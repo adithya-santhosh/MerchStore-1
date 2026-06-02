@@ -1,8 +1,8 @@
 import { Response, Request } from "express";
 import { getAllProducts } from "../services/product.service";
 
-export const getProducts = (req:Request, res:Response) =>{
+export const getProducts = async (req:Request, res:Response) =>{
     
-        const products = getAllProducts();
+        const products = await getAllProducts();
         res.json(products);
     };
