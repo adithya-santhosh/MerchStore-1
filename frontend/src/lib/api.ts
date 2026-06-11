@@ -1,7 +1,7 @@
 import { Product } from "@/types/products";
 
 //const API_URL = import.meta.env.VITE_API_URL;
-const API_URL = "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 /// This function will go to backend and fetch all the product info
 export async function getProducts() :Promise<Product []>{

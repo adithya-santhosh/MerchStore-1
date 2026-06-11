@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown, ShoppingBag, User, Search, Sparkles } from "lucide-react";
+import { Menu, X, ChevronDown, ShoppingBag, User, Search, Sparkles, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface NavItem {
@@ -163,7 +163,7 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Desktop Right Actions (Search, Cart, User, Checkout CTA) */}
+          {/* Desktop Right Actions (Search, Cart, User, Admin, Checkout CTA) */}
           <div className="hidden md:flex items-center gap-3">
             <button
               aria-label="Search items"
@@ -186,6 +186,13 @@ export default function Navbar() {
                 0
               </span>
             </button>
+            <Link
+              href="/admin/products"
+              aria-label="Admin Panel"
+              className="p-2 text-muted-foreground hover:text-primary rounded-full hover:bg-muted transition-colors cursor-pointer"
+            >
+              <Shield className="size-5" />
+            </Link>
             <Button size="sm" className="ml-2 shadow-md cursor-pointer">
               Shop Now
             </Button>
@@ -269,6 +276,14 @@ export default function Navbar() {
               >
                 <User className="size-5" />
                 <span className="text-sm font-medium">My Account</span>
+              </Link>
+              <Link
+                href="/admin/products"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
+              >
+                <Shield className="size-5" />
+                <span className="text-sm font-medium">Admin Console</span>
               </Link>
               <button className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors w-full text-left cursor-pointer">
                 <Search className="size-5" />
