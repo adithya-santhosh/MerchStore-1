@@ -2,14 +2,12 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Sparkles, AlertCircle } from "lucide-react";
+import { getProductByCategory } from "@/lib/api";
+import { Product } from "@/types/products";
+import ProductCard from "@/components/ProductCard";
 
-export default function StorageRacksPage() {
-  const products = [
-    { name: "Modular Low-Profile Roof Rack", specs: "Laser-cut steel brackets, T-slot extruded aluminum crossbars", price: "$450.00" },
-    { name: "Sleek Flatbed Platform System", specs: "High-load alloy structure, multiple tie-down anchors", price: "$580.00" },
-    { name: "Trunk Slide-Out Drawer Modules", specs: "Dual galvanized steel drawers, marine-grade carpet top, heavy drawer slides", price: "$690.00" },
-    { name: "Waterproof Overland Cargo Bag", specs: "80L volume, heavy-duty TPU coated fabric, secure buckle compression", price: "$95.00" },
-  ];
+export default async function StorageRacksPage() {
+  const products = await getProductByCategory("Storage & Racks");
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -40,30 +38,22 @@ export default function StorageRacksPage() {
           </p>
         </div>
 
-        {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {products.map((prod) => (
-            <div
-              key={prod.name}
-              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200"
-            >
-              <div>
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                  {prod.name}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-normal">
-                  {prod.specs}
-                </p>
-              </div>
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/40">
-                <span className="text-sm font-bold text-foreground">{prod.price}</span>
-                <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">
-                  Coming Soon
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* Products Grid using ProductCards */}
+        {products.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
+            {products.map((prod: Product) => (
+              <ProductCard key={prod.id} product={prod} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12 border border-border/60 rounded-3xl bg-card/20 max-w-md mx-auto">
+            <Sparkles className="size-8 text-muted-foreground/40 mx-auto mb-3" />
+            <h3 className="text-sm font-bold text-foreground">No Products Found</h3>
+            <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
+              Active drops in this category are coming shortly. Join our waitlist!
+            </p>
+          </div>
+        )}
 
         {/* Info Banner */}
         <div className="mt-12 rounded-2xl border border-border/60 bg-muted/20 p-5 flex gap-3.5 items-start max-w-2xl">

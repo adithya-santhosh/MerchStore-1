@@ -2,14 +2,12 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Sparkles, AlertCircle } from "lucide-react";
+import ProductCard from "@/components/ProductCard";
+import { getProductByCategory } from "@/lib/api";
+import { Product } from "@/types/products";
 
-export default function RecoveryGearPage() {
-  const products = [
-    { name: "Heavy-Duty 12,000 lbs Electric Winch", specs: "Steel Cable, IP68 Waterproof, Wireless Remote", price: "$499.00" },
-    { name: "Synthetic Snatch Rope Shackles Kit", specs: "30,000 lbs breaking strength, Orange/Black sleeve", price: "$85.00" },
-    { name: "Reinforced Off-Road Recovery Tracks", specs: "High-flex composite material, Pack of 2", price: "$120.00" },
-    { name: "Heavy-Duty Tow Snatch Strap", specs: "30ft length, 9ton stretching kinetic nylon", price: "$65.00" },
-  ];
+export default async function RecoveryGearPage() {
+  const products = await getProductByCategory("Recovery Gear");
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -40,28 +38,10 @@ export default function RecoveryGearPage() {
           </p>
         </div>
 
-        {/* Premium Products Listings Area */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8">
-          {products.map((prod) => (
-            <div
-              key={prod.name}
-              className="group relative flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-sm hover:shadow-md hover:border-primary/10 transition-all duration-200"
-            >
-              <div>
-                <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                  {prod.name}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-normal">
-                  {prod.specs}
-                </p>
-              </div>
-              <div className="flex items-center justify-between mt-6 pt-4 border-t border-border/40">
-                <span className="text-sm font-bold text-foreground">{prod.price}</span>
-                <span className="text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 tracking-wider uppercase">
-                  Coming Soon
-                </span>
-              </div>
-            </div>
+        {/* Products Grid using Reusable ProductCards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
+          {products.map((prod: Product) => (
+            <ProductCard key={prod.id} product={prod} />
           ))}
         </div>
 

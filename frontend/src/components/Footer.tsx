@@ -71,7 +71,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/products?category=merchandise" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/products/merchandise" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
                   Merchandise
                 </Link>
               </li>

@@ -35,7 +35,7 @@ export default function Navbar() {
         },
         {
           label: "Merchandise",
-          href: "/products?category=merchandise",
+          href: "/products/merchandise",
           description: "Limited apparel, caps, keychains, and street fashion gear.",
         },
       ],

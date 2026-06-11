@@ -14,6 +14,10 @@ export const getProducts = async (req:Request, res:Response) =>{
 export const getProduct = async (req:Request, res:Response) =>{
     const id = Number(req.params.id);
 
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid product ID" });
+    }
+
     const product = await getProductById(id);
 
     if (!product){
@@ -38,6 +42,10 @@ export const createNewProduct = async(req:Request, res:Response) =>{
 export const removeProduct = async(req:Request, res:Response) =>{
     const id = Number(req.params.id);
 
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid product ID" });
+    }
+
     await deleteProduct(id);
     res.json({
         message:"Product Deleted Successfully"
@@ -48,6 +56,11 @@ export const removeProduct = async(req:Request, res:Response) =>{
 //
 export const editProduct = async (req:Request, res:Response) =>{
     const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid product ID" });
+    }
+
     const data = req.body;
     const product = await updateProduct(id, data);
     res.json(product);

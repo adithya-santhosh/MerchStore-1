@@ -86,7 +86,7 @@ export default function CarAccessoriesPage() {
             <Link
               key={cat.title}
               href={cat.href}
-              className="group flex flex-col justify-between rounded-3xl border border-border bg-card shadow-sm hover:shadow-lg hover:border-primary/20 hover:shadow-primary/5 transition-all duration-300 overflow-hidden min-h-[460px] cursor-pointer"
+              className="group flex flex-col justify-between rounded-3xl border border-border bg-card shadow-sm hover:shadow-lg hover:border-primary hover:shadow-primary/10 transition-all duration-300 overflow-hidden min-h-[460px] cursor-pointer"
             >
               
               {/* Card Contents */}
