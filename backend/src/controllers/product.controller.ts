@@ -1,5 +1,6 @@
 import { Response, Request } from "express";
 import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct } from "../services/product.service";
+import { subCategories } from "../services/product.service";
 
 export const getProducts = async (req:Request, res:Response) =>{
         const category = req.query.category as string
@@ -64,4 +65,14 @@ export const editProduct = async (req:Request, res:Response) =>{
     const data = req.body;
     const product = await updateProduct(id, data);
     res.json(product);
+}
+
+
+export const getSubCategories = async (req:Request, res:Response) =>{
+    const {category} = req.params;
+    if (typeof category !== 'string') {
+        return res.status(400).json({ message: "Invalid category" });
+    }
+    const subcategories = await subCategories(category);
+    res.json(subcategories)
 }

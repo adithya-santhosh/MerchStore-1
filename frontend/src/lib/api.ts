@@ -40,7 +40,7 @@ export async function getProductByCategory(category:string) :Promise<Product[]> 
 
 export async function getProductById(id:string) :Promise<Product>{
   const response = await fetch(
-    `http://localhost:5000/api/products/${id}`,
+    `${API_URL}/api/products/${id}`,
     {
       cache: "no-store",
     }
@@ -56,7 +56,7 @@ export async function getProductById(id:string) :Promise<Product>{
 
 export async function deleteProduct(id: number) {
   const response = await fetch(
-    `http://localhost:5000/api/products/${id}`,
+    `${API_URL}/api/products/${id}`,
     {
       method: "DELETE",
     }
@@ -70,7 +70,7 @@ export async function deleteProduct(id: number) {
 }
 
 export async function createProduct(product: Omit<Product,"id" | "createdAt" |"updatedAt">){
-  const response = await fetch(`http://localhost:5000/api/products`,{
+  const response = await fetch(`${API_URL}/api/products`,{
     method :"POST",
     headers : {"Content-Type": "application/json",},
     body : JSON.stringify(product),
@@ -78,5 +78,36 @@ export async function createProduct(product: Omit<Product,"id" | "createdAt" |"u
   if (!response.ok){
     throw new Error("Failed to create the product");
   }
+  return response.json();
+}
+
+export async function updateProduct(id: string | number, product: Omit<Product, "id" | "createdAt" | "updatedAt">) {
+  const response = await fetch(`${API_URL}/api/products/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(product),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to update the product");
+  }
+
+  return response.json();
+}
+
+export async function getSubCategories(category: string): Promise<string[]> {
+  const response = await fetch(
+    `${API_URL}/api/products/subcategories/${encodeURIComponent(category)}`,
+    {
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch subcategories");
+  }
+
   return response.json();
 }

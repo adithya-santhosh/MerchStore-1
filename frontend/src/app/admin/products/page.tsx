@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getProducts } from "@/lib/api";
 import { Product } from "@/types/products";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit2, Trash2, Sparkles, FolderOpen } from "lucide-react";
+import { PlusCircle, Edit2, Sparkles, FolderOpen } from "lucide-react";
+import DeleteProductButton from "@/components/admin/DeleteProductButton";
 
 export default async function AdminProductsPage() {
   const products: Product[] = await getProducts();
@@ -91,10 +92,7 @@ export default async function AdminProductsPage() {
                     </Link>
                   </Button>
 
-                  <Button variant="destructive" size="xs" className="cursor-pointer">
-                    <Trash2 className="size-3" />
-                    Delete
-                  </Button>
+                  <DeleteProductButton product={product} />
 
                 </div>
 

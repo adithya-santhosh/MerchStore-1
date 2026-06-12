@@ -21,13 +21,7 @@ export const getProductById = async (id: number) => {
 //
 //// Function to add The product to the Database
 //
-export const createProduct = async (
-                                    data: {
-                                      name : string,
-                                      description : string,
-                                      price : number, 
-                                      category : string,
-                                      ImageURL : string }) => 
+export const createProduct = async (data: any) => 
   {
     return await prisma.product.create({data,});
   };
@@ -43,4 +37,11 @@ export const deleteProduct = async (id: number) =>{
 
 export const updateProduct = async (id: number, data: any) =>{
   return await prisma.product.update({where :{id,},data,});
+}
+
+export const subCategories = async(category: string) =>{
+  const results =  await prisma.product.findMany({where :{category,},
+                                         select:{subCategory :true},
+                                        distinct:["subCategory"]});
+  return results.map(item=> item.subCategory)
 }

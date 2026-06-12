@@ -1,8 +1,9 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { Button } from "@/components/ui/button";
-import { ArrowLeft, Sparkles, Save, Trash2 } from "lucide-react";
+import { ArrowLeft, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { getProductById } from "@/lib/api";
+import EditProductForm from "@/components/admin/EditProductForm";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -10,6 +11,15 @@ interface PageProps {
 
 export default async function AdminProductEditPage({ params }: PageProps) {
   const { id } = await params;
+
+  let product = null;
+  let errorMsg = "";
+  try {
+    product = await getProductById(id);
+  } catch (err) {
+    console.error(err);
+    errorMsg = "Failed to load product. It might not exist in the database.";
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -37,80 +47,16 @@ export default async function AdminProductEditPage({ params }: PageProps) {
               Edit Product #{id}
             </h1>
           </div>
-          <Button variant="destructive" size="sm" className="cursor-pointer">
-            <Trash2 className="size-4 mr-2" />
-            Delete Product
-          </Button>
         </div>
 
-        {/* Placeholder Form */}
-        <form className="space-y-6 bg-card border border-border rounded-3xl p-8 shadow-sm">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
-                Product Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
-                placeholder="e.g. Formula V1 Hoodie"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="price" className="block text-sm font-semibold text-foreground mb-2">
-                Price (₹)
-              </label>
-              <input
-                type="number"
-                id="price"
-                name="price"
-                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
-                placeholder="₹6500"
-                required
-              />
-            </div>
+        {/* Form Container */}
+        {product ? (
+          <EditProductForm product={product} />
+        ) : (
+          <div className="bg-card border border-border rounded-3xl p-8 text-center text-muted-foreground">
+            {errorMsg || "Product not found."}
           </div>
-
-          <div>
-            <label htmlFor="category" className="block text-sm font-semibold text-foreground mb-2">
-              Category
-            </label>
-            <select
-              id="category"
-              name="category"
-              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground cursor-pointer"
-              required
-            >
-              <option value="Car Accessories">Car Accessories</option>
-              <option value="Merchandise">Merchandise</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="description" className="block text-sm font-semibold text-foreground mb-2">
-              Product Description
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              rows={5}
-              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground resize-none"
-              placeholder="Provide a detailed description of the product and materials used..."
-              required
-            />
-          </div>
-
-          <div className="flex justify-end pt-4">
-            <Button type="button" className="shadow-lg cursor-pointer">
-              <Save className="size-4 mr-2" />
-              Save Changes
-            </Button>
-          </div>
-        </form>
+        )}
 
       </main>
 
