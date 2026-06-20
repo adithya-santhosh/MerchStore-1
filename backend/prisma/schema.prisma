@@ -14,15 +14,317 @@ datasource db {
 
 }
 
-model Product {
-  id  Int   @id @default(autoincrement())
-  name  String
-  description String
-  price Float
-  category  String
-  subCategory String?
-  ImageURL  String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// ─── CATEGORY (self-referencing for parent → child hierarchy) ───────────────
+model Category {
+  id          Int        @id @default(autoincrement())
+  name        String
+  description String?
+  slug        String     @unique  // e.g. "car-accessories", "lighting"
+  imageUrl    String?
+  isActive    Boolean    @default(true)
+  sortOrder   Int        @default(0)
+
+  parentId    Int?
+  parent      Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryTree")
+
+  products    Product[]
+
+  createdAt   DateTime   @default(now())
+
+  @@map("categories")
+}
+
+// ─── BRAND ──────────────────────────────────────────────────────────────────
+model Brand {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  slug        String    @unique
+  logoUrl     String?
+  description String?
+  isActive    Boolean   @default(true)
+
+  products    Product[]
+
+  @@map("brands")
+}
+
+// ─── VEHICLE ────────────────────────────────────────────────────────────────
+model Vehicle {
+  id         Int               @id @default(autoincrement())
+  make       String            // Toyota, BMW, Maruti...
+  model      String            // Camry, X5, Swift...
+  yearFrom   Int
+  yearTo     Int?
+  bodyType   String?           // sedan, SUV, hatchback...
+  engineType String?           // petrol, diesel, EV...
+
+  products   ProductVehicle[]
+
+  @@map("vehicles")
+}
+
+// ─── PRODUCT (your existing table, restructured) ─────────────────────────────
+model Product {
+  id               Int       @id @default(autoincrement())
+  name             String
+  description      String
+  shortDescription String?
+  slug             String    @unique  // for SEO URLs
+
+  price            Decimal   @db.Decimal(10, 2)  // use Decimal, not Float, for money
+  compareAtPrice   Decimal?  @db.Decimal(10, 2)  // strike-through price
+  costPrice        Decimal?  @db.Decimal(10, 2)  // your purchase cost
+
+  sku              String?   @unique
+  stockQty         Int       @default(0)
+  weight           Float?    // in kg, for shipping calc
+
+  productType      String    @default("part")  // "part" or "merch"
+
+  isActive         Boolean   @default(true)
+  isFeatured       Boolean   @default(false)
+
+  // ── Relations (replacing your plain text columns) ──
+  categoryId       Int
+  category         Category  @relation(fields: [categoryId], references: [id])
+
+  brandId          Int?
+  brand            Brand?    @relation(fields: [brandId], references: [id])
+
+  // ── Child relations ──
+  images           ProductImage[]
+  attributes       ProductAttribute[]
+  compatibleWith   ProductVehicle[]
+  orderItems       OrderItem[]
+  cartItems        CartItem[]
+  wishlistItems    WishlistItem[]
+  reviews          Review[]
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@map("products")
+}
+
+// ─── PRODUCT IMAGES ──────────────────────────────────────────────────────────
+model ProductImage {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  imageUrl  String
+  altText   String?
+  isPrimary Boolean @default(false)
+  sortOrder Int     @default(0)
+
+  @@map("product_images")
+}
+
+// ─── PRODUCT ATTRIBUTES (flexible key-value for specs) ───────────────────────
+model ProductAttribute {
+  id        Int     @id @default(autoincrement())
+  productId Int
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  attrKey   String  // e.g. "Wattage", "Color", "Material"
+  attrValue String  // e.g. "55W", "Black", "ABS Plastic"
+
+  @@map("product_attributes")
+}
+
+// ─── PRODUCT ↔ VEHICLE (many-to-many junction) ───────────────────────────────
+model ProductVehicle {
+  productId Int
+  vehicleId Int
+  notes     String?  // e.g. "Does not fit diesel variant"
+
+  product   Product @relation(fields: [productId], references: [id])
+  vehicle   Vehicle @relation(fields: [vehicleId], references: [id])
+
+  @@id([productId, vehicleId])
+  @@map("product_vehicles")
+}
+
+// ─── USER ────────────────────────────────────────────────────────────────────
+model User {
+  id            Int      @id @default(autoincrement())
+  email         String   @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?
+  role          String   @default("customer")  // "customer" or "admin"
+  emailVerified Boolean  @default(false)
+
+  addresses     Address[]
+  orders        Order[]
+  cart          Cart?
+  wishlist      WishlistItem[]
+  reviews       Review[]
+
+  createdAt     DateTime @default(now())
+
+  @@map("users")
+}
+
+// ─── ADDRESS ─────────────────────────────────────────────────────────────────
+model Address {
+  id           Int     @id @default(autoincrement())
+  userId       Int
+  user         User    @relation(fields: [userId], references: [id])
+  label        String? // "Home", "Work"
+  addressLine1 String
+  addressLine2 String?
+  city         String
+  state        String
+  postalCode   String
+  country      String  @default("IN")
+  isDefault    Boolean @default(false)
+
+  orders       Order[]
+
+  @@map("addresses")
+}
+
+// ─── CART ────────────────────────────────────────────────────────────────────
+model Cart {
+  id           Int        @id @default(autoincrement())
+  userId       Int?       @unique
+  user         User?      @relation(fields: [userId], references: [id])
+  sessionToken String?    // for guest users
+  items        CartItem[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        Int     @id @default(autoincrement())
+  cartId    Int
+  cart      Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+
+  @@map("cart_items")
+}
+
+// ─── ORDER ───────────────────────────────────────────────────────────────────
+model Order {
+  id                Int         @id @default(autoincrement())
+  userId            Int
+  user              User        @relation(fields: [userId], references: [id])
+  orderNumber       String      @unique  // e.g. "ORD-2026-00042"
+  status            String      @default("pending")
+  // pending → confirmed → processing → shipped → delivered → cancelled
+
+  shippingAddressId Int
+  shippingAddress   Address     @relation(fields: [shippingAddressId], references: [id])
+
+  subtotal         Decimal     @db.Decimal(10, 2)
+  discountAmount   Decimal     @default(0) @db.Decimal(10, 2)
+  shippingCost     Decimal     @default(0) @db.Decimal(10, 2)
+  taxAmount        Decimal     @default(0) @db.Decimal(10, 2)
+  totalAmount      Decimal     @db.Decimal(10, 2)
+  couponCode       String?
+
+  notes            String?
+  items            OrderItem[]
+  payment          Payment?
+  shipment         Shipment?
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id          Int     @id @default(autoincrement())
+  orderId     Int
+  order       Order   @relation(fields: [orderId], references: [id])
+  productId   Int
+  product     Product @relation(fields: [productId], references: [id])
+  productName String  // snapshot — so renames don't break history
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  totalPrice  Decimal @db.Decimal(10, 2)
+
+  @@map("order_items")
+}
+
+// ─── PAYMENT ─────────────────────────────────────────────────────────────────
+model Payment {
+  id            Int      @id @default(autoincrement())
+  orderId       Int      @unique
+  order         Order    @relation(fields: [orderId], references: [id])
+  gateway       String   // "razorpay", "stripe", "cod"
+  gatewayTxnId  String?
+  amount        Decimal  @db.Decimal(10, 2)
+  currency      String   @default("INR")
+  status        String   // "pending", "paid", "failed", "refunded"
+  paidAt        DateTime?
+
+  @@map("payments")
+}
+
+// ─── SHIPMENT ────────────────────────────────────────────────────────────────
+model Shipment {
+  id             Int       @id @default(autoincrement())
+  orderId        Int       @unique
+  order          Order     @relation(fields: [orderId], references: [id])
+  carrier        String?   // "Blue Dart", "Delhivery"
+  trackingNumber String?
+  status         String    @default("preparing")
+  shippedAt      DateTime?
+  deliveredAt    DateTime?
+
+  @@map("shipments")
+}
+
+// ─── REVIEW ──────────────────────────────────────────────────────────────────
+model Review {
+  id                Int      @id @default(autoincrement())
+  productId         Int
+  product           Product  @relation(fields: [productId], references: [id])
+  userId            Int
+  user              User     @relation(fields: [userId], references: [id])
+  rating            Int      // 1–5
+  title             String?
+  body              String?
+  isVerifiedPurchase Boolean @default(false)
+  isApproved        Boolean  @default(false)
+  createdAt         DateTime @default(now())
+
+  @@map("reviews")
+}
+
+// ─── WISHLIST ────────────────────────────────────────────────────────────────
+model WishlistItem {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  addedAt   DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+// ─── COUPON ──────────────────────────────────────────────────────────────────
+model Coupon {
+  id             Int       @id @default(autoincrement())
+  code           String    @unique
+  type           String    // "percent" or "fixed"
+  value          Decimal   @db.Decimal(10, 2)
+  minOrderAmount Decimal?  @db.Decimal(10, 2)
+  maxUses        Int?
+  usedCount      Int       @default(0)
+  expiresAt      DateTime?
+  isActive       Boolean   @default(true)
+
+  @@map("coupons")
 }
