@@ -1,5 +1,36 @@
 import prisma from "../lib/prisma";
 
+// Helper function to map Prisma Product relations to frontend-compatible formats
+const mapProduct = (product: any) => {
+  if (!product) return null;
+
+  let categoryName = "";
+  let subCategoryName: string | null = null;
+
+  if (product.category) {
+    if (product.category.parent) {
+      categoryName = product.category.parent.name;
+      subCategoryName = product.category.name;
+    } else {
+      categoryName = product.category.name;
+      subCategoryName = null;
+    }
+  }
+
+  const primaryImage = product.images?.find((img: any) => img.isPrimary) || product.images?.[0];
+  const ImageURL = primaryImage ? primaryImage.imageUrl : null;
+
+  return {
+    ...product,
+    category: categoryName,
+    subCategory: subCategoryName,
+    ImageURL,
+    price: product.price ? Number(product.price) : 0,
+    compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : null,
+    costPrice: product.costPrice ? Number(product.costPrice) : null,
+  };
+};
+
 //
 /// Function to Get All the Products from the Database
 //
@@ -45,10 +76,14 @@ export const getAllProducts = async (categoryQuery?: string, subCategoryQuery?: 
     }
   }
 
-  return await prisma.product.findMany({
+  const products = await prisma.product.findMany({
     where,
     include: {
-      category: true,
+      category: {
+        include: {
+          parent: true
+        }
+      },
       brand: true,
       images: true,
       attributes: true,
@@ -59,16 +94,22 @@ export const getAllProducts = async (categoryQuery?: string, subCategoryQuery?: 
       }
     }
   });
+
+  return products.map(mapProduct);
 };
 
 //
 /// Function to Find the Product by Id number
 //
 export const getProductById = async (id: number) => {
-  return await prisma.product.findUnique({
+  const product = await prisma.product.findUnique({
     where: { id },
     include: {
-      category: true,
+      category: {
+        include: {
+          parent: true
+        }
+      },
       brand: true,
       images: true,
       attributes: true,
@@ -90,6 +131,8 @@ export const getProductById = async (id: number) => {
       }
     }
   });
+
+  return product ? mapProduct(product) : null;
 };
 
 //
@@ -175,14 +218,20 @@ export const createProduct = async (data: any) => {
     delete createData.subCategory;
   }
 
-  return await prisma.product.create({
+  const product = await prisma.product.create({
     data: createData,
     include: {
       images: true,
-      category: true,
+      category: {
+        include: {
+          parent: true
+        }
+      },
       brand: true
     }
   });
+
+  return mapProduct(product);
 };
 
 //
@@ -277,15 +326,21 @@ export const updateProduct = async (id: number, data: any) => {
     delete updateData.subCategory;
   }
 
-  return await prisma.product.update({
+  const product = await prisma.product.update({
     where: { id },
     data: updateData,
     include: {
       images: true,
-      category: true,
+      category: {
+        include: {
+          parent: true
+        }
+      },
       brand: true
     }
   });
+
+  return mapProduct(product);
 };
 
 export const subCategories = async (categorySlugOrName: string) => {
