@@ -3,11 +3,11 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Sparkles, AlertCircle } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
-import { getProductByCategory } from "@/lib/api";
+import { getProductBySubCategory } from "@/lib/api";
 import { Product } from "@/types/products";
 
 export default async function RecoveryGearPage() {
-  const products = await getProductByCategory("Recovery Gear");
+  const products = await getProductBySubCategory("Recovery Gear");
 
   return (
     <div className="flex flex-col min-h-screen bg-background">

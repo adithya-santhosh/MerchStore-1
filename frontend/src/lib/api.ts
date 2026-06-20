@@ -111,3 +111,32 @@ export async function getSubCategories(category: string): Promise<string[]> {
 
   return response.json();
 }
+
+export async function getProductBySubCategory(subCategory: string): Promise<Product[]> {
+  const response = await fetch(
+    `${API_URL}/api/products?subCategory=${encodeURIComponent(subCategory)}`,
+    {
+      cache: "no-store",
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to Fetch the product by subcategory.");
+  }
+  return response.json();
+}
+
+export async function getProductsBySubCategory(category: string):Promise<Product []> { 
+  const response = await fetch(
+    `${API_URL}/api/products?subCategory=${encodeURIComponent(category)}`,
+      {
+        cache:"no-store"
+      }
+    );
+  
+    if (!response.ok){
+      throw new Error("Failed to Fetch the Products using Sub categories");
+    }
+    return response.json();
+}
+

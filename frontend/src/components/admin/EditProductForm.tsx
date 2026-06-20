@@ -63,7 +63,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
 
   const getSubCategoryOptions = () => {
     const defaults = category === "Car Accessories"
-      ? ["Recovery Gear", "Lighting & Electrical", "Armor & Protection", "Camping & Overland", "Storage Racks", "Suspension & Wheels"]
+      ? ["Recovery Gear", "Lighting & Electrical", "Armor & Protection", "Camping & Overland", "Storage & Racks", "Suspension & Wheels"]
       : ["Apparel", "Headwear", "Lifestyle", "Streetwear"];
 
     const initialSub = product.subCategory ? [product.subCategory] : [];

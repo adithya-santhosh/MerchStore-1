@@ -2,12 +2,12 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { ArrowLeft, Sparkles, AlertCircle } from "lucide-react";
-import { getProductByCategory } from "@/lib/api";
+import { getProductBySubCategory } from "@/lib/api";
 import { Product } from "@/types/products";
 import ProductCard from "@/components/ProductCard";
 
 export default async function StorageRacksPage() {
-  const products = await getProductByCategory("Storage & Racks");
+  const products = await getProductBySubCategory("Storage & Racks");
 
   return (
     <div className="flex flex-col min-h-screen bg-background">

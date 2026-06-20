@@ -3,8 +3,9 @@ import { getAllProducts, getProductById, createProduct, deleteProduct, updatePro
 import { subCategories } from "../services/product.service";
 
 export const getProducts = async (req:Request, res:Response) =>{
-        const category = req.query.category as string
-        const products = await getAllProducts(category);
+        const category = req.query.category as string;
+        const subCategory = req.query.subCategory as string;
+        const products = await getAllProducts(category, subCategory);
         res.json(products);
     };
 

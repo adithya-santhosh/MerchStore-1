@@ -4,11 +4,21 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { createProduct, getSubCategories } from "@/lib/api";
 import { PlusCircle, Image, Sparkles } from "lucide-react";
+import { uploadToCloudinary } from "@/lib/utils";
 
 export default function ProductForm() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [slug, setSlug] = useState("");
   const [price, setPrice] = useState("");
+  const [compareAtPrice, setCompareAtPrice] = useState("");
+  const [costPrice, setCostPrice] = useState("");
+  const [sku, setSku] = useState("");
+  const [stockQty, setStockQty] = useState("0");
+  const [weight, setWeight] = useState("");
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [isActive, setIsActive] = useState(true);
   const [category, setCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [customSubCategory, setCustomSubCategory] = useState("");
@@ -19,6 +29,19 @@ export default function ProductForm() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [manualSlug, setManualSlug] = useState(false);
+
+  // Auto-generate slug from name unless manually edited
+  useEffect(() => {
+    if (!manualSlug) {
+      const generatedSlug = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)+/g, "");
+      setSlug(generatedSlug);
+    }
+  }, [name, manualSlug]);
 
   // Fetch subcategories from database on category change
   useEffect(() => {
@@ -48,7 +71,7 @@ export default function ProductForm() {
 
   const getSubCategoryOptions = () => {
     const defaults = category === "Car Accessories"
-      ? ["Recovery Gear", "Lighting & Electrical", "Armor & Protection", "Camping & Overland", "Storage Racks", "Suspension & Wheels"]
+      ? ["Recovery Gear", "Lighting & Electrical", "Armor & Protection", "Camping & Overland", "Storage & Racks", "Suspension & Wheels"]
       : ["Apparel", "Headwear", "Lifestyle", "Streetwear"];
 
     return Array.from(new Set([...defaults, ...dbSubCategories]));
@@ -65,6 +88,22 @@ export default function ProductForm() {
     }
   };
 
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const url = await uploadToCloudinary(file);
+      setImageURL(url);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload image to Cloudinary. Please ensure your preset is set to unsigned.");
+    } finally {
+      setUploading(false);
+    }
+  };
+ 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowConfirm(true);
@@ -75,8 +114,18 @@ export default function ProductForm() {
     try {
       await createProduct({
         name,
+        slug,
         description,
+        shortDescription: shortDescription || null,
         price: Number(price),
+        compareAtPrice: compareAtPrice ? Number(compareAtPrice) : null,
+        costPrice: costPrice ? Number(costPrice) : null,
+        sku: sku || null,
+        stockQty: Number(stockQty) || 0,
+        weight: weight ? Number(weight) : null,
+        productType: category === "Car Accessories" ? "part" : "merch",
+        isActive,
+        isFeatured,
         category,
         subCategory: isCustom ? customSubCategory : subCategory,
         ImageURL: ImageURL || null,
@@ -95,7 +144,17 @@ export default function ProductForm() {
   const handleCloseSuccess = () => {
     setName("");
     setDescription("");
+    setShortDescription("");
+    setSlug("");
     setPrice("");
+    setCompareAtPrice("");
+    setCostPrice("");
+    setSku("");
+    setStockQty("0");
+    setWeight("");
+    setIsFeatured(false);
+    setIsActive(true);
+    setManualSlug(false);
     setCategory("");
     setSubCategory("");
     setCustomSubCategory("");
@@ -110,13 +169,12 @@ export default function ProductForm() {
     <>
       <form onSubmit={handleSubmit} className="space-y-6 bg-card/40 border border-border/80 rounded-3xl p-6 sm:p-8 shadow-sm">
         
-        {/* 2-Column Inputs Grid */}
+        {/* Name and Slug Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-
           {/* Name Input */}
           <div className="space-y-2">
             <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Product Name
+              Product Name <span className="text-destructive font-bold">*</span>
             </label>
             <input
               type="text"
@@ -129,10 +187,65 @@ export default function ProductForm() {
             />
           </div>
 
+          {/* Slug Input */}
+          <div className="space-y-2">
+            <label htmlFor="slug" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              SEO URL Slug <span className="text-destructive font-bold">*</span>
+            </label>
+            <input
+              type="text"
+              id="slug"
+              value={slug}
+              onChange={(e) => {
+                setManualSlug(true);
+                setSlug(e.target.value);
+              }}
+              placeholder="e.g. formula-v1-hoodie"
+              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+              required
+            />
+          </div>
+        </div>
+
+        {/* Short Description and SKU */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Short Description */}
+          <div className="space-y-2">
+            <label htmlFor="shortDescription" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Short Description
+            </label>
+            <input
+              type="text"
+              id="shortDescription"
+              value={shortDescription}
+              onChange={(e) => setShortDescription(e.target.value)}
+              placeholder="Brief tagline or summary..."
+              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+            />
+          </div>
+
+          {/* SKU Input */}
+          <div className="space-y-2">
+            <label htmlFor="sku" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              SKU (Stock Keeping Unit)
+            </label>
+            <input
+              type="text"
+              id="sku"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+              placeholder="e.g. TS-MERCH-001"
+              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+            />
+          </div>
+        </div>
+
+        {/* Pricing Fields Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {/* Price Input */}
           <div className="space-y-2">
             <label htmlFor="price" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Price (₹)
+              Price (₹) <span className="text-destructive font-bold">*</span>
             </label>
             <div className="relative">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground select-none">
@@ -150,13 +263,86 @@ export default function ProductForm() {
             </div>
           </div>
 
+          {/* Compare At Price Input */}
+          <div className="space-y-2">
+            <label htmlFor="compareAtPrice" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Compare At Price (₹)
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground select-none">
+                ₹
+              </span>
+              <input
+                type="number"
+                id="compareAtPrice"
+                value={compareAtPrice}
+                onChange={(e) => setCompareAtPrice(e.target.value)}
+                placeholder="Original price e.g. 1800"
+                className="w-full rounded-xl border border-input bg-background/50 pl-8 pr-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+              />
+            </div>
+          </div>
+
+          {/* Cost Price Input */}
+          <div className="space-y-2">
+            <label htmlFor="costPrice" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Cost Price (₹)
+            </label>
+            <div className="relative">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground select-none">
+                ₹
+              </span>
+              <input
+                type="number"
+                id="costPrice"
+                value={costPrice}
+                onChange={(e) => setCostPrice(e.target.value)}
+                placeholder="Your buying cost e.g. 600"
+                className="w-full rounded-xl border border-input bg-background/50 pl-8 pr-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Inventory & Shipping Fields Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {/* Stock Qty */}
+          <div className="space-y-2">
+            <label htmlFor="stockQty" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Stock Quantity
+            </label>
+            <input
+              type="number"
+              id="stockQty"
+              value={stockQty}
+              onChange={(e) => setStockQty(e.target.value)}
+              placeholder="0"
+              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+            />
+          </div>
+
+          {/* Weight */}
+          <div className="space-y-2">
+            <label htmlFor="weight" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Weight (in kg)
+            </label>
+            <input
+              type="number"
+              step="any"
+              id="weight"
+              value={weight}
+              onChange={(e) => setWeight(e.target.value)}
+              placeholder="e.g. 0.5"
+              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+            />
+          </div>
         </div>
 
         {/* Primary and Sub-Category Dropdowns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label htmlFor="category" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Primary Category
+              Primary Category <span className="text-destructive font-bold">*</span>
             </label>
             <select
               id="category"
@@ -173,7 +359,7 @@ export default function ProductForm() {
 
           <div className="space-y-2">
             <label htmlFor="subCategory" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Sub-Category
+              Sub-Category <span className="text-destructive font-bold">*</span>
             </label>
             <select
               id="subCategory"
@@ -198,7 +384,7 @@ export default function ProductForm() {
         {isCustom && category && (
           <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
             <label htmlFor="customSub" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Custom Sub-Category Name
+              Custom Sub-Category Name <span className="text-destructive font-bold">*</span>
             </label>
             <input
               type="text"
@@ -212,26 +398,48 @@ export default function ProductForm() {
           </div>
         )}
 
-        {/* Image URL Input */}
+        {/* Image URL / Upload Input */}
         <div className="space-y-2">
-          <label htmlFor="imageURL" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
             <Image className="size-3.5 text-muted-foreground" />
-            Image URL
+            Product Image
           </label>
-          <input
-            type="text"
-            id="imageURL"
-            value={ImageURL}
-            onChange={(e) => setImageURL(e.target.value)}
-            placeholder="e.g. https://cloudinary.com/your-product-image.png"
-            className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
-          />
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex-1">
+              <input
+                type="text"
+                id="imageURL"
+                value={ImageURL}
+                onChange={(e) => setImageURL(e.target.value)}
+                placeholder="Paste an image URL or upload a file..."
+                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+              />
+            </div>
+            <div className="relative">
+              <input
+                type="file"
+                accept="image/*"
+                id="image-file"
+                onChange={handleImageUpload}
+                className="hidden"
+                disabled={uploading}
+              />
+              <label
+                htmlFor="image-file"
+                className={`flex h-full min-h-[46px] flex items-center justify-center gap-2 rounded-xl border border-dashed border-input bg-background/50 px-4 py-2 text-sm font-semibold cursor-pointer hover:border-primary transition-all text-muted-foreground hover:text-primary ${
+                  uploading ? "opacity-50 cursor-wait" : ""
+                }`}
+              >
+                {uploading ? "Uploading..." : "Upload File"}
+              </label>
+            </div>
+          </div>
         </div>
 
         {/* Description Textarea */}
         <div className="space-y-2">
           <label htmlFor="description" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Product Description
+            Product Description <span className="text-destructive font-bold">*</span>
           </label>
           <textarea
             id="description"
@@ -242,6 +450,35 @@ export default function ProductForm() {
             className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground resize-none"
             required
           />
+        </div>
+
+        {/* Active & Featured Toggles */}
+        <div className="flex gap-8 items-center bg-background/30 p-4 border border-input/60 rounded-2xl">
+          <div className="flex items-center gap-2.5">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="size-4 rounded border-input text-primary focus:ring-primary cursor-pointer accent-primary"
+            />
+            <label htmlFor="isActive" className="text-sm font-semibold text-foreground cursor-pointer select-none">
+              Publish (Active)
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <input
+              type="checkbox"
+              id="isFeatured"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="size-4 rounded border-input text-primary focus:ring-primary cursor-pointer accent-primary"
+            />
+            <label htmlFor="isFeatured" className="text-sm font-semibold text-foreground cursor-pointer select-none">
+              Feature Product
+            </label>
+          </div>
         </div>
 
         {/* Submit Button */}
@@ -286,8 +523,15 @@ export default function ProductForm() {
                   )}
                 </div>
                 <h3 className="text-sm font-bold text-foreground truncate">{name || "Untitled Product"}</h3>
+                {shortDescription && <p className="text-xs font-semibold text-foreground/80 line-clamp-1">{shortDescription}</p>}
                 <p className="text-xs text-muted-foreground line-clamp-2">{description || "No description provided."}</p>
-                <div className="text-sm font-extrabold text-foreground pt-1">Price: ₹{Number(price).toLocaleString("en-IN")}</div>
+                <div className="flex gap-2 items-baseline pt-1">
+                  <span className="text-sm font-extrabold text-foreground">₹{Number(price).toLocaleString("en-IN")}</span>
+                  {compareAtPrice && Number(compareAtPrice) > Number(price) && (
+                    <span className="text-xs text-muted-foreground line-through font-normal">₹{Number(compareAtPrice).toLocaleString("en-IN")}</span>
+                  )}
+                </div>
+                {sku && <div className="text-[10px] font-mono text-muted-foreground">SKU: {sku}</div>}
               </div>
             </div>
 
@@ -339,7 +583,12 @@ export default function ProductForm() {
                   )}
                 </div>
                 <h3 className="text-sm font-bold text-foreground truncate">{name}</h3>
-                <div className="text-sm font-extrabold text-foreground pt-1">Price: ₹{Number(price).toLocaleString("en-IN")}</div>
+                <div className="flex gap-2 items-baseline pt-1">
+                  <span className="text-sm font-extrabold text-foreground">₹{Number(price).toLocaleString("en-IN")}</span>
+                  {compareAtPrice && Number(compareAtPrice) > Number(price) && (
+                    <span className="text-xs text-muted-foreground line-through font-normal">₹{Number(compareAtPrice).toLocaleString("en-IN")}</span>
+                  )}
+                </div>
               </div>
             </div>
 
