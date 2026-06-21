@@ -34,8 +34,35 @@ const mapProduct = (product: any) => {
 //
 /// Function to Get All the Products from the Database
 //
-export const getAllProducts = async (categoryQuery?: string, subCategoryQuery?: string) => {
+export const getAllProducts = async (
+  categoryQuery?: string, 
+  subCategoryQuery?: string,
+  vehicleQuery?: string,
+  brandQuery?: string
+) => {
   const where: any = {};
+
+  if (brandQuery) {
+    where.brand = {
+      OR: [
+        { slug: { equals: brandQuery, mode: 'insensitive' } },
+        { name: { equals: brandQuery, mode: 'insensitive' } }
+      ]
+    };
+  }
+
+  if (vehicleQuery) {
+    where.compatibleWith = {
+      some: {
+        vehicle: {
+          OR: [
+            { model: { equals: vehicleQuery, mode: 'insensitive' } },
+            { make: { equals: vehicleQuery, mode: 'insensitive' } }
+          ]
+        }
+      }
+    };
+  }
 
   if (subCategoryQuery) {
     // If a subcategory query is specified, find the specific category record
@@ -358,4 +385,35 @@ export const subCategories = async (categorySlugOrName: string) => {
 
   if (!category) return [];
   return category.children.map(child => child.name); // return subcategory names for controller compatibility
+};
+
+export const getNavigationMetadata = async () => {
+  const categories = await prisma.category.findMany({
+    where: { parentId: null, isActive: true },
+    include: {
+      children: {
+        where: { isActive: true },
+        orderBy: { sortOrder: "asc" }
+      }
+    },
+    orderBy: { sortOrder: "asc" }
+  });
+
+  const brands = await prisma.brand.findMany({
+    where: { isActive: true },
+    orderBy: { name: "asc" }
+  });
+
+  const vehicles = await prisma.vehicle.findMany({
+    orderBy: [
+      { make: "asc" },
+      { model: "asc" }
+    ]
+  });
+
+  return {
+    categories,
+    brands,
+    vehicles
+  };
 };

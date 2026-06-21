@@ -4,9 +4,18 @@ import { Product } from "@/types/products";
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 /// This function will go to backend and fetch all the product info
-export async function getProducts() :Promise<Product []>{
+export async function getProducts(params?: { category?: string; subCategory?: string; vehicle?: string; brand?: string }) :Promise<Product []>{
+  const query = new URLSearchParams();
+  if (params) {
+    if (params.category) query.append("category", params.category);
+    if (params.subCategory) query.append("subCategory", params.subCategory);
+    if (params.vehicle) query.append("vehicle", params.vehicle);
+    if (params.brand) query.append("brand", params.brand);
+  }
+
+  const url = `${API_URL}/api/products${query.toString() ? `?${query.toString()}` : ""}`;
   const response = await fetch(
-    `${API_URL}/api/products`,
+    url,
     {
       cache: "no-store",
     }
@@ -138,5 +147,54 @@ export async function getProductsBySubCategory(category: string):Promise<Product
       throw new Error("Failed to Fetch the Products using Sub categories");
     }
     return response.json();
+}
+
+export interface NavCategory {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  children: {
+    id: number;
+    name: string;
+    slug: string;
+    description: string | null;
+  }[];
+}
+
+export interface NavBrand {
+  id: number;
+  name: string;
+  slug: string;
+  logoUrl: string | null;
+  description: string | null;
+}
+
+export interface NavVehicle {
+  id: number;
+  make: string;
+  model: string;
+  yearFrom: number;
+  yearTo: number | null;
+  bodyType: string | null;
+  engineType: string | null;
+}
+
+export interface NavMetadata {
+  categories: NavCategory[];
+  brands: NavBrand[];
+  vehicles: NavVehicle[];
+}
+
+export async function getNavigationMetadata(): Promise<NavMetadata> {
+  const response = await fetch(`${API_URL}/api/products/navigation/metadata`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch navigation metadata");
+  }
+
+  return response.json();
 }
 

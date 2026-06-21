@@ -3,8 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, ChevronDown, ShoppingBag, User, Search, Sparkles, Shield } from "lucide-react";
+import { Menu, X, ChevronDown, ShoppingBag, User, Search, Sparkles, Shield, Tag, Car, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getNavigationMetadata, NavMetadata } from "@/lib/api";
 
 interface NavItem {
   label: string;
@@ -18,6 +19,17 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [navMetadata, setNavMetadata] = useState<NavMetadata | null>(null);
+  const [activeDropdown, setActiveDropdown] = useState<"category" | "brand" | "vehicle" | null>(null);
+  const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);
+  const [isMobileBrandsOpen, setIsMobileBrandsOpen] = useState(false);
+  const [isMobileVehiclesOpen, setIsMobileVehiclesOpen] = useState(false);
+
+  useEffect(() => {
+    getNavigationMetadata()
+      .then(setNavMetadata)
+      .catch((err) => console.error("Failed to load navigation metadata:", err));
+  }, []);
 
   // Nav configuration
   
@@ -217,14 +229,147 @@ export default function Navbar() {
               {isMobileMenuOpen ? <X className="size-6" /> : <Menu className="size-6" />}
             </button>
           </div>
-
         </div>
+      </div>
+
+      {/* Secondary Sub-Navbar (Desktop Only) */}
+      <div 
+        className="hidden md:block border-t border-border/40 bg-background/25 relative"
+        onMouseLeave={() => setActiveDropdown(null)}
+      >
+        <div className="max-w-7xl mx-auto px-8">
+          <div className="flex items-center gap-8 h-10 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <button
+              onMouseEnter={() => setActiveDropdown("category")}
+              className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
+                activeDropdown === "category" ? "text-primary" : "hover:text-foreground"
+              }`}
+            >
+              <Layers className="size-3.5" /> Shop by Category
+            </button>
+            <button
+              onMouseEnter={() => setActiveDropdown("brand")}
+              className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
+                activeDropdown === "brand" ? "text-primary" : "hover:text-foreground"
+              }`}
+            >
+              <Tag className="size-3.5" /> Shop by Brand
+            </button>
+            <button
+              onMouseEnter={() => setActiveDropdown("vehicle")}
+              className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
+                activeDropdown === "vehicle" ? "text-primary" : "hover:text-foreground"
+              }`}
+            >
+              <Car className="size-3.5" /> Shop by Vehicle
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Absolute Dropdown Panels */}
+        {activeDropdown && navMetadata && (
+          <div className="absolute left-0 right-0 top-full bg-popover/98 backdrop-blur-xl border-b border-border shadow-2xl z-40 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="max-w-7xl mx-auto px-8 py-8">
+              
+              {/* Category Panel */}
+              {activeDropdown === "category" && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                  {navMetadata.categories.map((cat) => (
+                    <div key={cat.id} className="space-y-4">
+                      <h3 className="text-xs font-black text-foreground tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-border/50">
+                        <Layers className="size-3.5 text-primary" />
+                        {cat.name}
+                      </h3>
+                      <ul className="space-y-2.5">
+                        {cat.children.map((sub) => (
+                          <li key={sub.id}>
+                            <Link
+                              href={cat.slug === "car-accessories" ? `/products/car-accessories/${sub.slug}` : "/products/merchandise"}
+                              onClick={() => setActiveDropdown(null)}
+                              className="group/sub flex flex-col gap-0.5 normal-case"
+                            >
+                              <span className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">
+                                {sub.name}
+                              </span>
+                              {sub.description && (
+                                <span className="text-[10px] text-muted-foreground/50 leading-normal max-w-[200px]">
+                                  {sub.description}
+                                </span>
+                              )}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Brand Panel */}
+              {activeDropdown === "brand" && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+                  {navMetadata.brands.map((brand) => (
+                    <Link
+                      key={brand.id}
+                      href={`/products?brand=${brand.slug}`}
+                      onClick={() => setActiveDropdown(null)}
+                      className="group p-4 rounded-2xl border border-border bg-card/20 hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 flex flex-col items-center justify-center text-center gap-2 cursor-pointer"
+                    >
+                      <div className="size-10 rounded-xl bg-muted/60 flex items-center justify-center text-foreground font-black tracking-tighter text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                        {brand.name
+                          .split(" ")
+                          .map((w) => w[0])
+                          .join("")}
+                      </div>
+                      <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors normal-case">
+                        {brand.name}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* Vehicle Panel */}
+              {activeDropdown === "vehicle" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {Object.entries(
+                    navMetadata.vehicles.reduce((acc, v) => {
+                      if (!acc[v.make]) acc[v.make] = [];
+                      acc[v.make].push(v);
+                      return acc;
+                    }, {} as Record<string, typeof navMetadata.vehicles>)
+                  ).map(([make, models]) => (
+                    <div key={make} className="p-4 rounded-2xl border border-border bg-card/10 space-y-3">
+                      <h4 className="text-xs font-black text-foreground tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-border/50">
+                        <Car className="size-3.5 text-primary" />
+                        {make}
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {models.map((model) => (
+                          <Link
+                            key={model.id}
+                            href={`/products?vehicle=${encodeURIComponent(model.model)}`}
+                            onClick={() => setActiveDropdown(null)}
+                            className="text-[9px] font-bold px-2.5 py-1 rounded-full border border-border bg-muted/30 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all uppercase normal-case cursor-pointer"
+                          >
+                            {model.model}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile Drawer (Slide down) */}
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-border/80 bg-background/95 backdrop-blur-xl animate-in slide-in-from-top-5 duration-200">
-          <div className="px-4 pt-2 pb-6 space-y-3">
+          <div className="px-4 pt-2 pb-6 space-y-3 max-h-[80vh] overflow-y-auto">
             {navItems.map((item) => {
               const active = isActive(item);
               if (item.hasDropdown) {
@@ -267,6 +412,120 @@ export default function Navbar() {
                 </Link>
               );
             })}
+
+            {/* Seeded Navigation Options (Mobile Accordions) */}
+            {navMetadata && (
+              <div className="pt-2 border-t border-border/40 space-y-2">
+                
+                {/* Shop by Category Accordion */}
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setIsMobileCategoriesOpen(!isMobileCategoriesOpen);
+                      setIsMobileBrandsOpen(false);
+                      setIsMobileVehiclesOpen(false);
+                    }}
+                    className="flex justify-between items-center w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2"><Layers className="size-4" /> Shop Categories</span>
+                    <ChevronDown className={`size-4 transition-transform duration-200 ${isMobileCategoriesOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {isMobileCategoriesOpen && (
+                    <div className="pl-6 space-y-3 pt-1 pb-2">
+                      {navMetadata.categories.map(cat => (
+                        <div key={cat.id} className="space-y-1">
+                          <div className="text-xs font-bold text-foreground/80 uppercase tracking-wide">{cat.name}</div>
+                          <div className="pl-3 space-y-1">
+                            {cat.children.map(sub => (
+                              <Link
+                                key={sub.id}
+                                href={cat.slug === "car-accessories" ? `/products/car-accessories/${sub.slug}` : "/products/merchandise"}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="block py-1 text-xs text-muted-foreground hover:text-primary"
+                              >
+                                {sub.name}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Shop by Brand Accordion */}
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setIsMobileBrandsOpen(!isMobileBrandsOpen);
+                      setIsMobileCategoriesOpen(false);
+                      setIsMobileVehiclesOpen(false);
+                    }}
+                    className="flex justify-between items-center w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2"><Tag className="size-4" /> Shop Brands</span>
+                    <ChevronDown className={`size-4 transition-transform duration-200 ${isMobileBrandsOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {isMobileBrandsOpen && (
+                    <div className="pl-6 pt-1 pb-2 flex flex-wrap gap-2">
+                      {navMetadata.brands.map(brand => (
+                        <Link
+                          key={brand.id}
+                          href={`/products?brand=${brand.slug}`}
+                          onClick={() => setIsMobileMenuOpen(false)}
+                          className="px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-primary hover:border-primary bg-card/45"
+                        >
+                          {brand.name}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Shop by Vehicle Accordion */}
+                <div className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setIsMobileVehiclesOpen(!isMobileVehiclesOpen);
+                      setIsMobileCategoriesOpen(false);
+                      setIsMobileBrandsOpen(false);
+                    }}
+                    className="flex justify-between items-center w-full px-3 py-2.5 rounded-xl text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2"><Car className="size-4" /> Shop Vehicles</span>
+                    <ChevronDown className={`size-4 transition-transform duration-200 ${isMobileVehiclesOpen ? "rotate-180" : ""}`} />
+                  </button>
+                  {isMobileVehiclesOpen && (
+                    <div className="pl-6 pt-1 pb-2 space-y-3">
+                      {Object.entries(
+                        navMetadata.vehicles.reduce((acc, v) => {
+                          if (!acc[v.make]) acc[v.make] = [];
+                          acc[v.make].push(v);
+                          return acc;
+                        }, {} as Record<string, typeof navMetadata.vehicles>)
+                      ).map(([make, models]) => (
+                        <div key={make} className="space-y-1">
+                          <div className="text-xs font-bold text-foreground/80 uppercase tracking-wide">{make}</div>
+                          <div className="pl-3 flex flex-wrap gap-1.5">
+                            {models.map(model => (
+                              <Link
+                                key={model.id}
+                                href={`/products?vehicle=${encodeURIComponent(model.model)}`}
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="px-2 py-1 rounded border border-border text-[10px] font-semibold text-muted-foreground hover:text-primary hover:border-primary"
+                              >
+                                {model.model}
+                              </Link>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            )}
             
             <div className="pt-4 border-t border-border/60 flex flex-col gap-3">
               <Link

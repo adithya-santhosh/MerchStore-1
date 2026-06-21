@@ -1,11 +1,12 @@
 import { Response, Request } from "express";
-import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct } from "../services/product.service";
-import { subCategories } from "../services/product.service";
+import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata } from "../services/product.service";
 
 export const getProducts = async (req:Request, res:Response) =>{
         const category = req.query.category as string;
         const subCategory = req.query.subCategory as string;
-        const products = await getAllProducts(category, subCategory);
+        const vehicle = req.query.vehicle as string;
+        const brand = req.query.brand as string;
+        const products = await getAllProducts(category, subCategory, vehicle, brand);
         res.json(products);
     };
 
@@ -76,4 +77,14 @@ export const getSubCategories = async (req:Request, res:Response) =>{
     }
     const subcategories = await subCategories(category);
     res.json(subcategories)
+}
+
+export const getNavMetadata = async (req: Request, res: Response) => {
+    try {
+        const metadata = await getNavigationMetadata();
+        res.json(metadata);
+    } catch (error) {
+        console.error("Failed to fetch navigation metadata:", error);
+        res.status(500).json({ message: "Failed to fetch navigation metadata" });
+    }
 }
