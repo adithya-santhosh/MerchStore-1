@@ -6,6 +6,9 @@ import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown, ShoppingBag, User, Search, Sparkles, Shield, Tag, Car, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getNavigationMetadata, NavMetadata } from "@/lib/api";
+import { useCart } from "@/hooks/useCart";
+import CartSidebar from "./CartSidebar";
+import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
   label: string;
@@ -24,6 +27,8 @@ export default function Navbar() {
   const [isMobileCategoriesOpen, setIsMobileCategoriesOpen] = useState(false);
   const [isMobileBrandsOpen, setIsMobileBrandsOpen] = useState(false);
   const [isMobileVehiclesOpen, setIsMobileVehiclesOpen] = useState(false);
+  const { itemsCount, setSidebarOpen } = useCart();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     getNavigationMetadata()
@@ -75,13 +80,14 @@ export default function Navbar() {
   };
 
   return (
-    <header
-      className={`sticky top-0 z-50 w-full transition-all duration-300 border-b ${
-        scrolled
-          ? "bg-background/80 backdrop-blur-lg border-border/80 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.1)]"
-          : "bg-background/40 backdrop-blur-sm border-transparent"
-      }`}
-    >
+    <>
+      <header
+        className={`sticky top-0 z-50 w-full transition-all duration-300 border-b ${
+          scrolled
+            ? "bg-background/80 backdrop-blur-lg border-border/80 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.1)]"
+            : "bg-background/40 backdrop-blur-sm border-transparent"
+        }`}
+      >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 sm:h-20">
           
@@ -183,28 +189,49 @@ export default function Navbar() {
             >
               <Search className="size-5" />
             </button>
+            {user ? (
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-muted-foreground hidden lg:inline max-w-[80px] truncate">
+                  Hi, {user.firstName}
+                </span>
+                <button
+                  onClick={logout}
+                  className="text-[11px] font-black text-destructive hover:text-destructive/80 transition-colors uppercase cursor-pointer"
+                  title="Logout"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                aria-label="User Account"
+                className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors cursor-pointer"
+              >
+                <User className="size-5" />
+              </Link>
+            )}
             <button
-              aria-label="User Account"
-              className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors cursor-pointer"
-            >
-              <User className="size-5" />
-            </button>
-            <button
+              onClick={() => setSidebarOpen(true)}
               aria-label="Shopping Cart"
               className="relative p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors cursor-pointer"
             >
               <ShoppingBag className="size-5" />
-              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shadow-sm">
-                0
-              </span>
+              {itemsCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shadow-sm">
+                  {itemsCount}
+                </span>
+              )}
             </button>
-            <Link
-              href="/admin/products"
-              aria-label="Admin Panel"
-              className="p-2 text-muted-foreground hover:text-primary rounded-full hover:bg-muted transition-colors cursor-pointer"
-            >
-              <Shield className="size-5" />
-            </Link>
+            {user && user.role === "admin" && (
+              <Link
+                href="/admin/products"
+                aria-label="Admin Panel"
+                className="p-2 text-muted-foreground hover:text-primary rounded-full hover:bg-muted transition-colors cursor-pointer"
+              >
+                <Shield className="size-5" />
+              </Link>
+            )}
             <Button size="sm" className="ml-2 shadow-md cursor-pointer">
               Shop Now
             </Button>
@@ -213,13 +240,16 @@ export default function Navbar() {
           {/* Mobile Menu Buttons */}
           <div className="flex md:hidden items-center gap-2">
             <button
+              onClick={() => setSidebarOpen(true)}
               aria-label="Shopping Cart"
               className="relative p-2 text-muted-foreground rounded-full hover:bg-muted cursor-pointer"
             >
               <ShoppingBag className="size-5" />
-              <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
-                0
-              </span>
+              {itemsCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+                  {itemsCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -528,22 +558,42 @@ export default function Navbar() {
             )}
             
             <div className="pt-4 border-t border-border/60 flex flex-col gap-3">
-              <Link
-                href="/login"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors"
-              >
-                <User className="size-5" />
-                <span className="text-sm font-medium">My Account</span>
-              </Link>
-              <Link
-                href="/admin/products"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
-              >
-                <Shield className="size-5" />
-                <span className="text-sm font-medium">Admin Console</span>
-              </Link>
+              {user ? (
+                <>
+                  <div className="flex items-center gap-3 px-3 py-2 text-muted-foreground">
+                    <User className="size-5" />
+                    <span className="text-sm font-bold">Hi, {user.firstName}</span>
+                  </div>
+                  {user.role === "admin" && (
+                    <Link
+                      href="/admin/products"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
+                    >
+                      <Shield className="size-5" />
+                      <span className="text-sm font-medium">Admin Console</span>
+                    </Link>
+                  )}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-3 py-2 text-destructive hover:bg-destructive/5 rounded-xl transition-colors w-full text-left cursor-pointer text-sm font-bold"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors"
+                >
+                  <User className="size-5" />
+                  <span className="text-sm font-medium">Login / Sign Up</span>
+                </Link>
+              )}
               <button className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors w-full text-left cursor-pointer">
                 <Search className="size-5" />
                 <span className="text-sm font-medium">Search Store</span>
@@ -555,6 +605,8 @@ export default function Navbar() {
           </div>
         </div>
       )}
-    </header>
+      </header>
+      <CartSidebar />
+    </>
   );
 }

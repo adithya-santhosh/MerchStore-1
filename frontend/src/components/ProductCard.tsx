@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { Product } from "@/types/products";
 import { getProductImageSrc } from "@/lib/utils";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight, Sparkles, ShoppingBag } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
 
 interface ProductCardProps {
   product: Product;
@@ -11,6 +12,13 @@ interface ProductCardProps {
 
 export default function ProductCard({ product }: ProductCardProps) {
   const imageSrc = getProductImageSrc(product.ImageURL);
+  const { addToCart } = useCart();
+
+  const handleQuickAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await addToCart(product.id, 1);
+  };
 
   return (
     <Link
@@ -63,7 +71,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
       </div>
 
-      {/* Bottom Section: Price & View Arrow */}
+      {/* Bottom Section: Price & View Arrow / Cart */}
       <div className="px-5 pb-5 pt-2">
         <div className="flex items-center justify-between pt-4 border-t border-border/40">
           
@@ -75,9 +83,22 @@ export default function ProductCard({ product }: ProductCardProps) {
             </span>
           </div>
 
-          {/* Glowing Red Arrow CTA */}
-          <div className="size-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 group-hover:translate-x-0.5">
-            <ArrowRight className="size-4" />
+          {/* Quick CTA Actions */}
+          <div className="flex items-center gap-2">
+            {/* Quick Add To Cart */}
+            <button
+              onClick={handleQuickAddToCart}
+              className="size-9 rounded-full bg-muted border border-border hover:border-transparent hover:bg-primary hover:text-primary-foreground flex items-center justify-center text-muted-foreground transition-all duration-300 cursor-pointer"
+              title="Add to Cart"
+              aria-label="Quick Add to Cart"
+            >
+              <ShoppingBag className="size-4" />
+            </button>
+
+            {/* Glowing Arrow CTA */}
+            <div className="size-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300">
+              <ArrowRight className="size-4" />
+            </div>
           </div>
 
         </div>

@@ -2,8 +2,7 @@ import { getProductById } from "@/lib/api";
 import { getProductImageSrc } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import QuantitySelector from "@/components/QuantitySelector";
-import { Button } from "@/components/ui/button";
+import ProductActions from "@/components/ProductActions";
 import { ShieldCheck, Truck, RotateCcw, Sparkles, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -121,20 +120,8 @@ export default async function ProductPage({ params }: PageProps) {
               </p>
             </div>
 
-            {/* Interactive Quantity Selector */}
-            <div className="pt-2">
-              <QuantitySelector />
-            </div>
-
-            {/* Dynamic Buttons (Unassigned/Unlinked for now) */}
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <Button size="lg" className="flex-1 shadow-lg shadow-primary/10 py-6 text-base font-semibold cursor-pointer">
-                Add to Cart
-              </Button>
-              <Button size="lg" variant="secondary" className="flex-grow sm:flex-1 py-6 text-base font-semibold cursor-pointer">
-                Buy Now
-              </Button>
-            </div>
+            {/* Product Actions (Client Side: Quantity, Add to Cart, Buy Now) */}
+            <ProductActions productId={product.id} />
 
             {/* Trust Seals and Shipping info */}
             <div className="pt-6 border-t border-border/80 grid grid-cols-1 sm:grid-cols-3 gap-4">

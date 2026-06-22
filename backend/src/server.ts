@@ -1,6 +1,10 @@
 import express from "express";
 import cors from "cors";
 import productRoutes from "./routes/product.routes";
+import cartRoutes from "./routes/cart.routes";
+import settingsRoutes from "./routes/settings.routes";
+import couponRoutes from "./routes/coupon.routes";
+import authRoutes from "./routes/auth.routes";
 
 const PORT = process.env.PORT || 5000
 
@@ -17,8 +21,11 @@ app.get("/", (req, res) => {
 
 
 app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/coupons", couponRoutes);
+app.use("/api/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
-
