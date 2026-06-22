@@ -28,6 +28,16 @@ const mapProduct = (product: any) => {
     price: product.price ? Number(product.price) : 0,
     compareAtPrice: product.compareAtPrice ? Number(product.compareAtPrice) : null,
     costPrice: product.costPrice ? Number(product.costPrice) : null,
+    compatibleWith: product.compatibleWith?.map((cv: any) => ({
+      id: cv.vehicle.id,
+      make: cv.vehicle.make,
+      model: cv.vehicle.model,
+      yearFrom: cv.vehicle.yearFrom,
+      yearTo: cv.vehicle.yearTo,
+      bodyType: cv.vehicle.bodyType,
+      engineType: cv.vehicle.engineType,
+      notes: cv.notes
+    })) || [],
   };
 };
 
@@ -169,6 +179,27 @@ export const createProduct = async (data: any) => {
   const { images, ...productData } = data;
   const createData: any = { ...productData };
 
+  const vehicleEntries = productData.compatibleWith || [];
+  delete createData.compatibleWith;
+
+  // Handle brand string lookup or creation
+  if (!productData.brandId && productData.brand) {
+    const brandName = productData.brand.trim();
+    let brandObj = await prisma.brand.findUnique({
+      where: { name: brandName }
+    });
+    if (!brandObj) {
+      brandObj = await prisma.brand.create({
+        data: {
+          name: brandName,
+          slug: brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+        }
+      });
+    }
+    createData.brandId = brandObj.id;
+  }
+  delete createData.brand;
+
   // Backwards compatibility for ImageURL
   if (productData.ImageURL) {
     createData.images = {
@@ -258,7 +289,75 @@ export const createProduct = async (data: any) => {
     }
   });
 
-  return mapProduct(product);
+  // Link vehicle compatibilities
+  if (vehicleEntries && Array.isArray(vehicleEntries)) {
+    for (const entry of vehicleEntries) {
+      const { make, model, yearFrom, yearTo, bodyType, engineType, notes } = entry;
+      if (!make || !model) continue;
+
+      let vehicle = await prisma.vehicle.findFirst({
+        where: {
+          make: { equals: make.trim(), mode: 'insensitive' },
+          model: { equals: model.trim(), mode: 'insensitive' },
+          yearFrom: Number(yearFrom),
+          yearTo: yearTo ? Number(yearTo) : null,
+          bodyType: bodyType ? bodyType.trim() : null,
+          engineType: engineType ? engineType.trim() : null
+        }
+      });
+
+      if (!vehicle) {
+        vehicle = await prisma.vehicle.create({
+          data: {
+            make: make.trim(),
+            model: model.trim(),
+            yearFrom: Number(yearFrom),
+            yearTo: yearTo ? Number(yearTo) : null,
+            bodyType: bodyType ? bodyType.trim() : null,
+            engineType: engineType ? engineType.trim() : null
+          }
+        });
+      }
+
+      await prisma.productVehicle.upsert({
+        where: {
+          productId_vehicleId: {
+            productId: product.id,
+            vehicleId: vehicle.id
+          }
+        },
+        create: {
+          productId: product.id,
+          vehicleId: vehicle.id,
+          notes: notes || null
+        },
+        update: {
+          notes: notes || null
+        }
+      });
+    }
+  }
+
+  // Refetch complete product with compatibleWith list
+  const fullProduct = await prisma.product.findUnique({
+    where: { id: product.id },
+    include: {
+      images: true,
+      category: {
+        include: {
+          parent: true
+        }
+      },
+      brand: true,
+      compatibleWith: {
+        include: {
+          vehicle: true
+        }
+      }
+    }
+  });
+
+  return mapProduct(fullProduct);
 };
 
 //
@@ -274,6 +373,27 @@ export const deleteProduct = async (id: number) => {
 export const updateProduct = async (id: number, data: any) => {
   const { images, ...productData } = data;
   const updateData: any = { ...productData };
+
+  const vehicleEntries = productData.compatibleWith || [];
+  delete updateData.compatibleWith;
+
+  // Handle brand string lookup or creation
+  if (!productData.brandId && productData.brand) {
+    const brandName = productData.brand.trim();
+    let brandObj = await prisma.brand.findUnique({
+      where: { name: brandName }
+    });
+    if (!brandObj) {
+      brandObj = await prisma.brand.create({
+        data: {
+          name: brandName,
+          slug: brandName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+        }
+      });
+    }
+    updateData.brandId = brandObj.id;
+  }
+  delete updateData.brand;
 
   // Backwards compatibility for ImageURL
   if (productData.ImageURL) {
@@ -367,7 +487,79 @@ export const updateProduct = async (id: number, data: any) => {
     }
   });
 
-  return mapProduct(product);
+  // Clear and update vehicle compatibilities
+  await prisma.productVehicle.deleteMany({
+    where: { productId: id }
+  });
+
+  if (vehicleEntries && Array.isArray(vehicleEntries)) {
+    for (const entry of vehicleEntries) {
+      const { make, model, yearFrom, yearTo, bodyType, engineType, notes } = entry;
+      if (!make || !model) continue;
+
+      let vehicle = await prisma.vehicle.findFirst({
+        where: {
+          make: { equals: make.trim(), mode: 'insensitive' },
+          model: { equals: model.trim(), mode: 'insensitive' },
+          yearFrom: Number(yearFrom),
+          yearTo: yearTo ? Number(yearTo) : null,
+          bodyType: bodyType ? bodyType.trim() : null,
+          engineType: engineType ? engineType.trim() : null
+        }
+      });
+
+      if (!vehicle) {
+        vehicle = await prisma.vehicle.create({
+          data: {
+            make: make.trim(),
+            model: model.trim(),
+            yearFrom: Number(yearFrom),
+            yearTo: yearTo ? Number(yearTo) : null,
+            bodyType: bodyType ? bodyType.trim() : null,
+            engineType: engineType ? engineType.trim() : null
+          }
+        });
+      }
+
+      await prisma.productVehicle.upsert({
+        where: {
+          productId_vehicleId: {
+            productId: id,
+            vehicleId: vehicle.id
+          }
+        },
+        create: {
+          productId: id,
+          vehicleId: vehicle.id,
+          notes: notes || null
+        },
+        update: {
+          notes: notes || null
+        }
+      });
+    }
+  }
+
+  // Refetch complete product with compatibleWith list
+  const fullProduct = await prisma.product.findUnique({
+    where: { id },
+    include: {
+      images: true,
+      category: {
+        include: {
+          parent: true
+        }
+      },
+      brand: true,
+      compatibleWith: {
+        include: {
+          vehicle: true
+        }
+      }
+    }
+  });
+
+  return mapProduct(fullProduct);
 };
 
 export const subCategories = async (categorySlugOrName: string) => {

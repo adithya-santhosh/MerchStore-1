@@ -16,6 +16,17 @@ export interface Product {
     category: string;
     subCategory?: string | null;
     ImageURL?: string | null;
+    brand?: string | null;
+    compatibleWith?: Array<{
+        id?: number;
+        make: string;
+        model: string;
+        yearFrom: number;
+        yearTo?: number | null;
+        bodyType?: string | null;
+        engineType?: string | null;
+        notes?: string | null;
+    }>;
     createdAt: string;
     updatedAt: string;
 }

@@ -1,4 +1,5 @@
 import { Product } from "@/types/products";
+import { getCookie } from "@/hooks/useAuth";
 
 //const API_URL = import.meta.env.VITE_API_URL;
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -31,18 +32,17 @@ export async function getProducts(params?: { category?: string; subCategory?: st
 // This is go to backend and fetch the products according to the category 
 
 export async function getProductByCategory(category:string) :Promise<Product[]> {
-    const response = await fetch(
-        `${API_URL}/api/products?category=${encodeURIComponent(category)}`,
-        {
-            cache: "no-store"
-        }
-    );
-
-    if (!response.ok){
-        throw new Error("Failed to Fetch the product by category.");
+  const response = await fetch(
+    `${API_URL}/api/products?category=${encodeURIComponent(category)}`,
+    {
+      cache: "no-store"
     }
-    return response.json();
-    
+  );
+
+  if (!response.ok){
+    throw new Error("Failed to Fetch the product by category.");
+  }
+  return response.json();
 }
 
 // This is to get product according to the id number
@@ -60,14 +60,17 @@ export async function getProductById(id:string) :Promise<Product>{
   }
 
   return response.json();
-  
 }
 
 export async function deleteProduct(id: number) {
+  const token = getCookie("token");
   const response = await fetch(
     `${API_URL}/api/products/${id}`,
     {
       method: "DELETE",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
     }
   );
 
@@ -79,9 +82,13 @@ export async function deleteProduct(id: number) {
 }
 
 export async function createProduct(product: Omit<Product,"id" | "createdAt" |"updatedAt">){
+  const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products`,{
     method :"POST",
-    headers : {"Content-Type": "application/json",},
+    headers : {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     body : JSON.stringify(product),
   });
   if (!response.ok){
@@ -91,10 +98,12 @@ export async function createProduct(product: Omit<Product,"id" | "createdAt" |"u
 }
 
 export async function updateProduct(id: string | number, product: Omit<Product, "id" | "createdAt" | "updatedAt">) {
+  const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
     body: JSON.stringify(product),
   });

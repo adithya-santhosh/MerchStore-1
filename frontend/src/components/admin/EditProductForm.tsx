@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { updateProduct, deleteProduct, getSubCategories } from "@/lib/api";
+import { updateProduct, deleteProduct, getSubCategories, getNavigationMetadata, NavMetadata } from "@/lib/api";
 import { Product } from "@/types/products";
-import { Save, Trash2, Image, Sparkles, AlertTriangle } from "lucide-react";
+import { Save, Trash2, Image, Sparkles, AlertTriangle, Car, X, Plus } from "lucide-react";
 
 interface EditProductFormProps {
   product: Product;
@@ -27,6 +27,50 @@ export default function EditProductForm({ product }: EditProductFormProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Metadata states for dynamic dropdowns
+  const [metadata, setMetadata] = useState<NavMetadata | null>(null);
+  const [dbBrands, setDbBrands] = useState<string[]>([]);
+  const [dbMakes, setDbMakes] = useState<string[]>([]);
+
+  // Brand states
+  const [brand, setBrand] = useState(product.brand || "");
+  const [customBrand, setCustomBrand] = useState("");
+  const [isCustomBrand, setIsCustomBrand] = useState(false);
+
+  // Vehicle compatibility states
+  const [compatibleWith, setCompatibleWith] = useState<any[]>(product.compatibleWith || []);
+
+  const [compMake, setCompMake] = useState("");
+  const [customCompMake, setCustomCompMake] = useState("");
+  const [isCustomCompMake, setIsCustomCompMake] = useState(false);
+
+  const [compModel, setCompModel] = useState("");
+  const [customCompModel, setCustomCompModel] = useState("");
+  const [isCustomCompModel, setIsCustomCompModel] = useState(false);
+
+  const [compYearFrom, setCompYearFrom] = useState("");
+  const [compYearTo, setCompYearTo] = useState("");
+  const [compBodyType, setCompBodyType] = useState("");
+  const [compEngineType, setCompEngineType] = useState("");
+  const [compNotes, setCompNotes] = useState("");
+
+  // Load metadata on mount
+  useEffect(() => {
+    const loadMetadata = async () => {
+      try {
+        const data = await getNavigationMetadata();
+        setMetadata(data);
+        const uniqueBrands = Array.from(new Set(data.brands.map(b => b.name)));
+        setDbBrands(uniqueBrands);
+        const uniqueMakes = Array.from(new Set(data.vehicles.map(v => v.make)));
+        setDbMakes(uniqueMakes);
+      } catch (err) {
+        console.error("Failed to load metadata:", err);
+      }
+    };
+    loadMetadata();
+  }, []);
 
   // Fetch subcategories from database on category change
   useEffect(() => {
@@ -82,6 +126,94 @@ export default function EditProductForm({ product }: EditProductFormProps) {
     }
   };
 
+  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "CUSTOM") {
+      setIsCustomBrand(true);
+      setBrand("");
+    } else {
+      setIsCustomBrand(false);
+      setBrand(val);
+    }
+  };
+
+  // Helper to filter models by selected make
+  const getModelsForMake = () => {
+    if (!metadata || !compMake || isCustomCompMake) return [];
+    return Array.from(
+      new Set(
+        metadata.vehicles
+          .filter(v => v.make.toLowerCase() === compMake.toLowerCase())
+          .map(v => v.model)
+      )
+    );
+  };
+
+  const handleMakeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "CUSTOM") {
+      setIsCustomCompMake(true);
+      setCompMake("");
+      setIsCustomCompModel(true);
+      setCompModel("");
+    } else {
+      setIsCustomCompMake(false);
+      setCompMake(val);
+      setIsCustomCompModel(false);
+      setCompModel("");
+    }
+  };
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    if (val === "CUSTOM") {
+      setIsCustomCompModel(true);
+      setCompModel("");
+    } else {
+      setIsCustomCompModel(false);
+      setCompModel(val);
+    }
+  };
+
+  const handleAddCompatibility = () => {
+    const make = isCustomCompMake ? customCompMake.trim() : compMake;
+    const model = isCustomCompModel ? customCompModel.trim() : compModel;
+
+    if (!make || !model || !compYearFrom) {
+      alert("Please specify Make, Model, and Year From to add compatibility.");
+      return;
+    }
+
+    const newComp = {
+      make,
+      model,
+      yearFrom: Number(compYearFrom),
+      yearTo: compYearTo ? Number(compYearTo) : null,
+      bodyType: compBodyType.trim() || null,
+      engineType: compEngineType.trim() || null,
+      notes: compNotes.trim() || null
+    };
+
+    setCompatibleWith([...compatibleWith, newComp]);
+
+    // Reset building inputs
+    setCompMake("");
+    setCustomCompMake("");
+    setIsCustomCompMake(false);
+    setCompModel("");
+    setCustomCompModel("");
+    setIsCustomCompModel(false);
+    setCompYearFrom("");
+    setCompYearTo("");
+    setCompBodyType("");
+    setCompEngineType("");
+    setCompNotes("");
+  };
+
+  const handleRemoveCompatibility = (index: number) => {
+    setCompatibleWith(compatibleWith.filter((_, idx) => idx !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowConfirm(true);
@@ -97,6 +229,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         category,
         subCategory: isCustom ? customSubCategory : subCategory,
         ImageURL: imageURL || null,
+        brand: isCustomBrand ? customBrand : brand,
+        compatibleWith: compatibleWith
       });
       setShowConfirm(false);
       setShowSuccess(true);
@@ -248,6 +382,220 @@ export default function EditProductForm({ product }: EditProductFormProps) {
               />
             </div>
           )}
+
+          {/* Brand Selection */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label htmlFor="brand" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Brand
+              </label>
+              <select
+                id="brand"
+                value={isCustomBrand ? "CUSTOM" : brand}
+                onChange={handleBrandChange}
+                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground cursor-pointer"
+              >
+                <option value="">Select Brand</option>
+                {dbBrands.map((b) => (
+                  <option key={b} value={b}>
+                    {b}
+                  </option>
+                ))}
+                <option value="CUSTOM">+ Add Custom Brand</option>
+              </select>
+            </div>
+
+            {isCustomBrand && (
+              <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
+                <label htmlFor="customBrand" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Custom Brand Name <span className="text-destructive font-bold">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="customBrand"
+                  value={customBrand}
+                  onChange={(e) => setCustomBrand(e.target.value)}
+                  placeholder="e.g. Isuzu, GMC, Tata..."
+                  className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+                  required
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Vehicle Compatibility Builder */}
+          <div className="border border-border/80 rounded-2xl p-6 bg-muted/10 space-y-4">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Car className="size-4.5 text-primary" />
+              Vehicle Compatibility Mappings
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Link this product to one or more compatible car models.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Make Select */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Make</label>
+                <select
+                  value={isCustomCompMake ? "CUSTOM" : compMake}
+                  onChange={handleMakeChange}
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                >
+                  <option value="">Select Make</option>
+                  {dbMakes.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                  <option value="CUSTOM">+ Add Custom Make</option>
+                </select>
+              </div>
+
+              {/* Custom Make input */}
+              {isCustomCompMake && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Custom Make</label>
+                  <input
+                    type="text"
+                    value={customCompMake}
+                    onChange={(e) => setCustomCompMake(e.target.value)}
+                    placeholder="e.g. Isuzu"
+                    className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                  />
+                </div>
+              )}
+
+              {/* Model Select */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Model</label>
+                <select
+                  value={isCustomCompModel ? "CUSTOM" : compModel}
+                  onChange={handleModelChange}
+                  disabled={!isCustomCompMake && !compMake}
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground disabled:opacity-50"
+                >
+                  <option value="">Select Model</option>
+                  {getModelsForMake().map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                  <option value="CUSTOM">+ Add Custom Model</option>
+                </select>
+              </div>
+
+              {/* Custom Model input */}
+              {isCustomCompModel && (
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Custom Model</label>
+                  <input
+                    type="text"
+                    value={customCompModel}
+                    onChange={(e) => setCustomCompModel(e.target.value)}
+                    placeholder="e.g. V-Cross"
+                    className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                  />
+                </div>
+              )}
+
+              {/* Year From */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Year From</label>
+                <input
+                  type="number"
+                  value={compYearFrom}
+                  onChange={(e) => setCompYearFrom(e.target.value)}
+                  placeholder="e.g. 2018"
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+
+              {/* Year To */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Year To (Optional)</label>
+                <input
+                  type="number"
+                  value={compYearTo}
+                  onChange={(e) => setCompYearTo(e.target.value)}
+                  placeholder="e.g. 2024"
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+
+              {/* Body Type */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Body Type (Optional)</label>
+                <input
+                  type="text"
+                  value={compBodyType}
+                  onChange={(e) => setCompBodyType(e.target.value)}
+                  placeholder="e.g. SUV, Pickup"
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+
+              {/* Engine Type */}
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Engine Type (Optional)</label>
+                <input
+                  type="text"
+                  value={compEngineType}
+                  onChange={(e) => setCompEngineType(e.target.value)}
+                  placeholder="e.g. 2.5L Diesel"
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+            </div>
+
+            {/* Compatibility Notes */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Notes (Optional)</label>
+              <input
+                type="text"
+                value={compNotes}
+                onChange={(e) => setCompNotes(e.target.value)}
+                placeholder="e.g. Only fits manual transmission models"
+                className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+              />
+            </div>
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={handleAddCompatibility}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
+              >
+                <Plus className="size-3.5" />
+                Add Compatibility tag
+              </button>
+            </div>
+
+            {/* Display Tags */}
+            {compatibleWith.length > 0 && (
+              <div className="pt-3 border-t border-border/60">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Active Compatibility Tags</label>
+                <div className="flex flex-wrap gap-2">
+                  {compatibleWith.map((c, index) => (
+                    <div
+                      key={index}
+                      className="inline-flex items-center gap-1.5 bg-background border border-border rounded-lg pl-3 pr-2 py-1 text-xs font-semibold shadow-sm text-foreground"
+                    >
+                      <span>{c.make} {c.model} ({c.yearFrom}{c.yearTo ? `-${c.yearTo}` : "+"})</span>
+                      {c.notes && <span className="text-[10px] text-muted-foreground italic">({c.notes})</span>}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCompatibility(index)}
+                        className="text-muted-foreground hover:text-destructive p-0.5 rounded-full hover:bg-muted transition-colors cursor-pointer"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="space-y-2">
             <label htmlFor="imageURL" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
