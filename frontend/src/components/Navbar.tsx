@@ -275,7 +275,7 @@ export default function Navbar() {
           onMouseLeave={() => setActiveDropdown(null)}
         >
           <div className="max-w-7xl mx-auto px-8">
-            <div className="flex items-center gap-8 h-10 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center gap-8 h-10 text-xs font-bold uppercase tracking-wider text-foreground/80">
               <button
                 onMouseEnter={() => setActiveDropdown("category")}
                 className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
@@ -284,7 +284,7 @@ export default function Navbar() {
                     : "hover:text-foreground"
                 }`}
               >
-                <Layers className="size-3.5" /> Shop by Category
+                <Layers className="size-4" /> Shop by Category
               </button>
               <button
                 onMouseEnter={() => setActiveDropdown("brand")}
@@ -294,7 +294,7 @@ export default function Navbar() {
                     : "hover:text-foreground"
                 }`}
               >
-                <Tag className="size-3.5" /> Shop by Brand
+                <Tag className="size-4" /> Shop by Brand
               </button>
               <button
                 onMouseEnter={() => setActiveDropdown("vehicle")}
@@ -304,7 +304,7 @@ export default function Navbar() {
                     : "hover:text-foreground"
                 }`}
               >
-                <Car className="size-3.5" /> Shop by Vehicle
+                <Car className="size-4" /> Shop by Vehicle
               </button>
             </div>
           </div>
@@ -318,8 +318,8 @@ export default function Navbar() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                     {navMetadata.categories.map((cat) => (
                       <div key={cat.id} className="space-y-4">
-                        <h3 className="text-xs font-black text-foreground tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-border/50">
-                          <Layers className="size-3.5 text-primary" />
+                        <h3 className="text-sm font-black text-foreground tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-border/50">
+                          <Layers className="size-4 text-primary" />
                           {cat.name}
                         </h3>
                         <ul className="space-y-2.5">
@@ -334,11 +334,11 @@ export default function Navbar() {
                                 onClick={() => setActiveDropdown(null)}
                                 className="group/sub flex flex-col gap-0.5 normal-case"
                               >
-                                <span className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">
+                                <span className="text-sm font-semibold text-foreground/90 hover:text-primary transition-colors">
                                   {sub.name}
                                 </span>
                                 {sub.description && (
-                                  <span className="text-[10px] text-muted-foreground/50 leading-normal max-w-[200px]">
+                                  <span className="text-xs text-muted-foreground/80 leading-normal max-w-[200px]">
                                     {sub.description}
                                   </span>
                                 )}
@@ -361,13 +361,13 @@ export default function Navbar() {
                         onClick={() => setActiveDropdown(null)}
                         className="group p-4 rounded-2xl border border-border bg-card/20 hover:border-primary hover:shadow-lg hover:shadow-primary/5 transition-all duration-300 flex flex-col items-center justify-center text-center gap-2 cursor-pointer"
                       >
-                        <div className="size-10 rounded-xl bg-muted/60 flex items-center justify-center text-foreground font-black tracking-tighter text-xs group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
+                        <div className="size-11 rounded-xl bg-muted/60 flex items-center justify-center text-foreground font-black tracking-tighter text-sm group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-300">
                           {brand.name
                             .split(" ")
                             .map((w) => w[0])
                             .join("")}
                         </div>
-                        <span className="text-xs font-bold text-foreground group-hover:text-primary transition-colors normal-case">
+                        <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors normal-case">
                           {brand.name}
                         </span>
                       </Link>
@@ -392,8 +392,8 @@ export default function Navbar() {
                         key={make}
                         className="p-4 rounded-2xl border border-border bg-card/10 space-y-3"
                       >
-                        <h4 className="text-xs font-black text-foreground tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-border/50">
-                          <Car className="size-3.5 text-primary" />
+                        <h4 className="text-sm font-black text-foreground tracking-wider uppercase flex items-center gap-1.5 pb-2 border-b border-border/50">
+                          <Car className="size-4 text-primary" />
                           {make}
                         </h4>
                         <div className="flex flex-wrap gap-1.5 pt-1">
@@ -404,7 +404,7 @@ export default function Navbar() {
                                 model.model
                               )}`}
                               onClick={() => setActiveDropdown(null)}
-                              className="text-[9px] font-bold px-2.5 py-1 rounded-full border border-border bg-muted/30 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all uppercase normal-case cursor-pointer"
+                              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-border bg-muted/30 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all normal-case cursor-pointer"
                             >
                               {model.model}
                             </Link>
