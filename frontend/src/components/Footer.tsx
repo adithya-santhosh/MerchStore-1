@@ -102,11 +102,6 @@ export default function Footer() {
                   FAQs & Delivery
                 </Link>
               </li>
-              <li>
-                <Link href="/admin/products" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-                  Admin Console
-                </Link>
-              </li>
             </ul>
           </div>
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  LayoutDashboard,
   FolderKanban,
   PlusCircle,
   ShoppingBag,
@@ -29,16 +30,20 @@ export default function AdminLayout({
   const pathname = usePathname();
 
   const menuItems: SidebarItem[] = [
+    { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
     { label: "Product Catalog", href: "/admin/products", icon: FolderKanban },
     { label: "Add Product", href: "/admin/products/new", icon: PlusCircle },
     { label: "Orders Manager", href: "/admin/orders", icon: ShoppingBag },
-    { label: "Customers list", href: "/admin/customers", icon: Users },
-    { label: "Settings panel", href: "/admin/settings", icon: Settings },
+    { label: "Customers List", href: "/admin/customers", icon: Users },
+    { label: "Settings Panel", href: "/admin/settings", icon: Settings },
   ];
 
   const isActive = (href: string) => {
+    if (href === "/admin/dashboard") {
+      return pathname === "/admin/dashboard" || pathname === "/admin";
+    }
     if (href === "/admin/products") {
-      return pathname === "/admin/products" || pathname.startsWith("/admin/products/");
+      return pathname === "/admin/products" || (pathname.startsWith("/admin/products/") && pathname !== "/admin/products/new");
     }
     return pathname === href;
   };
