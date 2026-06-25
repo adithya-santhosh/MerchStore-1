@@ -30,8 +30,8 @@ export default function Hero() {
 
   const toggleMute = () => {
     if (videoRef.current) {
-      videoRef.current.muted = !isMuted;
-      setIsMuted(!isMuted);
+      videoRef.current.muted = isMuted;
+      setIsMuted(isMuted);
     }
   };
 

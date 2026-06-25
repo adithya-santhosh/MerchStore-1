@@ -1,6 +1,7 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { UserRole } from "../generated/prisma/client";
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_fallback_key";
 
@@ -20,7 +21,7 @@ export const registerUser = async (data: any) => {
   // Auto-make admin if email is admin@merchstore.com or if database is empty of users
   const userCount = await prisma.user.count();
   const isFirstOrAdminEmail = email === "admin@merchstore.com" || userCount === 0;
-  const role = isFirstOrAdminEmail ? "admin" : "customer";
+  const role: UserRole = isFirstOrAdminEmail ? UserRole.ADMIN : UserRole.CUSTOMER;
 
   const user = await prisma.user.create({
     data: {

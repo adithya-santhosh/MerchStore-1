@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(data.user);
       
       // Redirect based on role
-      if (data.user.role === "admin") {
+      if (data.user.role === "ADMIN") {
         router.push("/admin/products");
       } else {
         router.push("/");
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const isAuthenticated = !!user;
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "ADMIN";
 
   return (
     <AuthContext.Provider

@@ -272,10 +272,12 @@ export default function CartPage() {
 
                   {/* Actions (Checkout & Continue Shopping) */}
                   <div className="space-y-3">
-                    <Button className="w-full py-6 text-sm font-bold shadow-lg shadow-primary/10 rounded-xl cursor-pointer">
-                      Proceed to Checkout
-                      <ArrowRight className="size-4.5 ml-1.5" />
-                    </Button>
+                    <Link href="/checkout" className="block">
+                      <Button className="w-full py-6 text-sm font-bold shadow-lg shadow-primary/10 rounded-xl cursor-pointer">
+                        Proceed to Checkout
+                        <ArrowRight className="size-4.5 ml-1.5" />
+                      </Button>
+                    </Link>
                     
                     <Link href="/products" className="block text-center mt-1">
                       <span className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer block py-1.5">

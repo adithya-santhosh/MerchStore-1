@@ -11,7 +11,7 @@ export function middleware(request: NextRequest) {
 
   // 1. Guard Admin Routes
   if (isAccessingAdmin) {
-    if (!token || role !== "admin") {
+    if (!token || role !== "ADMIN") {
       const loginUrl = new URL("/login", request.url);
       // Pass the original destination so we can redirect back after login
       loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
@@ -21,7 +21,7 @@ export function middleware(request: NextRequest) {
 
   // 2. Redirect authenticated users away from /login & /register
   if (isAccessingAuthPages && token) {
-    const destination = role === "admin" ? "/admin/products" : "/";
+    const destination = role === "ADMIN" ? "/admin/products" : "/";
     return NextResponse.redirect(new URL(destination, request.url));
   }
 

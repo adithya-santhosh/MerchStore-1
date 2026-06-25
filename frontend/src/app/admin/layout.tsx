@@ -44,7 +44,7 @@ export default function AdminLayout({
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row text-foreground">
+    <div className="min-h-screen md:h-screen md:overflow-hidden bg-background flex flex-col md:flex-row text-foreground">
       
       {/* 1. Left Sidebar Panel (Desktop) */}
       <aside className="w-full md:w-64 bg-card/40 border-b md:border-b-0 md:border-r border-border/80 flex flex-col shrink-0">

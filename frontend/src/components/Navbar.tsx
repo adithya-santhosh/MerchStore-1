@@ -204,7 +204,7 @@ export default function Navbar() {
                       </div>
 
                       {/* Admin link */}
-                      {user.role === "admin" && (
+                      {user.role === "ADMIN" && (
                         <Link
                           href="/admin/products"
                           onClick={() => setIsUserMenuOpen(false)}
@@ -600,7 +600,7 @@ export default function Navbar() {
                         {user.firstName} {user.lastName}
                       </span>
                     </div>
-                    {user.role === "admin" && (
+                    {user.role === "ADMIN" && (
                       <Link
                         href="/admin/products"
                         onClick={() => setIsMobileMenuOpen(false)}

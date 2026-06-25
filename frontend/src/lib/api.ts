@@ -207,3 +207,193 @@ export async function getNavigationMetadata(): Promise<NavMetadata> {
   return response.json();
 }
 
+// ─── Order API Helpers ────────────────────────────────────────────────────────
+
+export interface OrderAddress {
+  label?: string;
+  addressLine1: string;
+  addressLine2?: string;
+  city: string;
+  state: string;
+  postalCode: string;
+  country?: string;
+}
+
+export interface CreateOrderPayload {
+  address: OrderAddress;
+  couponCode?: string;
+  paymentMethod: "cod" | "razorpay";
+  sessionToken?: string;
+  taxRate: number;
+  shippingCost: number;
+}
+
+export interface OrderItem {
+  id: number;
+  productId: number;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  totalPrice: number;
+  imageUrl?: string | null;
+}
+
+export interface Order {
+  id: number;
+  orderNumber: string;
+  status: string;
+  subtotal: number;
+  discountAmount: number;
+  shippingCost: number;
+  taxAmount: number;
+  totalAmount: number;
+  couponCode: string | null;
+  createdAt: string;
+  shippingAddress: OrderAddress & { id: number };
+  payment: {
+    gateway: string;
+    amount: number;
+    status: string;
+    paidAt: string | null;
+  } | null;
+  items: OrderItem[];
+}
+
+export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/orders`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to place order");
+  }
+
+  return response.json();
+}
+
+// ─── Admin Order API Helpers ──────────────────────────────────────────────────
+
+export interface AdminOrderRow {
+  id: number;
+  orderNumber: string;
+  status: string;
+  totalAmount: number;
+  createdAt: string;
+  customer: {
+    id: number;
+    name: string;
+    email: string;
+  };
+  payment: { gateway: string; status: string } | null;
+}
+
+export interface AdminOrderDetail {
+  id: number;
+  orderNumber: string;
+  status: string;
+  subtotal: number;
+  discountAmount: number;
+  shippingCost: number;
+  taxAmount: number;
+  totalAmount: number;
+  couponCode: string | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer: {
+    id: number;
+    name: string;
+    email: string;
+    phone: string | null;
+  };
+  shippingAddress: {
+    id: number;
+    label: string | null;
+    addressLine1: string;
+    addressLine2: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
+  payment: {
+    gateway: string;
+    amount: number;
+    status: string;
+    paidAt: string | null;
+  } | null;
+  shipment: {
+    carrier: string | null;
+    trackingNumber: string | null;
+    status: string;
+    shippedAt: string | null;
+    deliveredAt: string | null;
+  } | null;
+  items: {
+    id: number;
+    productId: number;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    imageUrl: string | null;
+  }[];
+}
+
+export async function getAllOrders(): Promise<AdminOrderRow[]> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/orders/admin/all`, {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch orders");
+  return response.json();
+}
+
+export async function getAdminOrderById(id: number): Promise<AdminOrderDetail> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/orders/admin/${id}`, {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch order");
+  return response.json();
+}
+
+export async function updateAdminOrderStatus(id: number, status: string): Promise<void> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/orders/admin/${id}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ status }),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to update status");
+  }
+}
+export async function getOrderById(id: number): Promise<Order> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/orders/${id}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch order");
+  }
+
+  return response.json();
+}

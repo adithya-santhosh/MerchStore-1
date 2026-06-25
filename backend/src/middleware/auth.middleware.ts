@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { UserRole } from "../generated/prisma/client";
 
 // Extend Express Request type
 declare global {
@@ -63,7 +64,7 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
   if (!req.user) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  if (req.user.role !== "admin") {
+  if (req.user.role !== UserRole.ADMIN) {
     return res.status(403).json({ message: "Access Denied: Admins Only" });
   }
   next();
