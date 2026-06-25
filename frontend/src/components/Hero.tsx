@@ -23,6 +23,11 @@ export default function Hero() {
     const video = videoRef.current;
     if (!video) return;
 
+    if (video.readyState >= 3) {
+      setIsLoaded(true);
+      return;
+    }
+
     const handleLoaded = () => setIsLoaded(true);
     video.addEventListener("loadeddata", handleLoaded);
     return () => video.removeEventListener("loadeddata", handleLoaded);

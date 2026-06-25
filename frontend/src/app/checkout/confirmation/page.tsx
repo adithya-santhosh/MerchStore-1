@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -56,7 +56,7 @@ function GatewayLabel({ gateway }: { gateway: string }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function ConfirmationPage() {
+function ConfirmationPageContent() {
   const searchParams = useSearchParams();
   const orderId = Number(searchParams.get("orderId"));
 
@@ -337,5 +337,24 @@ export default function ConfirmationPage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function ConfirmationPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex flex-col min-h-screen bg-background text-foreground">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center">
+          <div className="space-y-4 text-center">
+            <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-sm text-muted-foreground">Loading your order...</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    }>
+      <ConfirmationPageContent />
+    </Suspense>
   );
 }
