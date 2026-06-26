@@ -1,17 +1,49 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { getProducts } from "@/lib/api";
-import { Product } from "@/types/products";
+import { cookies } from "next/headers";
+import { getAdminProducts, getProductStats } from "@/lib/api";
+import { PlusCircle, FolderOpen, Package, ShieldAlert, AlertTriangle, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Edit2, Sparkles, FolderOpen } from "lucide-react";
-import DeleteProductButton from "@/components/admin/DeleteProductButton";
+import ProductFilters from "@/components/admin/ProductFilters";
+import ProductPagination from "@/components/admin/ProductPagination";
+import BulkActions from "@/components/admin/BulkActions";
 
-export default async function AdminProductsPage() {
-  const products: Product[] = await getProducts();
+interface PageProps {
+  searchParams: Promise<{
+    page?: string;
+    search?: string;
+    category?: string;
+    status?: string;
+    stock?: string;
+    sortBy?: string;
+    sortOrder?: string;
+  }>;
+}
+
+export default async function AdminProductsPage({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token")?.value;
+  
+  // Parallel server-side fetch
+  const [productsData, stats] = await Promise.all([
+    getAdminProducts({
+      page: params.page || "1",
+      limit: "15",
+      search: params.search,
+      category: params.category,
+      status: params.status,
+      stock: params.stock,
+      sortBy: params.sortBy,
+      sortOrder: params.sortOrder,
+    }, token),
+    getProductStats(token),
+  ]);
 
   return (
-    <div className="space-y-8">
-      
-      {/* Catalog Header */}
+    <div className="space-y-6">
+
+      {/* ── Page Header ──────────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">
@@ -21,7 +53,7 @@ export default async function AdminProductsPage() {
             Manage your store inventory, pricing, and category divisions.
           </p>
         </div>
-        
+
         <Button className="shadow-lg cursor-pointer" asChild>
           <Link href="/admin/products/new" className="flex items-center gap-2">
             <PlusCircle className="size-4" />
@@ -30,76 +62,69 @@ export default async function AdminProductsPage() {
         </Button>
       </div>
 
-      {/* Catalog List */}
-      {products.length > 0 ? (
+      {/* ── Stats Cards ──────────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        {[
+          {
+            label: "Total Products",
+            value: stats.totalProducts,
+            icon: FolderKanban,
+            color: "text-foreground",
+            bg: "bg-muted/20",
+          },
+          {
+            label: "Active",
+            value: stats.activeProducts,
+            icon: Package,
+            color: "text-emerald-500",
+            bg: "bg-emerald-500/5",
+          },
+          {
+            label: "Inactive",
+            value: stats.inactiveProducts,
+            icon: ShieldAlert,
+            color: "text-muted-foreground",
+            bg: "bg-muted/10",
+          },
+          {
+            label: "Out of Stock",
+            value: stats.outOfStock,
+            icon: AlertTriangle,
+            color: "text-rose-500",
+            bg: "bg-rose-500/5",
+          },
+          {
+            label: "Low Stock",
+            value: stats.lowStock,
+            icon: AlertTriangle,
+            color: "text-amber-500",
+            bg: "bg-amber-500/5",
+          },
+        ].map((stat) => (
+          <div
+            key={stat.label}
+            className={`rounded-2xl border border-border/70 p-4 ${stat.bg} space-y-1`}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground font-semibold">
+                {stat.label}
+              </p>
+              <stat.icon className={`size-4 ${stat.color} opacity-50`} />
+            </div>
+            <p className={`text-2xl font-black ${stat.color}`}>{stat.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Filters (Client Component) ───────────────────────────────────── */}
+      <Suspense fallback={null}>
+        <ProductFilters />
+      </Suspense>
+
+      {/* ── Product List ─────────────────────────────────────────────────── */}
+      {productsData.products.length > 0 ? (
         <div className="bg-card/40 border border-border/80 rounded-3xl overflow-hidden shadow-sm">
-          
-          {/* Header Row (Desktop) */}
-          <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
-            <div className="col-span-1">ID</div>
-            <div className="col-span-5">Product Details</div>
-            <div className="col-span-2">Category</div>
-            <div className="col-span-2">Price</div>
-            <div className="col-span-2 text-right">Actions</div>
-          </div>
-
-          {/* Table Data Rows */}
-          <div className="divide-y divide-border/60">
-            {products.map((product: Product) => (
-              <div
-                key={product.id}
-                className="grid grid-cols-1 md:grid-cols-12 gap-4 px-6 py-5 items-center hover:bg-muted/10 transition-colors duration-200"
-              >
-                
-                {/* ID Column */}
-                <div className="col-span-1 text-xs font-semibold text-muted-foreground md:block flex items-center justify-between">
-                  <span className="md:hidden text-xs font-bold uppercase tracking-wider text-muted-foreground mr-2">ID:</span>
-                  #{product.id}
-                </div>
-
-                {/* Name & Details Column */}
-                <div className="col-span-5 space-y-1">
-                  <h3 className="text-sm font-bold text-foreground hover:text-primary transition-colors">
-                    {product.name}
-                  </h3>
-                  <p className="text-xs text-muted-foreground line-clamp-1 max-w-sm">
-                    {product.description || "No description set for this catalog item."}
-                  </p>
-                </div>
-
-                {/* Category Column */}
-                <div className="col-span-2 flex items-center md:block">
-                  <span className="md:hidden text-xs font-bold uppercase tracking-wider text-muted-foreground mr-4">Category:</span>
-                  <span className="inline-flex px-2.5 py-0.5 rounded-full border border-border bg-muted/40 text-[10px] font-semibold tracking-wide uppercase text-muted-foreground">
-                    {product.category}
-                  </span>
-                </div>
-
-                {/* Price Column */}
-                <div className="col-span-2 flex items-center md:block font-bold text-foreground">
-                  <span className="md:hidden text-xs font-bold uppercase tracking-wider text-muted-foreground mr-4">Price:</span>
-                  ₹{product.price.toLocaleString("en-IN")}
-                </div>
-
-                {/* Actions Button Column */}
-                <div className="col-span-2 flex justify-end gap-2 pt-4 md:pt-0 border-t border-border/40 md:border-t-0">
-                  
-                  {/* Redirect Edit link to the correct dynamic route /admin/products/[id] */}
-                  <Button variant="outline" size="xs" className="cursor-pointer" asChild>
-                    <Link href={`/admin/products/${product.id}`} className="flex items-center gap-1">
-                      <Edit2 className="size-3" />
-                      Edit
-                    </Link>
-                  </Button>
-
-                  <DeleteProductButton product={product} />
-
-                </div>
-
-              </div>
-            ))}
-          </div>
-
+          <BulkActions products={productsData.products} />
         </div>
       ) : (
         <div className="text-center py-20 border border-border/80 rounded-3xl bg-card/20 max-w-md mx-auto space-y-4">
@@ -107,19 +132,34 @@ export default async function AdminProductsPage() {
             <FolderOpen className="size-6" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-foreground">No Products Active</h3>
+            <h3 className="text-base font-bold text-foreground">
+              {params.search || params.category || params.status || params.stock
+                ? "No Products Match"
+                : "No Products Active"}
+            </h3>
             <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto leading-relaxed">
-              Your inventory database is currently empty. Get started by adding a brand new product card drop!
+              {params.search || params.category || params.status || params.stock
+                ? "No products match your current filters. Try adjusting your search or resetting filters."
+                : "Your inventory database is currently empty. Get started by adding a brand new product!"}
             </p>
           </div>
-          <Button size="sm" className="cursor-pointer" asChild>
-            <Link href="/admin/products/new">
-              Add Your First Product
-            </Link>
-          </Button>
+          {!params.search && !params.category && !params.status && !params.stock && (
+            <Button size="sm" className="cursor-pointer" asChild>
+              <Link href="/admin/products/new">Add Your First Product</Link>
+            </Button>
+          )}
         </div>
       )}
 
+      {/* ── Pagination (Client Component) ────────────────────────────────── */}
+      <Suspense fallback={null}>
+        <ProductPagination
+          total={productsData.total}
+          page={productsData.page}
+          limit={productsData.limit}
+          totalPages={productsData.totalPages}
+        />
+      </Suspense>
     </div>
   );
 }

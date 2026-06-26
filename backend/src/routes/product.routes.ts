@@ -1,9 +1,15 @@
 import { Router } from "express";
-import { getProducts, getProduct, createNewProduct, removeProduct, editProduct, getSubCategories, getNavMetadata } from "../controllers/product.controller";
+import { getProducts, getProduct, createNewProduct, removeProduct, editProduct, getSubCategories, getNavMetadata, getProductsAdminCtrl, getProductStatsCtrl, bulkUpdateProductsCtrl } from "../controllers/product.controller";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 
 const router = Router();
 
+// ── Admin routes FIRST (specific paths must come before generic /:id) ────────
+router.get("/admin/stats", requireAuth, requireAdmin, getProductStatsCtrl);
+router.get("/admin", requireAuth, requireAdmin, getProductsAdminCtrl);
+router.patch("/admin/bulk", requireAuth, requireAdmin, bulkUpdateProductsCtrl);
+
+// ── Public routes ────────────────────────────────────────────────────────────
 router.get("/", getProducts);
 router.get("/navigation/metadata", getNavMetadata);
 router.get("/:id", getProduct);

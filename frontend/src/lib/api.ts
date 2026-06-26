@@ -1,5 +1,5 @@
 import { Product } from "@/types/products";
-import { getCookie } from "@/hooks/useAuth";
+import { getCookie } from "@/utils/cookie";
 
 //const API_URL = import.meta.env.VITE_API_URL;
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -395,5 +395,224 @@ export async function getOrderById(id: number): Promise<Order> {
     throw new Error("Failed to fetch order");
   }
 
+  return response.json();
+}
+
+// ─── Admin Products API ──────────────────────────────────────────────────────
+
+export interface AdminProductsResponse {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface ProductStats {
+  totalProducts: number;
+  activeProducts: number;
+  inactiveProducts: number;
+  outOfStock: number;
+  lowStock: number;
+}
+
+export async function getAdminProducts(params: {
+  page?: string | number;
+  limit?: string | number;
+  search?: string;
+  category?: string;
+  status?: string;
+  stock?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}, token?: string): Promise<AdminProductsResponse> {
+  const finalToken = token || getCookie("token");
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.append(key, String(value));
+  });
+  const response = await fetch(
+    `${API_URL}/api/products/admin?${query.toString()}`,
+    {
+      headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
+      cache: "no-store",
+    }
+  );
+  if (!response.ok) throw new Error("Failed to fetch admin products");
+  return response.json();
+}
+
+export async function getProductStats(token?: string): Promise<ProductStats> {
+  const finalToken = token || getCookie("token");
+  const response = await fetch(`${API_URL}/api/products/admin/stats`, {
+    headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch product stats");
+  return response.json();
+}
+
+export async function bulkUpdateProducts(
+  ids: number[],
+  action: "activate" | "deactivate" | "delete"
+): Promise<{ affected: number; action: string }> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/products/admin/bulk`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ ids, action }),
+  });
+  if (!response.ok) throw new Error("Failed to bulk update products");
+  return response.json();
+}
+
+// ─── Admin Customers API ─────────────────────────────────────────────────────
+
+export interface AdminCustomerRow {
+  id: number;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  createdAt: string;
+  totalOrders: number;
+  totalReviews: number;
+  totalWishlist: number;
+  totalSpent: number;
+}
+
+export interface AdminCustomersResponse {
+  customers: AdminCustomerRow[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export interface CustomerStats {
+  totalCustomers: number;
+  newThisMonth: number;
+  totalAdmins: number;
+  customersWithOrders: number;
+}
+
+export interface AdminCustomerDetail {
+  id: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  emailVerified: boolean;
+  createdAt: string;
+  totalOrders: number;
+  totalReviews: number;
+  totalWishlist: number;
+  totalSpent: number;
+  addresses: {
+    id: number;
+    label: string | null;
+    addressLine1: string;
+    addressLine2: string | null;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+    isDefault: boolean;
+  }[];
+  recentOrders: {
+    id: number;
+    orderNumber: string;
+    status: string;
+    totalAmount: number;
+    createdAt: string;
+    itemCount: number;
+    payment: { gateway: string; status: string } | null;
+  }[];
+}
+
+export async function getAdminCustomers(params: {
+  page?: string | number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}, token?: string): Promise<AdminCustomersResponse> {
+  const finalToken = token || getCookie("token");
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.append(key, String(value));
+  });
+  const response = await fetch(
+    `${API_URL}/api/customers/admin?${query.toString()}`,
+    {
+      headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
+      cache: "no-store",
+    }
+  );
+  if (!response.ok) throw new Error("Failed to fetch customers");
+  return response.json();
+}
+
+export async function getAdminCustomerById(
+  id: number,
+  token?: string
+): Promise<AdminCustomerDetail> {
+  const finalToken = token || getCookie("token");
+  const response = await fetch(`${API_URL}/api/customers/admin/${id}`, {
+    headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch customer");
+  return response.json();
+}
+
+export async function getCustomerStatsApi(token?: string): Promise<CustomerStats> {
+  const finalToken = token || getCookie("token");
+  const response = await fetch(`${API_URL}/api/customers/admin/stats`, {
+    headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch customer stats");
+  return response.json();
+}
+
+// ─── Dashboard / Analytics API ───────────────────────────────────────────────
+
+export interface DashboardData {
+  stats: {
+    totalRevenue: number;
+    totalOrders: number;
+    totalCustomers: number;
+    totalProducts: number;
+    pendingOrders: number;
+    averageOrderValue: number;
+  };
+  revenueChart: { date: string; revenue: number; orderCount: number }[];
+  topProducts: {
+    productId: number;
+    productName: string;
+    totalQuantity: number;
+    totalRevenue: number;
+    imageUrl: string | null;
+  }[];
+  recentOrders: AdminOrderRow[];
+  statusBreakdown: Record<string, number>;
+}
+
+export async function getDashboardData(
+  days?: number,
+  token?: string
+): Promise<DashboardData> {
+  const finalToken = token || getCookie("token");
+  const query = days ? `?days=${days}` : "";
+  const response = await fetch(`${API_URL}/api/analytics/dashboard${query}`, {
+    headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch dashboard data");
   return response.json();
 }

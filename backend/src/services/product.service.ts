@@ -609,3 +609,135 @@ export const getNavigationMetadata = async () => {
     vehicles
   };
 };
+
+// ─── ADMIN: Paginated product list with search/filter/sort ───────────────────
+
+export const getProductsAdmin = async (params: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  status?: string;   // 'active' | 'inactive'
+  stock?: string;    // 'in-stock' | 'low-stock' | 'out-of-stock'
+  sortBy?: string;   // 'name' | 'price' | 'createdAt' | 'stockQty'
+  sortOrder?: string; // 'asc' | 'desc'
+}) => {
+  const page = Math.max(1, params.page || 1);
+  const limit = Math.min(100, Math.max(1, params.limit || 15));
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+
+  // Search across name, sku, description
+  if (params.search?.trim()) {
+    const q = params.search.trim();
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { sku: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+
+  // Category filter
+  if (params.category) {
+    const cat = await prisma.category.findFirst({
+      where: {
+        OR: [
+          { slug: params.category },
+          { name: { equals: params.category, mode: 'insensitive' } }
+        ]
+      },
+      include: { children: true }
+    });
+    if (cat) {
+      const categoryIds = [cat.id, ...cat.children.map(c => c.id)];
+      where.categoryId = { in: categoryIds };
+    }
+  }
+
+  // Status filter
+  if (params.status === 'active') where.isActive = true;
+  if (params.status === 'inactive') where.isActive = false;
+
+  // Stock filter
+  if (params.stock === 'out-of-stock') where.stockQty = 0;
+  if (params.stock === 'low-stock') where.stockQty = { gt: 0, lt: 5 };
+  if (params.stock === 'in-stock') where.stockQty = { gte: 5 };
+
+  // Sorting
+  const validSortFields = ['name', 'price', 'createdAt', 'stockQty'];
+  const sortBy = validSortFields.includes(params.sortBy || '') ? params.sortBy! : 'createdAt';
+  const sortOrder = params.sortOrder === 'asc' ? 'asc' : 'desc';
+
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        category: { include: { parent: true } },
+        brand: true,
+        images: true,
+        attributes: true,
+        compatibleWith: { include: { vehicle: true } },
+      },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return {
+    products: products.map(mapProduct),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  };
+};
+
+// ─── ADMIN: Product stats aggregate ──────────────────────────────────────────
+
+export const getProductStats = async () => {
+  const [totalProducts, activeProducts, outOfStock, lowStock] = await Promise.all([
+    prisma.product.count(),
+    prisma.product.count({ where: { isActive: true } }),
+    prisma.product.count({ where: { stockQty: 0 } }),
+    prisma.product.count({ where: { stockQty: { gt: 0, lt: 5 } } }),
+  ]);
+
+  return {
+    totalProducts,
+    activeProducts,
+    inactiveProducts: totalProducts - activeProducts,
+    outOfStock,
+    lowStock,
+  };
+};
+
+// ─── ADMIN: Bulk update products ─────────────────────────────────────────────
+
+export const bulkUpdateProducts = async (
+  ids: number[],
+  action: 'activate' | 'deactivate' | 'delete'
+) => {
+  if (!ids.length) throw new Error('No product IDs provided');
+
+  if (action === 'delete') {
+    // Delete related records first, then products
+    await prisma.productVehicle.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.productAttribute.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.productImage.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.cartItem.deleteMany({ where: { productId: { in: ids } } });
+    await prisma.wishlistItem.deleteMany({ where: { productId: { in: ids } } });
+    const result = await prisma.product.deleteMany({ where: { id: { in: ids } } });
+    return { affected: result.count, action };
+  }
+
+  const isActive = action === 'activate';
+  const result = await prisma.product.updateMany({
+    where: { id: { in: ids } },
+    data: { isActive },
+  });
+
+  return { affected: result.count, action };
+};

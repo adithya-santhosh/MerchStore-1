@@ -129,6 +129,11 @@
   html {
     @apply font-sans;
   }
+
+  select option, option {
+    background-color: oklch(0.18 0.01 250);
+    color: oklch(0.985 0 0);
+  }
 }
 
 /* Marquee animation for AnnouncementTicker */
