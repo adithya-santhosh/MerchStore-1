@@ -155,6 +155,7 @@ model User {
   phone         String?
   role          UserRole @default(CUSTOMER)
   emailVerified Boolean  @default(false)
+  isMember      Boolean  @default(false)
 
   addresses     Address[]
   orders        Order[]

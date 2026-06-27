@@ -616,3 +616,39 @@ export async function getDashboardData(
   if (!response.ok) throw new Error("Failed to fetch dashboard data");
   return response.json();
 }
+
+export async function getMyOrders(token?: string): Promise<Order[]> {
+  const finalToken = token || getCookie("token");
+  const response = await fetch(`${API_URL}/api/orders`, {
+    headers: {
+      ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch order history");
+  }
+
+  return response.json();
+}
+
+export async function updateProfile(payload: { firstName: string; lastName: string; phone?: string | null }): Promise<any> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/auth/profile`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to update profile");
+  }
+
+  return response.json();
+}
+

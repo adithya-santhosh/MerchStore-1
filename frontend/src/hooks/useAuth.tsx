@@ -12,16 +12,20 @@ interface UserProfile {
   lastName: string;
   role: string;
   createdAt: string;
+  phone?: string | null;
+  isMember?: boolean;
 }
 
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (firstName: string, lastName: string, email: string, password: string) => Promise<void>;
+  register: (firstName: string, lastName: string, email: string, password: string, isMember?: boolean) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
+  updateProfile: (firstName: string, lastName: string, phone?: string | null) => Promise<void>;
+  becomeMember: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -109,13 +113,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (firstName: string, lastName: string, email: string, password: string) => {
+  const register = async (firstName: string, lastName: string, email: string, password: string, isMember: boolean = false) => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, email, password })
+        body: JSON.stringify({ firstName, lastName, email, password, isMember })
       });
 
       if (!response.ok) {
@@ -141,6 +145,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     router.push("/login");
   };
 
+  const updateProfile = async (firstName: string, lastName: string, phone?: string | null) => {
+    setLoading(true);
+    try {
+      const token = getCookie("token");
+      if (!token) throw new Error("Not authenticated");
+      const response = await fetch(`${API_URL}/api/auth/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ firstName, lastName, phone })
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || "Failed to update profile");
+      }
+      const data = await response.json();
+      setUser(data);
+    } catch (err) {
+      setLoading(false);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const becomeMember = async () => {
+    setLoading(true);
+    try {
+      const token = getCookie("token");
+      if (!token) throw new Error("Not authenticated");
+      const response = await fetch(`${API_URL}/api/auth/become-member`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.message || "Failed to join membership");
+      }
+      const data = await response.json();
+      setUser(data);
+    } catch (err) {
+      setLoading(false);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const isAuthenticated = !!user;
   const isAdmin = user?.role === "ADMIN";
 
@@ -153,7 +209,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         logout,
         isAuthenticated,
-        isAdmin
+        isAdmin,
+        updateProfile,
+        becomeMember
       }}
     >
       {children}

@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft, User } from "lucide-react";
+import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft, User, CheckCircle2, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function RegisterPage() {
@@ -13,6 +13,20 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isMember, setIsMember] = useState(false);
+  const [membershipFee, setMembershipFee] = useState<number>(999);
+  
+  React.useEffect(() => {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+    fetch(`${API_URL}/api/settings`, { cache: "no-store" })
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.membership_fee) {
+          setMembershipFee(data.membership_fee);
+        }
+      })
+      .catch(err => console.error("Failed to load settings:", err));
+  }, []);
 
   const { register } = useAuth();
 
@@ -22,7 +36,7 @@ export default function RegisterPage() {
     setSubmitting(true);
 
     try {
-      await register(firstName, lastName, email, password);
+      await register(firstName, lastName, email, password, isMember);
     } catch (err: any) {
       setError(err.message || "Registration failed. Try again.");
       setSubmitting(false);
@@ -124,6 +138,58 @@ export default function RegisterPage() {
                 className="w-full bg-background border border-input rounded-xl px-10 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-semibold"
               />
             </div>
+          </div>
+
+          {/* Membership card selection option */}
+          <div 
+            onClick={() => setIsMember(!isMember)}
+            className={`p-4 border rounded-2xl cursor-pointer transition-all flex items-start gap-3 select-none mt-2
+              ${isMember 
+                ? "bg-primary/5 border-primary shadow-lg shadow-primary/5" 
+                : "bg-background/25 border-border/80 hover:border-primary/20 hover:bg-card/25"
+              }`}
+          >
+            <div className={`mt-0.5 size-5 rounded-lg border-2 flex items-center justify-center transition-all shrink-0
+              ${isMember 
+                ? "border-primary bg-primary text-primary-foreground" 
+                : "border-muted-foreground"
+              }`}
+            >
+              {isMember && <CheckCircle2 className="size-3.5" />}
+            </div>
+            <div className="flex-grow space-y-1">
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-xs font-bold text-foreground">Join Premium Membership</span>
+                <span className="text-[10px] font-black text-primary uppercase shrink-0">₹{membershipFee} One-Time</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground font-semibold leading-relaxed">
+                Unlock automated 10% off storewide, VIP mechanical consultations, and priority tracking.
+              </p>
+              <div className="pt-1.5 flex items-center gap-1">
+                <Link 
+                  href="/rewards" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()} // Prevent card toggle
+                  className="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5"
+                >
+                  View Rewards & Benefits <ChevronRight className="size-3" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* Terms and Conditions checkbox */}
+          <div className="flex items-center gap-2 select-none pt-2">
+            <input
+              type="checkbox"
+              id="terms"
+              required
+              className="size-4 border-input rounded text-primary focus:ring-primary cursor-pointer shrink-0"
+            />
+            <label htmlFor="terms" className="text-[10px] font-bold text-muted-foreground cursor-pointer hover:text-foreground">
+              I agree to the Terms & Conditions and Privacy Policy
+            </label>
           </div>
 
           {/* Submit */}

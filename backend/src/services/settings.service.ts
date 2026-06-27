@@ -7,7 +7,8 @@ export const getSettings = async () => {
   const config: Record<string, string> = {
     tax_rate: "0.18",       // 18% default GST
     shipping_limit: "499",  // Free shipping threshold
-    shipping_cost: "99"     // Shipping charge
+    shipping_cost: "99",     // Shipping charge
+    membership_fee: "999"   // Default membership joining fee
   };
 
   for (const s of settings) {
@@ -17,7 +18,8 @@ export const getSettings = async () => {
   return {
     tax_rate: Number(config.tax_rate),
     shipping_limit: Number(config.shipping_limit),
-    shipping_cost: Number(config.shipping_cost)
+    shipping_cost: Number(config.shipping_cost),
+    membership_fee: Number(config.membership_fee)
   };
 };
 

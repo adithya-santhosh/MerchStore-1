@@ -30,7 +30,8 @@ export const registerUser = async (data: any) => {
       firstName: data.firstName.trim(),
       lastName: data.lastName.trim(),
       phone: data.phone || null,
-      role
+      role,
+      isMember: !!data.isMember
     }
   });
 
@@ -53,7 +54,8 @@ export const registerUser = async (data: any) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      isMember: user.isMember
     },
     token
   };
@@ -93,7 +95,8 @@ export const loginUser = async (data: any) => {
       firstName: user.firstName,
       lastName: user.lastName,
       role: user.role,
-      createdAt: user.createdAt
+      createdAt: user.createdAt,
+      isMember: user.isMember
     },
     token
   };
@@ -110,6 +113,47 @@ export const getUserById = async (id: number) => {
     firstName: user.firstName,
     lastName: user.lastName,
     role: user.role,
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    phone: user.phone,
+    isMember: user.isMember
   };
 };
+
+export const updateUserProfile = async (id: number, data: { firstName: string; lastName: string; phone?: string | null }) => {
+  const user = await prisma.user.update({
+    where: { id },
+    data: {
+      firstName: data.firstName.trim(),
+      lastName: data.lastName.trim(),
+      phone: data.phone ? data.phone.trim() : null
+    }
+  });
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+    createdAt: user.createdAt,
+    phone: user.phone,
+    isMember: user.isMember
+  };
+};
+
+export const becomeMemberUser = async (id: number) => {
+  const user = await prisma.user.update({
+    where: { id },
+    data: { isMember: true }
+  });
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role,
+    createdAt: user.createdAt,
+    phone: user.phone,
+    isMember: user.isMember
+  };
+};
+
