@@ -36,6 +36,7 @@ interface SystemSettings {
   tax_rate: number;
   shipping_limit: number;
   shipping_cost: number;
+  membership_fee: number;
 }
 
 export default function AdminSettingsPage() {
@@ -46,7 +47,8 @@ export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<SystemSettings>({
     tax_rate: 18,
     shipping_limit: 499,
-    shipping_cost: 99
+    shipping_cost: 99,
+    membership_fee: 999
   });
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [settingsSaving, setSettingsSaving] = useState(false);
@@ -79,7 +81,8 @@ export default function AdminSettingsPage() {
         setSettings({
           tax_rate: data.tax_rate * 100,
           shipping_limit: data.shipping_limit,
-          shipping_cost: data.shipping_cost
+          shipping_cost: data.shipping_cost,
+          membership_fee: data.membership_fee || 999
         });
       }
     } catch (error) {
@@ -136,7 +139,8 @@ export default function AdminSettingsPage() {
         body: JSON.stringify({
           tax_rate: settings.tax_rate / 100, // convert percentage back to decimal
           shipping_limit: settings.shipping_limit,
-          shipping_cost: settings.shipping_cost
+          shipping_cost: settings.shipping_cost,
+          membership_fee: settings.membership_fee
         })
       });
 
@@ -415,6 +419,44 @@ export default function AdminSettingsPage() {
                     <button
                       type="button"
                       onClick={() => setSettings({ ...settings, shipping_cost: settings.shipping_cost + 10 })}
+                      className="w-12 h-full text-muted-foreground hover:text-foreground hover:bg-muted font-bold text-lg cursor-pointer transition-colors border-l border-border/40"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Membership Fee */}
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold text-foreground uppercase tracking-wide flex items-center gap-2">
+                      <Settings className="size-4 text-primary" />
+                      Membership Joining Fee
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">Fee charged to become a member</span>
+                  </div>
+                  <div className="flex items-center border border-border rounded-xl bg-background/50 overflow-hidden h-12 shadow-sm focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all">
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, membership_fee: Math.max(0, settings.membership_fee - 100) })}
+                      className="w-12 h-full text-muted-foreground hover:text-foreground hover:bg-muted font-bold text-lg cursor-pointer transition-colors border-r border-border/40"
+                    >
+                      -
+                    </button>
+                    <div className="relative flex-grow h-full flex items-center">
+                      <span className="absolute left-4 font-bold text-sm text-muted-foreground">₹</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={settings.membership_fee}
+                        onChange={(e) => setSettings({ ...settings, membership_fee: Number(e.target.value.replace(/\D/g, '')) })}
+                        className="w-full h-full bg-transparent border-none text-center text-sm font-semibold text-foreground focus:outline-none focus:ring-0 px-8"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setSettings({ ...settings, membership_fee: settings.membership_fee + 100 })}
                       className="w-12 h-full text-muted-foreground hover:text-foreground hover:bg-muted font-bold text-lg cursor-pointer transition-colors border-l border-border/40"
                     >
                       +

@@ -203,6 +203,16 @@ export default function Navbar() {
                         </p>
                       </div>
 
+                      {/* Dashboard link */}
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setIsUserMenuOpen(false)}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                      >
+                        <User className="size-4" />
+                        My Dashboard
+                      </Link>
+
                       {/* Admin link */}
                       {user.role === "ADMIN" && (
                         <Link
@@ -600,6 +610,16 @@ export default function Navbar() {
                         {user.firstName} {user.lastName}
                       </span>
                     </div>
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
+                    >
+                      <User className="size-5" />
+                      <span className="text-sm font-medium text-foreground">
+                        My Dashboard
+                      </span>
+                    </Link>
                     {user.role === "ADMIN" && (
                       <Link
                         href="/admin/products"

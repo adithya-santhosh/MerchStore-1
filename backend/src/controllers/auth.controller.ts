@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { registerUser, loginUser, getUserById } from "../services/auth.service";
+import { registerUser, loginUser, getUserById, updateUserProfile, becomeMemberUser } from "../services/auth.service";
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -46,3 +46,34 @@ export const me = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Failed to retrieve user details" });
   }
 };
+
+export const updateProfile = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const { firstName, lastName, phone } = req.body;
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: "First name and last name are required" });
+    }
+    const updatedUser = await updateUserProfile(req.user.id, { firstName, lastName, phone });
+    res.json(updatedUser);
+  } catch (error: any) {
+    console.error("Error in updateProfile controller:", error);
+    res.status(500).json({ message: error.message || "Failed to update profile" });
+  }
+};
+
+export const becomeMember = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const updatedUser = await becomeMemberUser(req.user.id);
+    res.json(updatedUser);
+  } catch (error: any) {
+    console.error("Error in becomeMember controller:", error);
+    res.status(500).json({ message: error.message || "Failed to activate membership" });
+  }
+};
+

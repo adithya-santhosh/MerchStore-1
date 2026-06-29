@@ -6,6 +6,7 @@ export function middleware(request: NextRequest) {
   const role = request.cookies.get("role")?.value;
 
   const isAccessingAdmin = request.nextUrl.pathname.startsWith("/admin");
+  const isAccessingDashboard = request.nextUrl.pathname.startsWith("/dashboard");
   const isAccessingAuthPages = request.nextUrl.pathname.startsWith("/login") || 
                                request.nextUrl.pathname.startsWith("/register");
 
@@ -19,7 +20,16 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // 2. Redirect authenticated users away from /login & /register
+  // 2. Guard Dashboard Route
+  if (isAccessingDashboard) {
+    if (!token) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+  }
+
+  // 3. Redirect authenticated users away from /login & /register
   if (isAccessingAuthPages && token) {
     const destination = role === "ADMIN" ? "/admin/products" : "/";
     return NextResponse.redirect(new URL(destination, request.url));
@@ -29,5 +39,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/login", "/register"]
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/login", "/register"]
 };
