@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { OrderStatus, PaymentStatus } from "../generated/prisma/client";
+import { OrderStatus, PaymentStatus, Prisma } from "../generated/prisma/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -23,6 +23,16 @@ export interface CreateOrderInput {
   shippingCost: number;
 }
 
+export type PreparedCheckout = {
+    cart: Prisma.CartGetPayload<{ include: { items: { include: { product: true } } } }>
+    subtotal: number
+    discountAmount: number
+    resolvedCouponCode?: string | undefined
+    taxAmount: number
+    shippingCost: number
+    totalAmount: number
+}
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
 const generateOrderNumber = (): string => {
@@ -31,22 +41,10 @@ const generateOrderNumber = (): string => {
   return `ORD-${year}-${rand}`;
 };
 
-// ─── Create Order ─────────────────────────────────────────────────────────────
-//
-// Flow:
-//   1. Validate input
-//   2. Fetch products (from cart)
-//   3. Calculate totals
-//   4. Check inventory
-//   5. Create order
-//   6. Create order items
-//   7. Reduce stock
-//   8. Return order
+export const prepareCheckout = async (input: CreateOrderInput) => {
+   const { userId, address, couponCode, paymentMethod, sessionToken, taxRate, shippingCost } = input;
 
-export const createOrder = async (input: CreateOrderInput) => {
-  const { userId, address, couponCode, paymentMethod, sessionToken, taxRate, shippingCost } = input;
-
-  // ── Step 1: Validate input ────────────────────────────────────────────────
+    // ── Step 1: Validate input ────────────────────────────────────────────────
   if (!address.addressLine1?.trim()) throw new Error("Shipping address is required.");
   if (!address.city?.trim())         throw new Error("City is required.");
   if (!address.state?.trim())        throw new Error("State is required.");
@@ -54,7 +52,7 @@ export const createOrder = async (input: CreateOrderInput) => {
   if (!["cod", "razorpay"].includes(paymentMethod)) {
     throw new Error("Invalid payment method.");
   }
-
+   
   // ── Step 2: Fetch products (via cart) ────────────────────────────────────
   const cart = sessionToken
     ? await prisma.cart.findFirst({
@@ -69,8 +67,7 @@ export const createOrder = async (input: CreateOrderInput) => {
   if (!cart || cart.items.length === 0) {
     throw new Error("Your cart is empty. Add items before placing an order.");
   }
-
-  // Ensure every product still exists
+    // Ensure every product still exists
   for (const item of cart.items) {
     if (!item.product) {
       throw new Error(`A product in your cart no longer exists (ID: ${item.productId}).`);
@@ -119,10 +116,33 @@ export const createOrder = async (input: CreateOrderInput) => {
     }
   }
 
-  // ── Steps 5 → 7: Atomic transaction ──────────────────────────────────────
-  //    5. Create order (+ address)
-  //    6. Create order items  (handled via nested create inside order)
-  //    7. Reduce stock
+  return {
+    cart,
+    subtotal,
+    discountAmount,
+    resolvedCouponCode,
+    taxAmount,
+    shippingCost,
+    totalAmount,
+  };
+
+}
+
+
+export const finalizeOrder = async (checkout: PreparedCheckout, input: CreateOrderInput, paymentStatus: PaymentStatus = PaymentStatus.PENDING)=>{
+
+  const { userId, address, paymentMethod } = input;
+
+const {
+    cart,
+    subtotal,
+    discountAmount,
+    resolvedCouponCode,
+    taxAmount,
+    shippingCost,
+    totalAmount,
+} = checkout;
+ 
   const order = await prisma.$transaction(async (tx) => {
 
     // Step 5a: Persist shipping address
@@ -172,7 +192,7 @@ export const createOrder = async (input: CreateOrderInput) => {
             gateway:  paymentMethod,
             amount:   totalAmount,
             currency: "INR",
-            status:   PaymentStatus.PENDING,
+            status:   paymentStatus,
           },
         },
       },
@@ -207,7 +227,18 @@ export const createOrder = async (input: CreateOrderInput) => {
 
   // ── Step 8: Return order ──────────────────────────────────────────────────
   return mapOrder(order);
+}
+
+export const createOrder = async (input: CreateOrderInput) => {
+  const { userId, address, paymentMethod } = input;
+  
+  const checkout  = await prepareCheckout(input);
+
+  return await finalizeOrder(checkout, input);
+
 };
+
+
 
 // ─── Get Orders By User (customer view) ──────────────────────────────────────
 

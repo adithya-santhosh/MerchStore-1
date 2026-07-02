@@ -261,12 +261,23 @@ model Payment {
   id            Int      @id @default(autoincrement())
   orderId       Int      @unique
   order         Order    @relation(fields: [orderId], references: [id])
+
   gateway       String   // "razorpay", "stripe", "cod"
+  
+  gatewayOrderId     String?
+  gatewayPaymentId   String?
+  gatewaySignature   String?
+
   gatewayTxnId  String?
+
   amount        Decimal  @db.Decimal(10, 2)
   currency      String   @default("INR")
+  
   status        PaymentStatus @default(PENDING)
   paidAt        DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@map("payments")
 }
