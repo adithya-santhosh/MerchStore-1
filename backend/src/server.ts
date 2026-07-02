@@ -8,6 +8,7 @@ import authRoutes from "./routes/auth.routes";
 import orderRoutes from "./routes/order.routes";
 import customerRoutes from "./routes/customer.routes";
 import analyticsRoutes from "./routes/analytics.routes";
+import paymentRoutes from "./routes/payment.routes";
 
 const PORT = process.env.PORT || 5000
 
@@ -31,6 +32,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/customers", customerRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/payment", paymentRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
