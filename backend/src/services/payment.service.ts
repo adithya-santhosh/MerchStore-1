@@ -1,6 +1,6 @@
 import { razorpay } from "../lib/razorpay";
 import { CreateOrderInput, prepareCheckout, finalizeOrder } from "./order.service";
-import { PaymentStatus } from "../generated/prisma/client";
+import { PaymentStatus } from "@prisma/client";
 import crypto from "crypto";
 
 type CreateRazorpayOrderInput = CreateOrderInput;
@@ -12,6 +12,9 @@ export interface VerifyRazorpayPaymentInput extends CreateOrderInput {
 }
 
 export const createRazorpayOrder = async (input: CreateRazorpayOrderInput) => {
+  if (!razorpay) {
+    throw new Error("Razorpay payment gateway is not configured on this server.");
+  }
   const checkout = await prepareCheckout(input);
 
   const razorpayOrder = await razorpay.orders.create({
@@ -30,6 +33,9 @@ export const createRazorpayOrder = async (input: CreateRazorpayOrderInput) => {
 };
 
 export const verifyRazorpayPayment = async (input: VerifyRazorpayPaymentInput) => {
+  if (!razorpay) {
+    throw new Error("Razorpay payment gateway is not configured on this server.");
+  }
   const {
     razorpayOrderId,
     razorpayPaymentId,

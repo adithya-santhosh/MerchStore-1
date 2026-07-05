@@ -1,7 +1,7 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { UserRole } from "../generated/prisma/client";
+import { UserRole } from "@prisma/client";
 
 // JWT_SECRET is guaranteed to be set — server.ts exits at startup if it isn't
 const JWT_SECRET = process.env.JWT_SECRET!;
