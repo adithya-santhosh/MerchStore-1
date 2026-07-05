@@ -51,9 +51,10 @@ export default function Navbar() {
       );
   }, []);
 
-  // Simple nav links — no Products dropdown (secondary nav handles that)
+  // Simple nav links
   const navItems: NavItem[] = [
     { label: "Home", href: "/" },
+    { label: "Shop", href: "/products" },
     { label: "About", href: "/about" },
     { label: "Contact", href: "/contact" },
   ];
