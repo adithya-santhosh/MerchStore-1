@@ -10,7 +10,7 @@ const getSessionToken = (req: Request): string | undefined => {
 export const getCart = async (req: Request, res: Response) => {
   try {
     const sessionToken = getSessionToken(req);
-    const cart = await getOrCreateCart(sessionToken);
+    const cart = await getOrCreateCart(sessionToken, req.user?.id);
     res.json(cart);
   } catch (error: any) {
     console.error("Error in getCart controller:", error);
@@ -21,8 +21,9 @@ export const getCart = async (req: Request, res: Response) => {
 export const addToCart = async (req: Request, res: Response) => {
   try {
     const sessionToken = getSessionToken(req);
-    if (!sessionToken) {
-      return res.status(400).json({ message: "Session token is required" });
+    const userId = req.user?.id;
+    if (!sessionToken && !userId) {
+      return res.status(400).json({ message: "Session token or user authentication is required" });
     }
 
     const { productId, quantity } = req.body;
@@ -36,7 +37,7 @@ export const addToCart = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Quantity must be a positive integer" });
     }
 
-    const cart = await addItemToCart(sessionToken, prodId, qty, true);
+    const cart = await addItemToCart(sessionToken, userId, prodId, qty, true);
     res.json(cart);
   } catch (error: any) {
     console.error("Error in addToCart controller:", error);
@@ -47,8 +48,9 @@ export const addToCart = async (req: Request, res: Response) => {
 export const updateQuantity = async (req: Request, res: Response) => {
   try {
     const sessionToken = getSessionToken(req);
-    if (!sessionToken) {
-      return res.status(400).json({ message: "Session token is required" });
+    const userId = req.user?.id;
+    if (!sessionToken && !userId) {
+      return res.status(400).json({ message: "Session token or user authentication is required" });
     }
 
     const { productId, quantity } = req.body;
@@ -62,7 +64,7 @@ export const updateQuantity = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Quantity must be a non-negative integer" });
     }
 
-    const cart = await addItemToCart(sessionToken, prodId, qty, false);
+    const cart = await addItemToCart(sessionToken, userId, prodId, qty, false);
     res.json(cart);
   } catch (error: any) {
     console.error("Error in updateQuantity controller:", error);
@@ -73,8 +75,9 @@ export const updateQuantity = async (req: Request, res: Response) => {
 export const removeFromCart = async (req: Request, res: Response) => {
   try {
     const sessionToken = getSessionToken(req);
-    if (!sessionToken) {
-      return res.status(400).json({ message: "Session token is required" });
+    const userId = req.user?.id;
+    if (!sessionToken && !userId) {
+      return res.status(400).json({ message: "Session token or user authentication is required" });
     }
 
     const productId = Number(req.params.productId);
@@ -82,7 +85,7 @@ export const removeFromCart = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid product ID" });
     }
 
-    const cart = await removeItemFromCart(sessionToken, productId);
+    const cart = await removeItemFromCart(sessionToken, userId, productId);
     res.json(cart);
   } catch (error: any) {
     console.error("Error in removeFromCart controller:", error);

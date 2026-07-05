@@ -44,9 +44,43 @@ const mapCart = (cart: any) => {
   };
 };
 
-export const getOrCreateCart = async (sessionToken?: string) => {
-  let token = sessionToken;
+export const getOrCreateCart = async (sessionToken?: string, userId?: number) => {
+  // If user is logged in, find cart by userId
+  if (userId) {
+    let cart = await prisma.cart.findFirst({
+      where: { userId },
+      include: cartInclude
+    });
 
+    // If no user cart exists, but they have a guest sessionToken,
+    // link that guest cart to the user.
+    if (!cart && sessionToken) {
+      cart = await prisma.cart.findFirst({
+        where: { sessionToken },
+        include: cartInclude
+      });
+      if (cart) {
+        cart = await prisma.cart.update({
+          where: { id: cart.id },
+          data: { userId, sessionToken: null },
+          include: cartInclude
+        });
+      }
+    }
+
+    // If still no cart, create a new one for the user
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: { userId },
+        include: cartInclude
+      });
+    }
+
+    return mapCart(cart);
+  }
+
+  // Guest flow (no userId)
+  let token = sessionToken;
   if (!token) {
     token = crypto.randomUUID();
     const cart = await prisma.cart.create({
@@ -71,17 +105,27 @@ export const getOrCreateCart = async (sessionToken?: string) => {
   return mapCart(cart);
 };
 
-export const addItemToCart = async (sessionToken: string, productId: number, quantity: number, relative: boolean = true) => {
-  const cart = await prisma.cart.findFirst({
-    where: { sessionToken }
-  });
+export const addItemToCart = async (
+  sessionToken: string | undefined,
+  userId: number | undefined,
+  productId: number,
+  quantity: number,
+  relative: boolean = true
+) => {
+  const cart = userId
+    ? await prisma.cart.findFirst({ where: { userId } })
+    : sessionToken
+      ? await prisma.cart.findFirst({ where: { sessionToken } })
+      : null;
 
   let targetCartId: number;
 
   if (!cart) {
-    const newCart = await prisma.cart.create({
-      data: { sessionToken }
-    });
+    const newCart = userId
+      ? await prisma.cart.create({ data: { userId } })
+      : sessionToken
+        ? await prisma.cart.create({ data: { sessionToken } })
+        : (() => { throw new Error("sessionToken or userId is required"); })();
     targetCartId = newCart.id;
   } else {
     targetCartId = cart.id;
@@ -136,13 +180,19 @@ export const addItemToCart = async (sessionToken: string, productId: number, qua
   return mapCart(updatedCart);
 };
 
-export const removeItemFromCart = async (sessionToken: string, productId: number) => {
-  const cart = await prisma.cart.findFirst({
-    where: { sessionToken }
-  });
+export const removeItemFromCart = async (
+  sessionToken: string | undefined,
+  userId: number | undefined,
+  productId: number
+) => {
+  const cart = userId
+    ? await prisma.cart.findFirst({ where: { userId } })
+    : sessionToken
+      ? await prisma.cart.findFirst({ where: { sessionToken } })
+      : null;
 
   if (!cart) {
-    return getOrCreateCart(sessionToken);
+    return getOrCreateCart(sessionToken, userId);
   }
 
   await prisma.cartItem.deleteMany({

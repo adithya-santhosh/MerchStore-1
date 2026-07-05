@@ -1,14 +1,20 @@
 import { Response, Request } from "express";
 import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata, getProductsAdmin, getProductStats, bulkUpdateProducts } from "../services/product.service";
 
-export const getProducts = async (req:Request, res:Response) =>{
-        const category = req.query.category as string;
-        const subCategory = req.query.subCategory as string;
-        const vehicle = req.query.vehicle as string;
-        const brand = req.query.brand as string;
-        const products = await getAllProducts(category, subCategory, vehicle, brand);
-        res.json(products);
-    };
+export const getProducts = async (req: Request, res: Response) => {
+  try {
+    const category = req.query.category as string;
+    const subCategory = req.query.subCategory as string;
+    const vehicle = req.query.vehicle as string;
+    const brand = req.query.brand as string;
+    const products = await getAllProducts(category, subCategory, vehicle, brand);
+    res.json(products);
+  } catch (error: any) {
+    console.error("Error in getProducts controller:", error);
+    res.status(500).json({ message: error.message || "Failed to fetch products" });
+  }
+};
+
 
 //
 // Get the Product by ID 

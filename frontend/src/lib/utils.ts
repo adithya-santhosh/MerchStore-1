@@ -18,8 +18,8 @@ export function getProductImageSrc(url: string | null | undefined): string | nul
 // frontend/src/utils/upload.ts
 
 export const uploadToCloudinary = async (file: File): Promise<string> => {
-  const cloudName = "diz4hpigr"; // Replace with your Cloud Name
-  const uploadPreset = "merch_store_preset";       // Replace with your Unsigned Preset Name
+  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "diz4hpigr"; // Replace with your Cloud Name
+  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "merch_store_preset";       // Replace with your Unsigned Preset Name
 
   const formData = new FormData();
   formData.append("file", file);

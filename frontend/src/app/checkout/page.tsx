@@ -7,7 +7,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { useCart } from "@/hooks/useCart";
-import { createOrder } from "@/lib/api";
+import { createOrder, createPaymentOrder, verifyPayment } from "@/lib/api";
 import { getProductImageSrc } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,6 +17,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Truck,
   Shield,
   Banknote,
@@ -172,12 +173,13 @@ export default function CheckoutPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  // Pre-fill name from user profile
+  // Pre-fill name and phone from user profile
   useEffect(() => {
     if (user) {
       setAddress((prev) => ({
         ...prev,
         fullName: prev.fullName || `${user.firstName} ${user.lastName}`.trim(),
+        phone: prev.phone || user.phone || "",
       }));
     }
   }, [user]);
@@ -265,25 +267,109 @@ export default function CheckoutPage() {
       const sessionToken =
         typeof window !== "undefined" ? localStorage.getItem("sessionToken") || undefined : undefined;
 
-      const order = await createOrder({
-        address: {
-          label: "Shipping",
-          addressLine1: address.addressLine1,
-          addressLine2: address.addressLine2 || undefined,
-          city: address.city,
-          state: address.state,
-          postalCode: address.postalCode,
-          country: "IN",
-        },
-        couponCode: couponDetails?.code,
-        paymentMethod,
-        sessionToken,
-        taxRate,
-        shippingCost,
-      });
+      const addressPayload = {
+        label: "Shipping",
+        addressLine1: address.addressLine1,
+        addressLine2: address.addressLine2 || undefined,
+        city: address.city,
+        state: address.state,
+        postalCode: address.postalCode,
+        country: "IN",
+      };
 
-      clearCart();
-      router.push(`/checkout/confirmation?orderId=${order.id}`);
+      if (paymentMethod === "razorpay") {
+        // 1. Load Razorpay script
+        const isScriptLoaded = await new Promise<boolean>((resolve) => {
+          if (typeof window === "undefined") {
+            resolve(false);
+            return;
+          }
+          if ((window as any).Razorpay) {
+            resolve(true);
+            return;
+          }
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = () => resolve(true);
+          script.onerror = () => resolve(false);
+          document.body.appendChild(script);
+        });
+
+        if (!isScriptLoaded) {
+          throw new Error("Failed to load Razorpay payment SDK. Please check your connection.");
+        }
+
+        // 2. Create payment order in backend
+        const orderData = await createPaymentOrder({
+          address: addressPayload,
+          couponCode: couponDetails?.code,
+          sessionToken,
+          taxRate,
+          shippingCost,
+        });
+
+        // 3. Open Razorpay checkout
+        const options = {
+          key: orderData.key,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: "MerchStore",
+          description: "Purchase Payment",
+          order_id: orderData.orderId,
+          handler: async function (response: any) {
+            console.log("Razorpay payment success response:", response);
+            try {
+              setSubmitting(true);
+              const order = await verifyPayment({
+                razorpayOrderId: response.razorpay_order_id,
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpaySignature: response.razorpay_signature,
+                address: addressPayload,
+                couponCode: couponDetails?.code,
+                sessionToken,
+                taxRate,
+                shippingCost,
+              });
+
+              clearCart();
+              router.push(`/checkout/confirmation?orderId=${order.id}`);
+            } catch (err: any) {
+              console.error("Payment verification failed:", err);
+              setSubmitError(err.message || "Payment verification failed. Please contact support.");
+            } finally {
+              setSubmitting(false);
+            }
+          },
+          prefill: {
+            name: address.fullName,
+            contact: address.phone,
+            email: user?.email || "",
+          },
+          theme: {
+            color: "#000000",
+          },
+        };
+
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", function (response: any) {
+          console.error("Razorpay payment failed:", response.error);
+          setSubmitError(response.error.description || "Payment failed. Please try again.");
+        });
+        rzp.open();
+      } else {
+        // COD path
+        const order = await createOrder({
+          address: addressPayload,
+          couponCode: couponDetails?.code,
+          paymentMethod: "cod",
+          sessionToken,
+          taxRate,
+          shippingCost,
+        });
+
+        clearCart();
+        router.push(`/checkout/confirmation?orderId=${order.id}`);
+      }
     } catch (e: any) {
       setSubmitError(e.message || "Failed to place order. Please try again.");
     } finally {
@@ -371,6 +457,62 @@ export default function CheckoutPage() {
                     <p className="text-xs text-muted-foreground">Where should we deliver your order?</p>
                   </div>
                 </div>
+
+                {user?.addresses && user.addresses.length > 0 && (
+                  <div className="space-y-2 p-5 rounded-2xl border border-primary/20 bg-primary/5 shadow-inner">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="size-4 text-primary animate-pulse" />
+                      <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                        Quick Fill Saved Address
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <select
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val) {
+                            const selected = user.addresses?.find((a) => String(a.id) === val);
+                            if (selected) {
+                              setAddress({
+                                fullName: `${user.firstName} ${user.lastName}`.trim(),
+                                phone: user.phone || address.phone || "",
+                                addressLine1: selected.addressLine1,
+                                addressLine2: selected.addressLine2 || "",
+                                city: selected.city,
+                                state: selected.state,
+                                postalCode: selected.postalCode,
+                              });
+                            }
+                          } else {
+                            setAddress({
+                              fullName: `${user.firstName} ${user.lastName}`.trim(),
+                              phone: user.phone || "",
+                              addressLine1: "",
+                              addressLine2: "",
+                              city: "",
+                              state: "",
+                              postalCode: "",
+                            });
+                          }
+                        }}
+                        className={`${selectClass} border-primary/30 pr-10`}
+                      >
+                        <option value="">-- Enter a new address --</option>
+                        {user.addresses.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.label ? `[${a.label}] ` : ""}{a.addressLine1}, {a.city}, {a.state} - {a.postalCode}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-muted-foreground">
+                        <ChevronDown className="size-4" />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground">
+                      Selecting an address will autofill the form below. You can still modify any field.
+                    </p>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="sm:col-span-2">
@@ -651,13 +793,24 @@ export default function CheckoutPage() {
                     )}
                   </label>
 
-                  {/* Razorpay (stub) */}
+                  {/* Razorpay */}
                   <label
                     htmlFor="pay-razorpay"
-                    className="flex items-center gap-4 p-4 rounded-2xl border-2 border-border bg-muted/5 opacity-60 cursor-not-allowed relative overflow-hidden"
+                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all duration-200
+                      ${paymentMethod === "razorpay" ? "border-primary bg-primary/5 shadow-lg shadow-primary/10" : "border-border bg-muted/10 hover:border-primary/40"}`}
                   >
-                    <input id="pay-razorpay" type="radio" name="payment" value="razorpay" disabled className="hidden" />
-                    <div className="size-5 rounded-full border-2 border-muted-foreground flex items-center justify-center shrink-0" />
+                    <input
+                      id="pay-razorpay"
+                      type="radio"
+                      name="payment"
+                      value="razorpay"
+                      checked={paymentMethod === "razorpay"}
+                      onChange={() => setPaymentMethod("razorpay")}
+                      className="hidden"
+                    />
+                    <div className={`size-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${paymentMethod === "razorpay" ? "border-primary" : "border-muted-foreground"}`}>
+                      {paymentMethod === "razorpay" && <div className="size-2.5 rounded-full bg-primary" />}
+                    </div>
                     <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
                       <CreditCard className="size-5 text-blue-500" />
                     </div>
@@ -665,9 +818,9 @@ export default function CheckoutPage() {
                       <p className="text-sm font-bold text-foreground">Pay Online</p>
                       <p className="text-xs text-muted-foreground">Cards, UPI, Net Banking via Razorpay</p>
                     </div>
-                    <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full shrink-0">
-                      Coming Soon
-                    </span>
+                    {paymentMethod === "razorpay" && (
+                      <CheckCircle2 className="size-5 text-primary shrink-0" />
+                    )}
                   </label>
                 </div>
 

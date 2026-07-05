@@ -5,6 +5,18 @@ import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
 
+interface Address {
+  id: number;
+  label?: string | null;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
 interface UserProfile {
   id: number;
   email: string;
@@ -14,6 +26,7 @@ interface UserProfile {
   createdAt: string;
   phone?: string | null;
   isMember?: boolean;
+  addresses?: Address[];
 }
 
 interface AuthContextType {
@@ -35,7 +48,9 @@ const setCookie = (name: string, value: string, days: number = 7) => {
   if (typeof document === "undefined") return;
   const expires = new Date();
   expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  const isProduction = window.location.protocol === "https:";
+  const secureFlag = isProduction ? ";Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax${secureFlag}`;
 };
 
 // Helper to delete cookie
@@ -85,10 +100,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     setLoading(true);
     try {
+      const sessionToken = typeof window !== "undefined" ? localStorage.getItem("sessionToken") : null;
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email, password, sessionToken })
       });
 
       if (!response.ok) {
@@ -100,6 +116,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setCookie("token", data.token);
       setCookie("role", data.user.role);
       setUser(data.user);
+
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("sessionToken");
+      }
       
       // Redirect based on role
       if (data.user.role === "ADMIN") {

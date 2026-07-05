@@ -1,43 +1,77 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { jwtVerify } from "jose";
 
-export function middleware(request: NextRequest) {
+// ─── JWT Verification in Edge Runtime ────────────────────────────────────────
+// NOTE: JWT_SECRET (no NEXT_PUBLIC_ prefix) is only available in middleware/
+// server-side code. Never expose it to the client bundle.
+const JWT_SECRET_VALUE = process.env.JWT_SECRET || "";
+
+async function verifyToken(token: string): Promise<{ role: string } | null> {
+  if (!JWT_SECRET_VALUE) return null;
+  try {
+    const secret = new TextEncoder().encode(JWT_SECRET_VALUE);
+    const { payload } = await jwtVerify(token, secret);
+    return { role: (payload as any).role ?? "" };
+  } catch {
+    return null;
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
-  const role = request.cookies.get("role")?.value;
 
-  const isAccessingAdmin = request.nextUrl.pathname.startsWith("/admin");
+  const isAccessingAdmin     = request.nextUrl.pathname.startsWith("/admin");
   const isAccessingDashboard = request.nextUrl.pathname.startsWith("/dashboard");
-  const isAccessingAuthPages = request.nextUrl.pathname.startsWith("/login") || 
-                               request.nextUrl.pathname.startsWith("/register");
+  const isAccessingAuthPages =
+    request.nextUrl.pathname.startsWith("/login") ||
+    request.nextUrl.pathname.startsWith("/register");
 
-  // 1. Guard Admin Routes
+  // ── 1. Protect Admin routes ─────────────────────────────────────────────────
   if (isAccessingAdmin) {
-    if (!token || role !== "ADMIN") {
+    if (!token) {
       const loginUrl = new URL("/login", request.url);
-      // Pass the original destination so we can redirect back after login
+      loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Cryptographically verify the JWT and extract role — never trust a cookie
+    const payload = await verifyToken(token);
+    if (!payload || payload.role !== "ADMIN") {
+      const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
   }
 
-  // 2. Guard Dashboard Route
+  // ── 2. Protect Dashboard route ──────────────────────────────────────────────
   if (isAccessingDashboard) {
     if (!token) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
       return NextResponse.redirect(loginUrl);
     }
+    const payload = await verifyToken(token);
+    if (!payload) {
+      const loginUrl = new URL("/login", request.url);
+      loginUrl.searchParams.set("callbackUrl", request.nextUrl.pathname);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
-  // 3. Redirect authenticated users away from /login & /register
+  // ── 3. Redirect already-authenticated users away from /login & /register ────
   if (isAccessingAuthPages && token) {
-    const destination = role === "ADMIN" ? "/admin/products" : "/";
-    return NextResponse.redirect(new URL(destination, request.url));
+    const payload = await verifyToken(token);
+    if (payload) {
+      const destination = payload.role === "ADMIN" ? "/admin/products" : "/";
+      return NextResponse.redirect(new URL(destination, request.url));
+    }
+    // Token present but invalid — allow through to login/register
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/dashboard/:path*", "/login", "/register"]
+  matcher: ["/admin/:path*", "/dashboard/:path*", "/login", "/register"],
 };

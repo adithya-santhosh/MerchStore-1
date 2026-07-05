@@ -144,19 +144,7 @@ export async function getProductBySubCategory(subCategory: string): Promise<Prod
   return response.json();
 }
 
-export async function getProductsBySubCategory(category: string):Promise<Product []> { 
-  const response = await fetch(
-    `${API_URL}/api/products?subCategory=${encodeURIComponent(category)}`,
-      {
-        cache:"no-store"
-      }
-    );
-  
-    if (!response.ok){
-      throw new Error("Failed to Fetch the Products using Sub categories");
-    }
-    return response.json();
-}
+
 
 export interface NavCategory {
   id: number;
@@ -273,6 +261,71 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   if (!response.ok) {
     const err = await response.json();
     throw new Error(err.message || "Failed to place order");
+  }
+
+  return response.json();
+}
+
+export interface CreatePaymentOrderPayload {
+  address: OrderAddress;
+  couponCode?: string;
+  sessionToken?: string;
+  taxRate: number;
+  shippingCost: number;
+}
+
+export interface RazorpayOrderResponse {
+  key: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  receipt: string;
+}
+
+export async function createPaymentOrder(payload: CreatePaymentOrderPayload): Promise<RazorpayOrderResponse> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/payment/create-order`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to create payment order");
+  }
+
+  return response.json();
+}
+
+export interface VerifyPaymentPayload {
+  razorpayOrderId: string;
+  razorpayPaymentId: string;
+  razorpaySignature: string;
+  address: OrderAddress;
+  couponCode?: string;
+  sessionToken?: string;
+  taxRate: number;
+  shippingCost: number;
+}
+
+export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Order> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/payment/verify`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to verify payment");
   }
 
   return response.json();

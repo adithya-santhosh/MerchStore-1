@@ -54,15 +54,17 @@ export const prepareCheckout = async (input: CreateOrderInput) => {
   }
    
   // ── Step 2: Fetch products (via cart) ────────────────────────────────────
-  const cart = sessionToken
+  const cart = userId
     ? await prisma.cart.findFirst({
-        where: { sessionToken },
-        include: { items: { include: { product: true } } },
-      })
-    : await prisma.cart.findFirst({
         where: { userId },
         include: { items: { include: { product: true } } },
-      });
+      })
+    : sessionToken
+      ? await prisma.cart.findFirst({
+          where: { sessionToken },
+          include: { items: { include: { product: true } } },
+        })
+      : null;
 
   if (!cart || cart.items.length === 0) {
     throw new Error("Your cart is empty. Add items before placing an order.");
@@ -129,11 +131,22 @@ export const prepareCheckout = async (input: CreateOrderInput) => {
 }
 
 
-export const finalizeOrder = async (checkout: PreparedCheckout, input: CreateOrderInput, paymentStatus: PaymentStatus = PaymentStatus.PENDING)=>{
+export interface PaymentDetails {
+  status?: PaymentStatus;
+  gatewayOrderId?: string;
+  gatewayPaymentId?: string;
+  gatewaySignature?: string;
+}
+
+export const finalizeOrder = async (
+  checkout: PreparedCheckout,
+  input: CreateOrderInput,
+  paymentDetails?: PaymentDetails
+) => {
 
   const { userId, address, paymentMethod } = input;
 
-const {
+  const {
     cart,
     subtotal,
     discountAmount,
@@ -141,8 +154,8 @@ const {
     taxAmount,
     shippingCost,
     totalAmount,
-} = checkout;
- 
+  } = checkout;
+
   const order = await prisma.$transaction(async (tx) => {
 
     // Step 5a: Persist shipping address
@@ -189,10 +202,14 @@ const {
         },
         payment: {
           create: {
-            gateway:  paymentMethod,
-            amount:   totalAmount,
-            currency: "INR",
-            status:   paymentStatus,
+            gateway:          paymentMethod,
+            amount:           totalAmount,
+            currency:         "INR",
+            status:           paymentDetails?.status || PaymentStatus.PENDING,
+            gatewayOrderId:   paymentDetails?.gatewayOrderId || null,
+            gatewayPaymentId: paymentDetails?.gatewayPaymentId || null,
+            gatewaySignature: paymentDetails?.gatewaySignature || null,
+            paidAt:           paymentDetails?.status === PaymentStatus.PAID ? new Date() : null,
           },
         },
       },
