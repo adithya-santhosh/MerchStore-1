@@ -16,7 +16,13 @@ const stats: StatItem[] = [
   { icon: Package, endValue: 500, suffix: "+", label: "Products Available" },
   { icon: Users, endValue: 10000, suffix: "+", label: "Happy Customers" },
   { icon: Award, endValue: 50, suffix: "+", label: "Premium Brands" },
-  { icon: Star, endValue: 4.8, suffix: "★", label: "Average Rating", prefix: "" },
+  {
+    icon: Star,
+    endValue: 4.8,
+    suffix: "★",
+    label: "Average Rating",
+    prefix: "",
+  },
 ];
 
 function AnimatedCounter({
@@ -50,7 +56,9 @@ function AnimatedCounter({
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = eased * endValue;
 
-      setCount(isDecimal ? parseFloat(current.toFixed(1)) : Math.floor(current));
+      setCount(
+        isDecimal ? parseFloat(current.toFixed(1)) : Math.floor(current)
+      );
 
       if (progress < 1) {
         requestAnimationFrame(animate);
@@ -60,7 +68,8 @@ function AnimatedCounter({
     requestAnimationFrame(animate);
   }, [isVisible, endValue, duration]);
 
-  const displayValue = endValue % 1 !== 0 ? count.toFixed(1) : count.toLocaleString("en-IN");
+  const displayValue =
+    endValue % 1 !== 0 ? count.toFixed(1) : count.toLocaleString("en-IN");
 
   return (
     <span className="tabular-nums">
@@ -96,17 +105,61 @@ export default function StatsCounter() {
   return (
     <section
       ref={sectionRef}
-      className="w-full bg-gradient-to-b from-background via-card/30 to-background py-16 sm:py-20"
+      className="relative w-full py-20 sm:py-28 overflow-hidden"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Background texture image */}
+      <div
+        className="absolute inset-0 opacity-30"
+        style={{
+          backgroundImage: "url(/images/backgrounds/stats_bg.png)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      />
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-background/80" />
+
+      {/* Decorative rotating rings */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+        <div
+          className="size-[500px] rounded-full border border-primary/5 animate-counter-spin"
+          style={{ borderStyle: "dashed" }}
+        />
+      </div>
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+        <div
+          className="size-[700px] rounded-full border border-primary/[0.03] animate-counter-spin-reverse"
+          style={{ borderStyle: "dashed" }}
+        />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <ScrollReveal direction="up">
+          <div className="text-center mb-14">
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+              Trusted by Enthusiasts
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground mt-3 max-w-md mx-auto">
+              Numbers that speak for our commitment to quality and community.
+            </p>
+          </div>
+        </ScrollReveal>
+
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {stats.map((stat, index) => (
-            <ScrollReveal key={stat.label} delay={index * 120} direction="up">
-              <div className="flex flex-col items-center text-center space-y-3">
-                <div className="size-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-1">
-                  <stat.icon className="size-6" />
+            <ScrollReveal key={stat.label} delay={index * 150} direction="up" scale>
+              <div className="flex flex-col items-center text-center space-y-4">
+                {/* Icon with pulse ring */}
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-2xl bg-primary/15 animate-pulse-ring" />
+                  <div className="relative size-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                    <stat.icon className="size-7" />
+                  </div>
                 </div>
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground tracking-tight">
+
+                {/* Animated number */}
+                <span className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground tracking-tight">
                   <AnimatedCounter
                     endValue={stat.endValue}
                     suffix={stat.suffix}
@@ -114,9 +167,14 @@ export default function StatsCounter() {
                     isVisible={isVisible}
                   />
                 </span>
-                <span className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider">
+
+                {/* Label */}
+                <span className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider">
                   {stat.label}
                 </span>
+
+                {/* Gradient divider */}
+                <div className="w-12 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
               </div>
             </ScrollReveal>
           ))}
