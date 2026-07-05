@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { OrderStatus, PaymentStatus, Prisma } from "../generated/prisma/client";
+import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

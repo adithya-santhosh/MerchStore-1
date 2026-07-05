@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { OrderStatus, UserRole } from "../generated/prisma/client";
+import { OrderStatus, UserRole } from "@prisma/client";
 
 // ─── Dashboard stats ─────────────────────────────────────────────────────────
 

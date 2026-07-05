@@ -1,6 +1,6 @@
 import { razorpay } from "../lib/razorpay";
 import { CreateOrderInput, prepareCheckout, finalizeOrder } from "./order.service";
-import { PaymentStatus } from "../generated/prisma/client";
+import { PaymentStatus } from "@prisma/client";
 import crypto from "crypto";
 
 type CreateRazorpayOrderInput = CreateOrderInput;
