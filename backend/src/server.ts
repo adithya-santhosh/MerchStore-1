@@ -27,17 +27,24 @@ const app = express();
 // ─── Security Headers (Helmet) ───────────────────────────────────────────────
 app.use(helmet());
 
-// ─── CORS (restrict to known origin) ─────────────────────────────────────────
+// ─── CORS (restrict to known origins and allow Vercel previews) ──────────────
+const allowedOrigins = process.env.ALLOWED_ORIGIN
+  ? process.env.ALLOWED_ORIGIN.split(",").map((o) => o.trim())
+  : [];
+
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (server-to-server, Postman in dev)
       if (!origin) return callback(null, true);
-      if (
-        origin === ALLOWED_ORIGIN ||
+      
+      const isAllowed =
+        allowedOrigins.includes(origin) ||
         origin === "http://localhost:3000" ||
-        origin === "http://127.0.0.1:3000"
-      ) {
+        origin === "http://127.0.0.1:3000" ||
+        origin.endsWith(".vercel.app"); // Auto-allow Vercel previews
+
+      if (isAllowed) {
         return callback(null, true);
       }
       return callback(new Error(`CORS: Origin ${origin} not allowed`));
