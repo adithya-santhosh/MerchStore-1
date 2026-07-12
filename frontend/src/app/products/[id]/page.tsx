@@ -3,6 +3,7 @@ import { getProductImageSrc } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductActions from "@/components/ProductActions";
+import ProductReviews from "@/components/ProductReviews";
 import { ShieldCheck, Truck, RotateCcw, Sparkles, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -153,6 +154,9 @@ export default async function ProductPage({ params }: PageProps) {
           </div>
 
         </div>
+
+        {/* Product Reviews Section */}
+        <ProductReviews productId={product.id} />
       </main>
 
       <Footer />

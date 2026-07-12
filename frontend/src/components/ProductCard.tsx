@@ -5,6 +5,7 @@ import { Product } from "@/types/products";
 import { getProductImageSrc } from "@/lib/utils";
 import { ArrowRight, Sparkles, ShoppingBag } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
+import WishlistButton from "./WishlistButton";
 
 interface ProductCardProps {
   product: Product;
@@ -34,9 +35,9 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {product.category}
           </span>
-          <span className="opacity-0 group-hover:opacity-100 text-primary transition-opacity duration-300">
-            <Sparkles className="size-3.5" />
-          </span>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <WishlistButton productId={product.id} variant="icon" />
+          </div>
         </div>
 
         {/* Product Image Visual */}

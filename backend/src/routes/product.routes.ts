@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getProducts, getProduct, createNewProduct, removeProduct, editProduct, getSubCategories, getNavMetadata, getProductsAdminCtrl, getProductStatsCtrl, bulkUpdateProductsCtrl } from "../controllers/product.controller";
+import { getProducts, getProduct, createNewProduct, removeProduct, editProduct, getSubCategories, getNavMetadata, getProductsAdminCtrl, getProductStatsCtrl, bulkUpdateProductsCtrl, searchProductsCtrl } from "../controllers/product.controller";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -11,6 +11,7 @@ router.patch("/admin/bulk", requireAuth, requireAdmin, bulkUpdateProductsCtrl);
 
 // ── Public routes ────────────────────────────────────────────────────────────
 router.get("/", getProducts);
+router.get("/search", searchProductsCtrl);
 router.get("/navigation/metadata", getNavMetadata);
 router.get("/:id", getProduct);
 router.post('/', requireAuth, requireAdmin, createNewProduct);

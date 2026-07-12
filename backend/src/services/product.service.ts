@@ -610,6 +610,167 @@ export const getNavigationMetadata = async () => {
   };
 };
 
+// ─── PUBLIC: Search products with filters, sorting, pagination & aggregations ─
+
+export const searchProducts = async (params: {
+  search?: string;
+  category?: string;
+  brand?: string;
+  vehicle?: string;
+  productType?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: string;   // 'price-asc' | 'price-desc' | 'newest' | 'name-asc' | 'name-desc'
+  page?: number;
+  limit?: number;
+}) => {
+  const page = Math.max(1, params.page || 1);
+  const limit = Math.min(60, Math.max(1, params.limit || 12));
+  const skip = (page - 1) * limit;
+
+  const where: any = { isActive: true };
+
+  // ── Text search across name, description, sku, brand name ──
+  if (params.search?.trim()) {
+    const q = params.search.trim();
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { description: { contains: q, mode: 'insensitive' } },
+      { sku: { contains: q, mode: 'insensitive' } },
+      { brand: { name: { contains: q, mode: 'insensitive' } } },
+    ];
+  }
+
+  // ── Category filter (includes children) ──
+  if (params.category) {
+    const cat = await prisma.category.findFirst({
+      where: {
+        OR: [
+          { slug: params.category },
+          { name: { equals: params.category, mode: 'insensitive' } }
+        ]
+      },
+      include: { children: true }
+    });
+    if (cat) {
+      const categoryIds = [cat.id, ...cat.children.map(c => c.id)];
+      where.categoryId = { in: categoryIds };
+    }
+  }
+
+  // ── Brand filter ──
+  if (params.brand) {
+    where.brand = {
+      OR: [
+        { slug: { equals: params.brand, mode: 'insensitive' } },
+        { name: { equals: params.brand, mode: 'insensitive' } }
+      ]
+    };
+  }
+
+  // ── Vehicle filter ──
+  if (params.vehicle) {
+    where.compatibleWith = {
+      some: {
+        vehicle: {
+          OR: [
+            { model: { equals: params.vehicle, mode: 'insensitive' } },
+            { make: { equals: params.vehicle, mode: 'insensitive' } }
+          ]
+        }
+      }
+    };
+  }
+
+  // ── Product type filter ──
+  if (params.productType && ['part', 'merch'].includes(params.productType)) {
+    where.productType = params.productType;
+  }
+
+  // ── Price range filter ──
+  if (params.minPrice !== undefined || params.maxPrice !== undefined) {
+    where.price = {};
+    if (params.minPrice !== undefined) where.price.gte = params.minPrice;
+    if (params.maxPrice !== undefined) where.price.lte = params.maxPrice;
+  }
+
+  // ── Sorting ──
+  let orderBy: any = { createdAt: 'desc' }; // default: newest
+  switch (params.sortBy) {
+    case 'price-asc':  orderBy = { price: 'asc' }; break;
+    case 'price-desc': orderBy = { price: 'desc' }; break;
+    case 'name-asc':   orderBy = { name: 'asc' }; break;
+    case 'name-desc':  orderBy = { name: 'desc' }; break;
+    case 'newest':
+    default:           orderBy = { createdAt: 'desc' }; break;
+  }
+
+  // ── Query products + count in parallel ──
+  const [products, total] = await Promise.all([
+    prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy,
+      include: {
+        category: { include: { parent: true } },
+        brand: true,
+        images: true,
+        attributes: true,
+        compatibleWith: { include: { vehicle: true } },
+      },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  // ── Aggregations for filter sidebar ──
+  // Get all active products (ignoring current filters except isActive)
+  const [allBrands, allCategories, priceAgg] = await Promise.all([
+    prisma.brand.findMany({
+      where: {
+        isActive: true,
+        products: { some: { isActive: true } }
+      },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true, slug: true }
+    }),
+    prisma.category.findMany({
+      where: {
+        isActive: true,
+        products: { some: { isActive: true } }
+      },
+      include: { parent: true },
+      orderBy: { name: 'asc' }
+    }),
+    prisma.product.aggregate({
+      where: { isActive: true },
+      _min: { price: true },
+      _max: { price: true },
+    }),
+  ]);
+
+  return {
+    products: products.map(mapProduct),
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+    aggregations: {
+      brands: allBrands,
+      categories: allCategories.map(c => ({
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        parentName: c.parent?.name || null,
+      })),
+      priceRange: {
+        min: priceAgg._min.price ? Number(priceAgg._min.price) : 0,
+        max: priceAgg._max.price ? Number(priceAgg._max.price) : 100000,
+      },
+    },
+  };
+};
+
 // ─── ADMIN: Paginated product list with search/filter/sort ───────────────────
 
 export const getProductsAdmin = async (params: {

@@ -5,6 +5,7 @@ import QuantitySelector from "./QuantitySelector";
 import { Button } from "./ui/button";
 import { useCart } from "@/hooks/useCart";
 import { useRouter } from "next/navigation";
+import WishlistButton from "./WishlistButton";
 
 interface ProductActionsProps {
   productId: number;
@@ -48,6 +49,10 @@ export default function ProductActions({ productId }: ProductActionsProps) {
         >
           Buy Now
         </Button>
+      </div>
+
+      <div className="pt-2">
+        <WishlistButton productId={productId} variant="button" />
       </div>
     </div>
   );

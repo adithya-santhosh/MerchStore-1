@@ -1,5 +1,5 @@
 import { Response, Request } from "express";
-import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata, getProductsAdmin, getProductStats, bulkUpdateProducts } from "../services/product.service";
+import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata, getProductsAdmin, getProductStats, bulkUpdateProducts, searchProducts } from "../services/product.service";
 
 export const getProducts = async (req: Request, res: Response) => {
   try {
@@ -94,6 +94,31 @@ export const getNavMetadata = async (req: Request, res: Response) => {
         res.status(500).json({ message: "Failed to fetch navigation metadata" });
     }
 }
+
+// ─── Public: Search with filters, sort, pagination ──────────────────────────
+
+export const searchProductsCtrl = async (req: Request, res: Response) => {
+    try {
+        const params: Record<string, any> = {
+            search: req.query.search as string,
+            category: req.query.category as string,
+            brand: req.query.brand as string,
+            vehicle: req.query.vehicle as string,
+            productType: req.query.productType as string,
+            sortBy: req.query.sortBy as string,
+            page: Number(req.query.page) || 1,
+            limit: Number(req.query.limit) || 12,
+        };
+        if (req.query.minPrice) params.minPrice = Number(req.query.minPrice);
+        if (req.query.maxPrice) params.maxPrice = Number(req.query.maxPrice);
+
+        const result = await searchProducts(params);
+        res.json(result);
+    } catch (error: any) {
+        console.error("Error in searchProducts controller:", error);
+        res.status(500).json({ message: error.message || "Failed to search products" });
+    }
+};
 
 // ─── Admin: Paginated product listing ────────────────────────────────────────
 

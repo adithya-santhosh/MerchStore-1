@@ -20,6 +20,7 @@ import {
 import { getNavigationMetadata, NavMetadata } from "@/lib/api";
 import { useCart } from "@/hooks/useCart";
 import CartSidebar from "./CartSidebar";
+import SearchOverlay from "./SearchOverlay";
 import { useAuth } from "@/hooks/useAuth";
 
 interface NavItem {
@@ -39,9 +40,22 @@ export default function Navbar() {
   const [isMobileBrandsOpen, setIsMobileBrandsOpen] = useState(false);
   const [isMobileVehiclesOpen, setIsMobileVehiclesOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { itemsCount, setSidebarOpen } = useCart();
   const { user, logout } = useAuth();
+
+  // Global keyboard shortcut: Ctrl+K / Cmd+K to open search
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     getNavigationMetadata()
@@ -147,14 +161,14 @@ export default function Navbar() {
 
             {/* Desktop Right Actions (Search, User, Cart, Admin) */}
             <div className="hidden md:flex items-center gap-2">
-              {/* Search — links to products page */}
-              <Link
-                href="/products"
-                aria-label="Search products"
+              {/* Search — opens global search overlay */}
+              <button
+                onClick={() => setIsSearchOpen(true)}
+                aria-label="Search products (Ctrl+K)"
                 className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors cursor-pointer"
               >
                 <Search className="size-5" />
-              </Link>
+              </button>
 
               {/* Cart */}
               <button
@@ -656,20 +670,23 @@ export default function Navbar() {
                     </span>
                   </Link>
                 )}
-                <Link
-                  href="/products"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors"
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setIsSearchOpen(true);
+                  }}
+                  className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-foreground rounded-xl hover:bg-muted transition-colors w-full text-left cursor-pointer"
                 >
                   <Search className="size-5" />
                   <span className="text-sm font-medium">Search Store</span>
-                </Link>
+                </button>
               </div>
             </div>
           </div>
         )}
       </header>
       <CartSidebar />
+      <SearchOverlay isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
     </>
   );
 }

@@ -130,6 +130,62 @@ export async function getSubCategories(category: string): Promise<string[]> {
   return response.json();
 }
 
+// ─── Search Products (with filters, sort, pagination) ─────────────────────────
+
+export interface SearchProductsParams {
+  search?: string;
+  category?: string;
+  brand?: string;
+  vehicle?: string;
+  productType?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  sortBy?: string;
+  page?: number;
+  limit?: number;
+}
+
+export interface SearchAggregations {
+  brands: { id: number; name: string; slug: string }[];
+  categories: { id: number; name: string; slug: string; parentName: string | null }[];
+  priceRange: { min: number; max: number };
+}
+
+export interface SearchProductsResult {
+  products: Product[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  aggregations: SearchAggregations;
+}
+
+export async function searchProducts(params: SearchProductsParams): Promise<SearchProductsResult> {
+  const query = new URLSearchParams();
+
+  if (params.search) query.append("search", params.search);
+  if (params.category) query.append("category", params.category);
+  if (params.brand) query.append("brand", params.brand);
+  if (params.vehicle) query.append("vehicle", params.vehicle);
+  if (params.productType) query.append("productType", params.productType);
+  if (params.minPrice !== undefined) query.append("minPrice", String(params.minPrice));
+  if (params.maxPrice !== undefined) query.append("maxPrice", String(params.maxPrice));
+  if (params.sortBy) query.append("sortBy", params.sortBy);
+  if (params.page) query.append("page", String(params.page));
+  if (params.limit) query.append("limit", String(params.limit));
+
+  const response = await fetch(
+    `${API_URL}/api/products/search${query.toString() ? `?${query.toString()}` : ""}`,
+    { cache: "no-store" }
+  );
+
+  if (!response.ok) {
+    throw new Error("Failed to search products");
+  }
+
+  return response.json();
+}
+
 export async function getProductBySubCategory(subCategory: string): Promise<Product[]> {
   const response = await fetch(
     `${API_URL}/api/products?subCategory=${encodeURIComponent(subCategory)}`,
@@ -705,3 +761,150 @@ export async function updateProfile(payload: { firstName: string; lastName: stri
   return response.json();
 }
 
+// ─── Review API Helpers ───────────────────────────────────────────────────────
+
+export interface ReviewUser {
+  id: number;
+  firstName: string;
+  lastInitial: string;
+}
+
+export interface Review {
+  id: number;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
+  user: ReviewUser;
+}
+
+export interface ReviewStats {
+  averageRating: number;
+  totalReviews: number;
+  ratingBreakdown: Record<number, number>;
+}
+
+export async function getProductReviews(productId: number): Promise<Review[]> {
+  const response = await fetch(`${API_URL}/api/reviews/${productId}`, {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch reviews");
+  return response.json();
+}
+
+export async function getReviewStats(productId: number): Promise<ReviewStats> {
+  const response = await fetch(`${API_URL}/api/reviews/${productId}/stats`, {
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch review stats");
+  return response.json();
+}
+
+export async function getMyReview(productId: number): Promise<Review | null> {
+  const token = getCookie("token");
+  if (!token) return null;
+  const response = await fetch(`${API_URL}/api/reviews/${productId}/mine`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) return null;
+  return response.json();
+}
+
+export async function submitReview(
+  productId: number,
+  data: { rating: number; title?: string; body?: string }
+): Promise<Review> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/reviews/${productId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to submit review");
+  }
+  return response.json();
+}
+
+export async function deleteReviewApi(reviewId: number): Promise<void> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/reviews/${reviewId}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    const err = await response.json();
+    throw new Error(err.message || "Failed to delete review");
+  }
+}
+
+// ─── Wishlist API Helpers ─────────────────────────────────────────────────────
+
+export interface WishlistProduct {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  compareAtPrice: number | null;
+  ImageURL: string | null;
+  category: string;
+  isActive: boolean;
+  stockQty: number;
+  brand: string | null;
+}
+
+export interface WishlistItem {
+  id: number;
+  addedAt: string;
+  product: WishlistProduct;
+}
+
+export async function getWishlist(): Promise<WishlistItem[]> {
+  const token = getCookie("token");
+  if (!token) return [];
+  const response = await fetch(`${API_URL}/api/wishlist`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) return [];
+  return response.json();
+}
+
+export async function getWishlistIds(): Promise<number[]> {
+  const token = getCookie("token");
+  if (!token) return [];
+  const response = await fetch(`${API_URL}/api/wishlist/ids`, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: "no-store",
+  });
+  if (!response.ok) return [];
+  return response.json();
+}
+
+export async function addToWishlistApi(productId: number): Promise<void> {
+  const token = getCookie("token");
+  await fetch(`${API_URL}/api/wishlist/${productId}`, {
+    method: "POST",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}
+
+export async function removeFromWishlistApi(productId: number): Promise<void> {
+  const token = getCookie("token");
+  await fetch(`${API_URL}/api/wishlist/${productId}`, {
+    method: "DELETE",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+}

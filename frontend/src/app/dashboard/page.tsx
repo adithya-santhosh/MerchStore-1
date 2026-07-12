@@ -7,6 +7,9 @@ import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
 import { getMyOrders, updateProfile, Order, OrderItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import ProductCard from "@/components/ProductCard";
+import { useWishlist } from "@/hooks/useWishlist";
+import { getWishlist, WishlistItem } from "@/lib/api";
 import { 
   User, 
   ShoppingBag, 
@@ -25,7 +28,8 @@ import {
   CheckCircle2,
   Sparkles,
   Package,
-  ArrowUpRight
+  ArrowUpRight,
+  Heart
 } from "lucide-react";
 
 // Color mappings for order statuses
@@ -40,8 +44,9 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string;
 
 export default function UserDashboard() {
   const { user, loading: authLoading, logout, updateProfile: updateProfileContext, becomeMember } = useAuth();
+  const { wishlistCount } = useWishlist();
   
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "profile">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "profile" | "wishlist">("overview");
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -61,6 +66,10 @@ export default function UserDashboard() {
   
   // Filter for orders list
   const [orderFilter, setOrderFilter] = useState<"all" | "active" | "completed" | "cancelled">("all");
+
+  // Wishlist state
+  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -117,6 +126,16 @@ export default function UserDashboard() {
   const activeOrdersCount = orders.filter(o => 
     ["pending", "confirmed", "processing", "shipped"].includes(o.status.toLowerCase())
   ).length;
+
+  useEffect(() => {
+    if (activeTab === "wishlist") {
+      setWishlistLoading(true);
+      getWishlist()
+        .then(setWishlistItems)
+        .catch(err => console.error("Error loading wishlist:", err))
+        .finally(() => setWishlistLoading(false));
+    }
+  }, [activeTab]);
 
 
 
@@ -315,6 +334,23 @@ export default function UserDashboard() {
               >
                 <Settings className="size-4 shrink-0" />
                 <span>Profile Settings</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab("wishlist"); setSelectedOrder(null); }}
+                className={`flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all w-full min-w-[130px] lg:min-w-0 text-left border ${
+                  activeTab === "wishlist" 
+                    ? "bg-primary/5 text-primary border-primary/20 shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/15"
+                }`}
+              >
+                <Heart className="size-4 shrink-0" />
+                <span>Wishlist</span>
+                {wishlistCount > 0 && (
+                  <span className="ml-auto bg-primary/10 text-primary px-1.5 py-0.5 rounded-md text-[10px]">
+                    {wishlistCount}
+                  </span>
+                )}
               </button>
             </div>
 
@@ -672,6 +708,48 @@ export default function UserDashboard() {
                       </Button>
                     </div>
                   </form>
+                </div>
+              )}
+
+              {/* TAB 4: WISHLIST */}
+              {activeTab === "wishlist" && (
+                <div className="space-y-6">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 pb-4">
+                    <div>
+                      <h2 className="text-lg font-bold flex items-center gap-2">
+                        <Heart className="size-5 text-primary" fill="currentColor" />
+                        My Wishlist
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Products you've saved for later.
+                      </p>
+                    </div>
+                  </div>
+
+                  {wishlistLoading ? (
+                    <div className="py-12 flex justify-center">
+                      <div className="size-8 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  ) : wishlistItems.length === 0 ? (
+                    <div className="bg-card/25 border border-border/50 rounded-2xl py-12 px-4 text-center">
+                      <div className="size-12 rounded-full bg-muted/30 flex items-center justify-center mx-auto mb-3">
+                        <Heart className="size-6 text-muted-foreground" />
+                      </div>
+                      <h3 className="text-sm font-bold text-foreground">Your wishlist is empty</h3>
+                      <p className="text-xs text-muted-foreground mt-1 mb-4">
+                        Save items you like and they will appear here.
+                      </p>
+                      <Link href="/products">
+                        <Button className="text-xs font-bold px-6">Explore Products</Button>
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                      {wishlistItems.map((item) => (
+                        <ProductCard key={item.id} product={item.product as any} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

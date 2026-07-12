@@ -1,40 +1,29 @@
+import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
-import { ArrowRight, Sparkles, ArrowLeft, Filter } from "lucide-react";
-import { getProducts } from "@/lib/api";
-import ProductCard from "@/components/ProductCard";
-import { Product } from "@/types/products";
+import { ArrowRight, Sparkles, Filter } from "lucide-react";
+import ProductsExplorerWrapper from "./ProductsExplorerWrapper";
 
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; subCategory?: string; vehicle?: string; brand?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    subCategory?: string;
+    vehicle?: string;
+    brand?: string;
+    search?: string;
+    sortBy?: string;
+    minPrice?: string;
+    maxPrice?: string;
+    page?: string;
+  }>;
 }) {
   const resolvedParams = await searchParams;
-  const { category, subCategory, vehicle, brand } = resolvedParams;
+  const { category, subCategory, vehicle, brand, search } = resolvedParams;
 
-  const hasFilter = !!(category || subCategory || vehicle || brand);
-  let products: Product[] = [];
-  let filterTitle = "Products";
-  let filterDesc = "Browse our premium products.";
-
-  if (hasFilter) {
-    products = await getProducts({ category, subCategory, vehicle, brand });
-    if (vehicle) {
-      filterTitle = `Compatible with ${vehicle}`;
-      filterDesc = `Products engineered or compatible with ${vehicle}.`;
-    } else if (brand) {
-      filterTitle = `Brand: ${brand}`;
-      filterDesc = `Premium products designed and manufactured by ${brand}.`;
-    } else if (subCategory) {
-      filterTitle = String(subCategory);
-      filterDesc = `Explore all items under ${subCategory}.`;
-    } else if (category) {
-      filterTitle = String(category);
-      filterDesc = `Explore all items under ${category}.`;
-    }
-  }
+  const hasFilter = !!(category || subCategory || vehicle || brand || search);
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -45,13 +34,27 @@ export default async function ProductsPage({
         <div className="absolute top-10 left-1/3 -z-10 size-80 rounded-full bg-primary/3 opacity-20 blur-3xl" />
 
         {hasFilter ? (
-          <div className="space-y-12">
+          <div className="space-y-8">
             {/* Back to Categories Link */}
             <Link
               href="/products"
               className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-primary group cursor-pointer"
             >
-              <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-transform group-hover:-translate-x-1"
+              >
+                <path d="m12 19-7-7 7-7" />
+                <path d="M19 12H5" />
+              </svg>
               Back to Divisions
             </Link>
 
@@ -59,32 +62,51 @@ export default async function ProductsPage({
             <div className="max-w-3xl space-y-4">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
                 <Filter className="size-3.5" />
-                Filtered Catalog
+                {search ? "Search Results" : "Filtered Catalog"}
               </div>
               <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
-                {filterTitle}
+                {search
+                  ? `Results for "${search}"`
+                  : vehicle
+                  ? `Compatible with ${vehicle}`
+                  : brand
+                  ? `Brand: ${brand}`
+                  : subCategory
+                  ? String(subCategory)
+                  : category
+                  ? String(category)
+                  : "Products"}
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                {filterDesc}
+                {search
+                  ? `Showing products matching your search query.`
+                  : vehicle
+                  ? `Products engineered or compatible with ${vehicle}.`
+                  : brand
+                  ? `Premium products designed and manufactured by ${brand}.`
+                  : subCategory
+                  ? `Explore all items under ${subCategory}.`
+                  : category
+                  ? `Explore all items under ${category}.`
+                  : "Browse our premium products."}
               </p>
             </div>
 
-            {/* Products Grid */}
-            {products.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
-                {products.map((prod) => (
-                  <ProductCard key={prod.id} product={prod} />
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 border border-border/60 rounded-3xl bg-card/20 max-w-md mx-auto">
-                <Sparkles className="size-8 text-muted-foreground/40 mx-auto mb-3" />
-                <h3 className="text-sm font-bold text-foreground">No Products Found</h3>
-                <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-                  We don't have any items in stock matching this filter right now. Explore other categories or check back soon!
-                </p>
-              </div>
-            )}
+            {/* ProductsExplorer */}
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center py-20">
+                  <div className="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+                </div>
+              }
+            >
+              <ProductsExplorerWrapper
+                search={search}
+                category={category}
+                brand={brand}
+                vehicle={vehicle}
+              />
+            </Suspense>
           </div>
         ) : (
           <div className="space-y-16">
@@ -98,7 +120,8 @@ export default async function ProductsPage({
                 Our Categories
               </h1>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Select a division below to configure your off-road rig or upgrade your lifestyle with our custom-engineered gear.
+                Select a division below to configure your off-road rig or
+                upgrade your lifestyle with our custom-engineered gear.
               </p>
             </div>
 
@@ -117,7 +140,9 @@ export default async function ProductsPage({
                     <Sparkles className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Configure your rig with custom vehicle armor, recovery kits, electrical LED light modules, suspension lifts, and modular platform storage systems built for the elements.
+                    Configure your rig with custom vehicle armor, recovery kits,
+                    electrical LED light modules, suspension lifts, and modular
+                    platform storage systems built for the elements.
                   </p>
                 </div>
 
@@ -142,7 +167,9 @@ export default async function ProductsPage({
                     <Sparkles className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Explore our limited-run seasonal drops of custom streetwear, heavyweight hoodies, graphic tee apparel, caps, keychains, and street fashion gear designed for car culture enthusiasts.
+                    Explore our limited-run seasonal drops of custom streetwear,
+                    heavyweight hoodies, graphic tee apparel, caps, keychains,
+                    and street fashion gear designed for car culture enthusiasts.
                   </p>
                 </div>
 
