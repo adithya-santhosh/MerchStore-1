@@ -1,3 +1,17 @@
+export interface ProductImage {
+    id: number;
+    imageUrl: string;
+    altText?: string | null;
+    isPrimary: boolean;
+    sortOrder: number;
+}
+
+export interface ProductAttribute {
+    id: number;
+    attrKey: string;
+    attrValue: string;
+}
+
 export interface Product {
     id: number;
     name: string;
@@ -17,6 +31,8 @@ export interface Product {
     subCategory?: string | null;
     ImageURL?: string | null;
     brand?: string | null;
+    images?: ProductImage[];
+    attributes?: ProductAttribute[];
     compatibleWith?: Array<{
         id?: number;
         make: string;

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -42,11 +43,13 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string;
   cancelled:  { label: "Cancelled",  color: "text-rose-500",    bg: "bg-rose-500/10 border-rose-500/30",        dot: "bg-rose-500" },
 };
 
-export default function UserDashboard() {
+function DashboardContent() {
   const { user, loading: authLoading, logout, updateProfile: updateProfileContext, becomeMember } = useAuth();
   const { wishlistCount } = useWishlist();
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get("tab") as any) || "overview";
   
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "profile" | "wishlist">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "profile" | "wishlist">(initialTab);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -961,5 +964,13 @@ export default function UserDashboard() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function UserDashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="size-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div></div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

@@ -4,6 +4,10 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductActions from "@/components/ProductActions";
 import ProductReviews from "@/components/ProductReviews";
+import ProductGallery from "@/components/ProductGallery";
+import ProductSpecifications from "@/components/ProductSpecifications";
+import VehicleCompatibility from "@/components/VehicleCompatibility";
+import RelatedProducts from "@/components/RelatedProducts";
 import { ShieldCheck, Truck, RotateCcw, Sparkles, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -48,6 +52,14 @@ export default async function ProductPage({ params }: PageProps) {
           <Link href={categoryUrl} className="hover:text-primary transition-colors cursor-pointer">
             {product.category}
           </Link>
+          {product.subCategory && (
+            <>
+              <ChevronRight className="size-3.5" />
+              <Link href={`/products/subcategories/${product.subCategory}`} className="hover:text-primary transition-colors cursor-pointer">
+                {product.subCategory}
+              </Link>
+            </>
+          )}
           <ChevronRight className="size-3.5" />
           <span className="text-foreground truncate max-w-[150px] sm:max-w-xs">{product.name}</span>
         </nav>
@@ -57,34 +69,12 @@ export default async function ProductPage({ params }: PageProps) {
           
           {/* Left Column: Image Showcase */}
           <div className="lg:col-span-6">
-            <div className="relative aspect-square w-full rounded-3xl border border-border bg-card/40 overflow-hidden flex items-center justify-center p-6 sm:p-12 shadow-sm hover:shadow-md transition-shadow duration-300">
-              
-              {imageSrc ? (
-                <img
-                  src={imageSrc}
-                  alt={product.name}
-                  className="w-full h-full object-contain rounded-2xl max-h-[400px]"
-                />
-              ) : (
-                /* Cohesive visual placeholder if no image exists */
-                <div className="flex flex-col items-center justify-center text-center space-y-4 max-w-xs">
-                  <div className="size-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm">
-                    <Sparkles className="size-8" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-semibold text-primary uppercase tracking-widest">
-                      {product.category}
-                    </span>
-                    <h4 className="text-sm font-bold text-muted-foreground mt-1">
-                      No Image Available
-                    </h4>
-                  </div>
-                </div>
-              )}
-              
-              {/* Mesh background glow */}
-              <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_center,var(--color-primary-foreground)/2,transparent_60%)] opacity-30" />
-            </div>
+            <ProductGallery 
+              images={product.images} 
+              fallbackImage={imageSrc} 
+              productName={product.name} 
+              category={product.category} 
+            />
           </div>
 
           {/* Right Column: Content and Actions */}
@@ -121,8 +111,12 @@ export default async function ProductPage({ params }: PageProps) {
               </p>
             </div>
 
+            <ProductSpecifications attributes={product.attributes} />
+
             {/* Product Actions (Client Side: Quantity, Add to Cart, Buy Now) */}
             <ProductActions productId={product.id} />
+
+            <VehicleCompatibility compatibleWith={product.compatibleWith} />
 
             {/* Trust Seals and Shipping info */}
             <div className="pt-6 border-t border-border/80 grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -157,6 +151,9 @@ export default async function ProductPage({ params }: PageProps) {
 
         {/* Product Reviews Section */}
         <ProductReviews productId={product.id} />
+
+        {/* Related Products Section */}
+        <RelatedProducts currentProductId={product.id} category={product.category} />
       </main>
 
       <Footer />

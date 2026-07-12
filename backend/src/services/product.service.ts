@@ -276,6 +276,16 @@ export const createProduct = async (data: any) => {
     delete createData.subCategory;
   }
 
+  // Handle attributes if provided
+  if (productData.attributes && Array.isArray(productData.attributes)) {
+    createData.attributes = {
+      create: productData.attributes.map((attr: any) => ({
+        attrKey: attr.attrKey,
+        attrValue: attr.attrValue
+      }))
+    };
+  }
+
   const product = await prisma.product.create({
     data: createData,
     include: {
@@ -471,6 +481,17 @@ export const updateProduct = async (id: number, data: any) => {
     }
     updateData.categoryId = subCat.id;
     delete updateData.subCategory;
+  }
+
+  // Handle attributes if provided
+  if (productData.attributes && Array.isArray(productData.attributes)) {
+    await prisma.productAttribute.deleteMany({ where: { productId: id } });
+    updateData.attributes = {
+      create: productData.attributes.map((attr: any) => ({
+        attrKey: attr.attrKey,
+        attrValue: attr.attrValue
+      }))
+    };
   }
 
   const product = await prisma.product.update({

@@ -55,6 +55,13 @@ export default function EditProductForm({ product }: EditProductFormProps) {
   const [compEngineType, setCompEngineType] = useState("");
   const [compNotes, setCompNotes] = useState("");
 
+  // Product attributes states
+  const [attributes, setAttributes] = useState<{attrKey: string; attrValue: string}[]>(
+    product.attributes ? product.attributes.map(a => ({ attrKey: a.attrKey, attrValue: a.attrValue })) : []
+  );
+  const [attrKeyInput, setAttrKeyInput] = useState("");
+  const [attrValueInput, setAttrValueInput] = useState("");
+
   // Load metadata on mount
   useEffect(() => {
     const loadMetadata = async () => {
@@ -214,6 +221,17 @@ export default function EditProductForm({ product }: EditProductFormProps) {
     setCompatibleWith(compatibleWith.filter((_, idx) => idx !== index));
   };
 
+  const handleAddAttribute = () => {
+    if (!attrKeyInput.trim() || !attrValueInput.trim()) return;
+    setAttributes([...attributes, { attrKey: attrKeyInput.trim(), attrValue: attrValueInput.trim() }]);
+    setAttrKeyInput("");
+    setAttrValueInput("");
+  };
+
+  const handleRemoveAttribute = (index: number) => {
+    setAttributes(attributes.filter((_, idx) => idx !== index));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setShowConfirm(true);
@@ -230,7 +248,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         subCategory: isCustom ? customSubCategory : subCategory,
         ImageURL: imageURL || null,
         brand: isCustomBrand ? customBrand : brand,
-        compatibleWith: compatibleWith
+        compatibleWith: compatibleWith,
+        attributes: attributes.length > 0 ? attributes : undefined
       });
       setShowConfirm(false);
       setShowSuccess(true);
@@ -419,6 +438,86 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                   className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
                   required
                 />
+              </div>
+            )}
+          </div>
+
+          {/* Specifications / Attributes Builder */}
+          <div className="border border-border/80 rounded-2xl p-6 bg-muted/10 space-y-4">
+            <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Sparkles className="size-4.5 text-primary" />
+              Product Specifications
+            </h3>
+            <p className="text-[11px] text-muted-foreground">
+              Add key-value pairs for technical specs (e.g. Material: Canvas, Weight: 2kg).
+            </p>
+
+            <div className="flex gap-4 items-end">
+              <div className="flex-1 space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Specification Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Dimensions"
+                  value={attrKeyInput}
+                  onChange={(e) => setAttrKeyInput(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                />
+              </div>
+              <div className="flex-1 space-y-1">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Value</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 10x10 inches"
+                  value={attrValueInput}
+                  onChange={(e) => setAttrValueInput(e.target.value)}
+                  className="w-full rounded-lg border border-input bg-background/50 px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddAttribute();
+                    }
+                  }}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAddAttribute}
+                className="gap-1 border-primary/20 text-primary hover:bg-primary/10 h-[34px] px-3"
+              >
+                <Plus className="size-3.5" />
+                Add
+              </Button>
+            </div>
+
+            {attributes.length > 0 && (
+              <div className="mt-4 border border-border/50 rounded-xl overflow-hidden bg-background">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/50 border-b border-border/50">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-semibold">Name</th>
+                      <th className="px-3 py-2 text-left font-semibold">Value</th>
+                      <th className="px-3 py-2 text-right"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/30">
+                    {attributes.map((attr, idx) => (
+                      <tr key={idx} className="hover:bg-muted/20">
+                        <td className="px-3 py-2 font-medium">{attr.attrKey}</td>
+                        <td className="px-3 py-2">{attr.attrValue}</td>
+                        <td className="px-3 py-2 text-right">
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAttribute(idx)}
+                            className="text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="size-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

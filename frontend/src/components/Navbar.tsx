@@ -16,12 +16,14 @@ import {
   Car,
   Layers,
   LogOut,
+  Heart,
 } from "lucide-react";
 import { getNavigationMetadata, NavMetadata } from "@/lib/api";
 import { useCart } from "@/hooks/useCart";
 import CartSidebar from "./CartSidebar";
 import SearchOverlay from "./SearchOverlay";
 import { useAuth } from "@/hooks/useAuth";
+import { useWishlist } from "@/hooks/useWishlist";
 
 interface NavItem {
   label: string;
@@ -44,6 +46,7 @@ export default function Navbar() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { itemsCount, setSidebarOpen } = useCart();
   const { user, logout } = useAuth();
+  const { wishlistCount } = useWishlist();
 
   // Global keyboard shortcut: Ctrl+K / Cmd+K to open search
   useEffect(() => {
@@ -169,6 +172,22 @@ export default function Navbar() {
               >
                 <Search className="size-5" />
               </button>
+
+              {/* Wishlist */}
+              {user && (
+                <Link
+                  href="/dashboard?tab=wishlist"
+                  aria-label="My Wishlist"
+                  className="relative p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors cursor-pointer"
+                >
+                  <Heart className="size-5" />
+                  {wishlistCount > 0 && (
+                    <span className="absolute top-1.5 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground shadow-sm">
+                      {wishlistCount}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {/* Cart */}
               <button
