@@ -103,3 +103,14 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
   }
   next();
 };
+
+// ─── requireVendor — allows VENDOR or ADMIN roles ─────────────────────────────
+export const requireVendor = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  if (req.user.role !== "VENDOR" && req.user.role !== UserRole.ADMIN) {
+    return res.status(403).json({ message: "Access Denied: Vendors Only" });
+  }
+  next();
+};

@@ -14,6 +14,7 @@ import analyticsRoutes from "./routes/analytics.routes";
 import paymentRoutes from "./routes/payment.routes";
 import reviewRoutes from "./routes/review.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
+import vendorRoutes from "./routes/vendor.routes";
 
 // ─── Env Guards ──────────────────────────────────────────────────────────────
 if (!process.env.JWT_SECRET) {
@@ -96,6 +97,7 @@ app.use("/api/analytics", apiLimiter, analyticsRoutes);
 app.use("/api/payment", apiLimiter, paymentRoutes);
 app.use("/api/reviews", apiLimiter, reviewRoutes);
 app.use("/api/wishlist", apiLimiter, wishlistRoutes);
+app.use("/api/vendors", apiLimiter, vendorRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT} | ENV: ${process.env.NODE_ENV || "development"}`);

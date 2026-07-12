@@ -908,3 +908,75 @@ export async function removeFromWishlistApi(productId: number): Promise<void> {
     },
   });
 }
+
+// ─── Vendor API ────────────────────────────────────────────────────────────────
+export async function getVendorOrders(): Promise<any[]> {
+  const token = getCookie("token");
+  const res = await fetch(`${API_URL}/api/vendors/orders`, {
+    cache: "no-store",
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  });
+  if (!res.ok) throw new Error("Failed to fetch vendor orders");
+  return res.json();
+}
+
+export async function submitVendorShipment(orderId: number, data: { carrier: string; trackingNumber: string }): Promise<any> {
+  const token = getCookie("token");
+  const res = await fetch(`${API_URL}/api/vendors/orders/${orderId}/ship`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to submit shipment details");
+  return res.json();
+}
+
+export async function getAllVendors(token?: string): Promise<any[]> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/vendors`, {
+    cache: "no-store",
+    headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+  });
+  if (!res.ok) throw new Error("Failed to fetch vendors");
+  return res.json();
+}
+
+export async function createVendorAccount(data: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  companyName: string;
+}, token?: string): Promise<any> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/vendors`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "Failed to create vendor");
+  }
+  return res.json();
+}
+
+export async function assignProductVendor(productId: number, vendorId: number | null, token?: string): Promise<any> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/vendors/products/${productId}/assign`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    },
+    body: JSON.stringify({ vendorId }),
+  });
+  if (!res.ok) throw new Error("Failed to assign vendor");
+  return res.json();
+}

@@ -13,6 +13,7 @@ import {
   Sparkles,
   Search,
   Bell,
+  Store,
   User,
 } from "lucide-react";
 
@@ -35,6 +36,7 @@ export default function AdminLayout({
     { label: "Add Product", href: "/admin/products/new", icon: PlusCircle },
     { label: "Orders Manager", href: "/admin/orders", icon: ShoppingBag },
     { label: "Customers List", href: "/admin/customers", icon: Users },
+    { label: "Vendor Accounts", href: "/admin/vendors", icon: Store },
     { label: "Settings Panel", href: "/admin/settings", icon: Settings },
   ];
 

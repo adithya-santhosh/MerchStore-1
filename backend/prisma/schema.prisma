@@ -92,6 +92,9 @@ model Product {
   brandId          Int?
   brand            Brand?    @relation(fields: [brandId], references: [id])
 
+  vendorId         Int?
+  vendor           Vendor?   @relation(fields: [vendorId], references: [id])
+
   // ── Child relations ──
   images           ProductImage[]
   attributes       ProductAttribute[]
@@ -164,7 +167,22 @@ model User {
 
   createdAt     DateTime @default(now())
 
+  vendor        Vendor?
+
   @@map("users")
+}
+
+// ─── VENDOR ──────────────────────────────────────────────────────────────────
+model Vendor {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @unique
+  user        User      @relation(fields: [userId], references: [id])
+  companyName String
+  products    Product[]
+
+  createdAt   DateTime  @default(now())
+
+  @@map("vendors")
 }
 
 // ─── ADDRESS ─────────────────────────────────────────────────────────────────
@@ -351,6 +369,7 @@ model SystemSetting {
 
 enum UserRole {
   CUSTOMER
+  VENDOR
   ADMIN
 }
 
