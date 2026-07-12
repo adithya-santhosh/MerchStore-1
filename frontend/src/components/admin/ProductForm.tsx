@@ -279,7 +279,7 @@ export default function ProductForm() {
         ImageURL: ImageURL || null,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
-        attributes: attributes.length > 0 ? attributes : undefined
+        attributes: attributes.length > 0 ? (attributes as any) : undefined
       });
       setShowConfirm(false);
       setShowSuccess(true);
