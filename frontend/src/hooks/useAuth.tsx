@@ -93,7 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token) {
       fetchProfile(token);
     } else {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 0);
     }
   }, []);
 
@@ -124,6 +124,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Redirect based on role
       if (data.user.role === "ADMIN") {
         router.push("/admin/products");
+      } else if (data.user.role === "VENDOR" || data.user.role === "vendor") {
+        router.push("/vendor/dashboard");
       } else {
         router.push("/");
       }

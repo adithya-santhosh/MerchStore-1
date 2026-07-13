@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { createProduct, getSubCategories, getNavigationMetadata, NavMetadata } from "@/lib/api";
+import { createProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors } from "@/lib/api";
 import { PlusCircle, Image, Sparkles, Trash2, Car, X, Plus } from "lucide-react";
 import { uploadToCloudinary } from "@/lib/utils";
 
@@ -64,6 +64,10 @@ export default function ProductForm() {
   const [attrKeyInput, setAttrKeyInput] = useState("");
   const [attrValueInput, setAttrValueInput] = useState("");
 
+  // Vendor state
+  const [vendors, setVendors] = useState<{id: number; companyName: string}[]>([]);
+  const [vendorId, setVendorId] = useState<number | null>(null);
+
   // Load metadata on mount
   useEffect(() => {
     const loadMetadata = async () => {
@@ -74,11 +78,20 @@ export default function ProductForm() {
         setDbBrands(uniqueBrands);
         const uniqueMakes = Array.from(new Set(data.vehicles.map(v => v.make)));
         setDbMakes(uniqueMakes);
-      } catch (err) {
-        console.error("Failed to load metadata:", err);
+      } catch (e) {
+        console.error("Failed to load metadata", e);
+      }
+    };
+    const loadVendors = async () => {
+      try {
+        const data = await getAllVendors();
+        setVendors(data);
+      } catch (e) {
+        console.error("Failed to load vendors", e);
       }
     };
     loadMetadata();
+    loadVendors();
   }, []);
 
   // Auto-generate slug from name unless manually edited
@@ -279,7 +292,8 @@ export default function ProductForm() {
         ImageURL: ImageURL || null,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
-        attributes: attributes.length > 0 ? (attributes as any) : undefined
+        attributes: attributes.length > 0 ? (attributes as any) : undefined,
+        vendorId: vendorId ?? undefined
       });
       setShowConfirm(false);
       setShowSuccess(true);
@@ -315,6 +329,8 @@ export default function ProductForm() {
     setCustomBrand("");
     setIsCustomBrand(false);
     setCompatibleWith([]);
+    setAttributes([]);
+    setVendorId(null);
     setShowSuccess(false);
   };
 
@@ -929,6 +945,27 @@ export default function ProductForm() {
             </label>
           </div>
         </div>
+
+        {/* Vendor Assignment */}
+        {vendors.length > 0 && (
+          <div className="space-y-2 bg-background/30 border border-input/60 rounded-2xl p-4">
+            <label htmlFor="vendorId" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Assign to Vendor / Supplier <span className="text-muted-foreground font-normal normal-case">(optional)</span>
+            </label>
+            <select
+              id="vendorId"
+              value={vendorId ?? ""}
+              onChange={(e) => setVendorId(e.target.value ? Number(e.target.value) : null)}
+              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+            >
+              <option value="">— No vendor (in-house fulfillment) —</option>
+              {vendors.map((v) => (
+                <option key={v.id} value={v.id}>{v.companyName}</option>
+              ))}
+            </select>
+            <p className="text-[11px] text-muted-foreground">The selected vendor will see this product's orders in their portal.</p>
+          </div>
+        )}
 
         {/* Submit Button */}
         <div className="flex justify-end pt-4">

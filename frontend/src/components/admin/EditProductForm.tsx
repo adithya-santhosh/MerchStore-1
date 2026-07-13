@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { updateProduct, deleteProduct, getSubCategories, getNavigationMetadata, NavMetadata } from "@/lib/api";
+import { updateProduct, deleteProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors, assignProductVendor } from "@/lib/api";
 import { Product } from "@/types/products";
 import { Save, Trash2, Image, Sparkles, AlertTriangle, Car, X, Plus } from "lucide-react";
 
@@ -62,6 +62,10 @@ export default function EditProductForm({ product }: EditProductFormProps) {
   const [attrKeyInput, setAttrKeyInput] = useState("");
   const [attrValueInput, setAttrValueInput] = useState("");
 
+  // Vendor state
+  const [vendors, setVendors] = useState<{id: number; companyName: string}[]>([]);
+  const [vendorId, setVendorId] = useState<number | null>((product as any).vendorId ?? null);
+
   // Load metadata on mount
   useEffect(() => {
     const loadMetadata = async () => {
@@ -76,7 +80,16 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         console.error("Failed to load metadata:", err);
       }
     };
+    const loadVendors = async () => {
+      try {
+        const data = await getAllVendors();
+        setVendors(data);
+      } catch (e) {
+        console.error("Failed to load vendors", e);
+      }
+    };
     loadMetadata();
+    loadVendors();
   }, []);
 
   // Fetch subcategories from database on category change
@@ -251,6 +264,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         compatibleWith: compatibleWith,
         attributes: attributes.length > 0 ? (attributes as any) : undefined
       });
+      // Also update vendor assignment via dedicated endpoint
+      await assignProductVendor(product.id, vendorId);
       setShowConfirm(false);
       setShowSuccess(true);
     } catch (error) {
@@ -725,6 +740,27 @@ export default function EditProductForm({ product }: EditProductFormProps) {
               required
             />
           </div>
+
+          {/* Vendor Assignment */}
+          {vendors.length > 0 && (
+            <div className="space-y-2 bg-background/30 border border-input/60 rounded-2xl p-4">
+              <label htmlFor="editVendorId" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Vendor / Supplier <span className="text-muted-foreground font-normal normal-case">(optional)</span>
+              </label>
+              <select
+                id="editVendorId"
+                value={vendorId ?? ""}
+                onChange={(e) => setVendorId(e.target.value ? Number(e.target.value) : null)}
+                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+              >
+                <option value="">— No vendor (in-house fulfillment) —</option>
+                {vendors.map((v) => (
+                  <option key={v.id} value={v.id}>{v.companyName}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-muted-foreground">The selected vendor will see orders for this product in their portal.</p>
+            </div>
+          )}
 
           <div className="flex justify-end pt-4">
             <Button type="submit" disabled={loading} className="shadow-lg cursor-pointer">

@@ -300,6 +300,13 @@ export interface Order {
     status: string;
     paidAt: string | null;
   } | null;
+  shipment: {
+    carrier: string | null;
+    trackingNumber: string | null;
+    status: string;
+    shippedAt: string | null;
+    deliveredAt: string | null;
+  } | null;
   items: OrderItem[];
 }
 

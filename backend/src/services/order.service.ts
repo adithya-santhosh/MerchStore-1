@@ -262,7 +262,7 @@ export const createOrder = async (input: CreateOrderInput) => {
 export const getOrdersByUser = async (userId: number) => {
   const orders = await prisma.order.findMany({
     where: { userId },
-    include: { items: true, payment: true, shippingAddress: true },
+    include: { items: true, payment: true, shippingAddress: true, shipment: true },
     orderBy: { createdAt: "desc" },
   });
   return orders.map(mapOrder);
@@ -412,6 +412,15 @@ const mapOrder = (order: any) => ({
         amount:  Number(order.payment.amount),
         status:  order.payment.status,
         paidAt:  order.payment.paidAt,
+      }
+    : null,
+  shipment: order.shipment
+    ? {
+        carrier:       order.shipment.carrier,
+        trackingNumber:order.shipment.trackingNumber,
+        status:        order.shipment.status,
+        shippedAt:     order.shipment.shippedAt,
+        deliveredAt:   order.shipment.deliveredAt,
       }
     : null,
   items: (order.items || []).map((item: any) => ({

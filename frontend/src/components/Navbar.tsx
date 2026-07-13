@@ -14,9 +14,10 @@ import {
   Shield,
   Tag,
   Car,
-  Layers,
   LogOut,
   Heart,
+  Package,
+  Layers,
 } from "lucide-react";
 import { getNavigationMetadata, NavMetadata } from "@/lib/api";
 import { useCart } from "@/hooks/useCart";
@@ -256,6 +257,18 @@ export default function Navbar() {
                         >
                           <Shield className="size-4" />
                           Admin Console
+                        </Link>
+                      )}
+
+                      {/* Vendor link */}
+                      {(user.role === "VENDOR" || user.role === "vendor") && (
+                        <Link
+                          href="/vendor/dashboard"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                        >
+                          <Package className="size-4" />
+                          Vendor Portal
                         </Link>
                       )}
 
@@ -663,6 +676,18 @@ export default function Navbar() {
                         <Shield className="size-5" />
                         <span className="text-sm font-medium">
                           Admin Console
+                        </span>
+                      </Link>
+                    )}
+                    {(user.role === "VENDOR" || user.role === "vendor") && (
+                      <Link
+                        href="/vendor/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
+                      >
+                        <Package className="size-5" />
+                        <span className="text-sm font-medium">
+                          Vendor Portal
                         </span>
                       </Link>
                     )}

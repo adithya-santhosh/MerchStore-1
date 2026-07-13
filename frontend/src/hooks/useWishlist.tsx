@@ -32,7 +32,9 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useEffect(() => {
-    fetchWishlistIds();
+    setTimeout(() => {
+      fetchWishlistIds();
+    }, 0);
   }, [fetchWishlistIds]);
 
   const isWishlisted = useCallback(

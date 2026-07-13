@@ -43,6 +43,7 @@ export default function AdminOrdersPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [updatingId, setUpdatingId] = useState<number | null>(null);
 
   const fetchOrders = async (showLoader = false) => {
     if (showLoader) setRefreshing(true);
@@ -54,6 +55,19 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
       setRefreshing(false);
+    }
+  };
+
+  const handleQuickStatusUpdate = async (orderId: number, newStatus: string) => {
+    setUpdatingId(orderId);
+    try {
+      await updateAdminOrderStatus(orderId, newStatus);
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    } catch (e) {
+      console.error(e);
+      alert("Failed to update status.");
+    } finally {
+      setUpdatingId(null);
     }
   };
 
@@ -177,9 +191,9 @@ export default function AdminOrdersPage() {
           {/* Header Row */}
           <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-4 border-b border-border/60 bg-muted/20 text-xs font-bold text-muted-foreground uppercase tracking-wider">
             <div className="col-span-3">Order Number</div>
-            <div className="col-span-3">Customer</div>
+            <div className="col-span-2">Customer</div>
             <div className="col-span-2">Total</div>
-            <div className="col-span-2">Status</div>
+            <div className="col-span-3">Status</div>
             <div className="col-span-1">Date</div>
             <div className="col-span-1 text-right">View</div>
           </div>
@@ -203,7 +217,7 @@ export default function AdminOrdersPage() {
                 </div>
 
                 {/* Customer */}
-                <div className="col-span-3">
+                <div className="col-span-2">
                   <p className="text-sm font-bold text-foreground truncate">{order.customer.name}</p>
                   <p className="text-[10px] text-muted-foreground truncate">{order.customer.email}</p>
                 </div>
@@ -218,9 +232,24 @@ export default function AdminOrdersPage() {
                   )}
                 </div>
 
-                {/* Status */}
-                <div className="col-span-2">
-                  <StatusBadge status={order.status} />
+                {/* Status — inline quick-update */}
+                <div className="col-span-3">
+                  <div className="flex items-center gap-2">
+                    <StatusBadge status={order.status} />
+                    <select
+                      value={order.status}
+                      disabled={updatingId === order.id}
+                      onChange={(e) => handleQuickStatusUpdate(order.id, e.target.value)}
+                      className="text-[10px] font-bold bg-background border border-border/60 rounded-lg px-2 py-1 text-foreground focus:outline-none focus:border-primary cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                    >
+                      {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                        <option key={key} value={key}>{cfg.label}</option>
+                      ))}
+                    </select>
+                    {updatingId === order.id && (
+                      <div className="size-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                    )}
+                  </div>
                 </div>
 
                 {/* Date */}

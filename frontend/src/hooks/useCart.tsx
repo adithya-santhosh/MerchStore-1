@@ -49,9 +49,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (typeof window !== "undefined") {
       const savedToken = localStorage.getItem("sessionToken");
       if (savedToken) {
-        setSessionToken(savedToken);
+        setTimeout(() => setSessionToken(savedToken), 0);
       }
-      setIsTokenLoaded(true);
+      setTimeout(() => setIsTokenLoaded(true), 0);
     }
   }, []);
 
@@ -69,7 +69,9 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Fetch settings on mount
   useEffect(() => {
-    fetchSettings();
+    setTimeout(() => {
+      fetchSettings();
+    }, 0);
   }, []);
 
   // Fetch cart once token state is loaded from localStorage

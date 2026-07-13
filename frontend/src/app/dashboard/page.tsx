@@ -30,7 +30,8 @@ import {
   Sparkles,
   Package,
   ArrowUpRight,
-  Heart
+  Heart,
+  Truck
 } from "lucide-react";
 
 // Color mappings for order statuses
@@ -885,6 +886,30 @@ function DashboardContent() {
                   </div>
                 )}
               </div>
+
+              {/* Shipment Tracking Info */}
+              {selectedOrder.shipment?.trackingNumber && (
+                <div className="bg-cyan-500/5 border border-cyan-500/20 rounded-xl p-4 space-y-2">
+                  <h3 className="text-[10px] font-bold text-cyan-600 uppercase tracking-wider flex items-center gap-1.5">
+                    <Truck className="size-3.5" /> Shipment Tracking
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Carrier</span>
+                      <span className="font-bold text-foreground">{selectedOrder.shipment.carrier || "—"}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider block">Tracking Number</span>
+                      <span className="font-bold text-foreground font-mono">{selectedOrder.shipment.trackingNumber}</span>
+                    </div>
+                  </div>
+                  {selectedOrder.shipment.shippedAt && (
+                    <p className="text-[10px] text-muted-foreground">
+                      Shipped on {new Date(selectedOrder.shipment.shippedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Items List */}
               <div className="space-y-3">
