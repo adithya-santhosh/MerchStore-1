@@ -26,12 +26,13 @@ export default async function ProductsPage({
   const hasFilter = !!(category || subCategory || vehicle || brand || search);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
+    <div className="flex flex-col min-h-screen bg-background text-foreground overflow-hidden">
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 relative">
-        {/* Subtle Decorative mesh glows */}
-        <div className="absolute top-10 left-1/3 -z-10 size-80 rounded-full bg-primary/3 opacity-20 blur-3xl" />
+        {/* Futuristic Background Gradients & Grids */}
+        <div className="absolute top-0 right-0 -z-10 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute inset-0 -z-20 opacity-[0.015]" style={{ backgroundImage: "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)", backgroundSize: "4rem 4rem" }} />
 
         {hasFilter ? (
           <div className="space-y-8">
@@ -110,11 +111,20 @@ export default async function ProductsPage({
           </div>
         ) : (
           <div className="space-y-16">
+            
             {/* Heading Section */}
-            <div className="text-center max-w-2xl mx-auto space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
-                <Sparkles className="size-3.5" />
-                Product Catalog
+            <ScrollReveal direction="up">
+              <div className="text-center max-w-2xl mx-auto space-y-4">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/10 text-xs font-bold tracking-widest text-primary uppercase shadow-[0_0_15px_rgba(220,50,47,0.15)]">
+                  <Sparkles className="size-3.5" />
+                  Product Catalog
+                </div>
+                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.1]">
+                  Our Divisions
+                </h1>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  Select a division below to configure your off-road rig or upgrade your lifestyle with our custom-engineered gear.
+                </p>
               </div>
               <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight">
                 Our Categories
@@ -126,18 +136,26 @@ export default async function ProductsPage({
             </div>
 
             {/* 2-Card Portal Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto perspective-container">
+              
               {/* Card 1: Car Accessories */}
-              <Link
-                href="/products/car-accessories"
-                className="group flex flex-col justify-between rounded-[2rem] border border-border bg-card/40 p-8 shadow-sm hover:shadow-lg hover:border-primary hover:shadow-primary/10 transition-all duration-300 min-h-[300px] cursor-pointer"
-              >
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-border/50">
-                    <h2 className="text-2xl font-bold uppercase tracking-wide">
-                      Car Accessories
-                    </h2>
-                    <Sparkles className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <ScrollReveal direction="left" delay={200} scale>
+                <Link
+                  href="/products/car-accessories"
+                  className="perspective-card group relative flex flex-col justify-between rounded-[2.5rem] border border-border/40 bg-card/40 backdrop-blur-md p-10 shadow-xl hover:border-primary/50 hover:shadow-[0_0_40px_rgba(220,50,47,0.15)] transition-all duration-500 min-h-[350px] cursor-pointer overflow-hidden block"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                  
+                  <div className="space-y-4 relative z-10">
+                    <div className="flex justify-between items-center pb-4 border-b border-border/50">
+                      <h2 className="text-3xl font-black uppercase tracking-wide text-foreground group-hover:text-primary transition-colors duration-300">
+                        Car Accessories
+                      </h2>
+                      <Sparkles className="size-6 text-muted-foreground group-hover:text-primary transition-colors animate-pulse" />
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed pt-2">
+                      Configure your rig with custom vehicle armor, recovery kits, electrical LED light modules, suspension lifts, and modular platform storage systems built for the elements.
+                    </p>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Configure your rig with custom vehicle armor, recovery kits,
@@ -146,25 +164,33 @@ export default async function ProductsPage({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground pt-6 border-t border-border/40 group-hover:text-primary transition-colors">
-                  <span>View Accessories</span>
-                  <div className="size-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 group-hover:translate-x-1">
-                    <ArrowRight className="size-4.5" />
+                  <div className="flex items-center justify-between text-sm font-bold text-muted-foreground pt-8 border-t border-border/40 group-hover:text-primary transition-colors relative z-10">
+                    <span className="uppercase tracking-widest">Enter Portal</span>
+                    <div className="size-10 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-500 group-hover:translate-x-2 shadow-lg shadow-primary/0 group-hover:shadow-primary/30">
+                      <ArrowRight className="size-5" />
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </ScrollReveal>
 
               {/* Card 2: Merchandise */}
-              <Link
-                href="/products/merchandise"
-                className="group flex flex-col justify-between rounded-[2rem] border border-border bg-card/40 p-8 shadow-sm hover:shadow-lg hover:border-primary hover:shadow-primary/10 transition-all duration-300 min-h-[300px] cursor-pointer"
-              >
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center pb-3 border-b border-border/50">
-                    <h2 className="text-2xl font-bold uppercase tracking-wide">
-                      Merchandise
-                    </h2>
-                    <Sparkles className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              <ScrollReveal direction="right" delay={300} scale>
+                <Link
+                  href="/products/merchandise"
+                  className="perspective-card group relative flex flex-col justify-between rounded-[2.5rem] border border-border/40 bg-card/40 backdrop-blur-md p-10 shadow-xl hover:border-primary/50 hover:shadow-[0_0_40px_rgba(220,50,47,0.15)] transition-all duration-500 min-h-[350px] cursor-pointer overflow-hidden block"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                  
+                  <div className="space-y-4 relative z-10">
+                    <div className="flex justify-between items-center pb-4 border-b border-border/50">
+                      <h2 className="text-3xl font-black uppercase tracking-wide text-foreground group-hover:text-primary transition-colors duration-300">
+                        Merchandise
+                      </h2>
+                      <Sparkles className="size-6 text-muted-foreground group-hover:text-primary transition-colors animate-pulse" />
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed pt-2">
+                      Explore our limited-run seasonal drops of custom streetwear, heavyweight hoodies, graphic tee apparel, caps, keychains, and street fashion gear designed for car culture enthusiasts.
+                    </p>
                   </div>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Explore our limited-run seasonal drops of custom streetwear,
@@ -173,13 +199,15 @@ export default async function ProductsPage({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground pt-6 border-t border-border/40 group-hover:text-primary transition-colors">
-                  <span>View Merchandise</span>
-                  <div className="size-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 group-hover:translate-x-1">
-                    <ArrowRight className="size-4.5" />
+                  <div className="flex items-center justify-between text-sm font-bold text-muted-foreground pt-8 border-t border-border/40 group-hover:text-primary transition-colors relative z-10">
+                    <span className="uppercase tracking-widest">Enter Portal</span>
+                    <div className="size-10 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-500 group-hover:translate-x-2 shadow-lg shadow-primary/0 group-hover:shadow-primary/30">
+                      <ArrowRight className="size-5" />
+                    </div>
                   </div>
-                </div>
-              </Link>
+                </Link>
+              </ScrollReveal>
+
             </div>
           </div>
         )}

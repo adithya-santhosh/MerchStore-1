@@ -69,21 +69,30 @@ const AUTO_PLAY_MS = 5000;
 export default function TestimonialsCarousel() {
   const [activeIndex, setActiveIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [direction, setDirection] = useState<"left" | "right">("right");
   const count = testimonials.length;
 
   const goTo = useCallback(
-    (index: number) => {
+    (index: number, dir?: "left" | "right") => {
+      setDirection(dir || (index > activeIndex ? "right" : "left"));
       setActiveIndex(((index % count) + count) % count);
     },
-    [count]
+    [count, activeIndex]
   );
 
-  const goNext = useCallback(() => goTo(activeIndex + 1), [activeIndex, goTo]);
-  const goPrev = useCallback(() => goTo(activeIndex - 1), [activeIndex, goTo]);
+  const goNext = useCallback(
+    () => goTo(activeIndex + 1, "right"),
+    [activeIndex, goTo]
+  );
+  const goPrev = useCallback(
+    () => goTo(activeIndex - 1, "left"),
+    [activeIndex, goTo]
+  );
 
   useEffect(() => {
     if (isPaused || count <= 1) return;
     const timer = setInterval(() => {
+      setDirection("right");
       setActiveIndex((prev) => (prev + 1) % count);
     }, AUTO_PLAY_MS);
     return () => clearInterval(timer);
@@ -95,7 +104,7 @@ export default function TestimonialsCarousel() {
       .map((w) => w[0])
       .join("");
 
-  // Show 3 cards on desktop, 1 on mobile
+  // Show 3 cards on desktop
   const getVisibleIndices = () => {
     const indices = [];
     for (let i = 0; i < Math.min(3, count); i++) {
@@ -108,24 +117,24 @@ export default function TestimonialsCarousel() {
 
   return (
     <section
-      className="w-full bg-gradient-to-b from-background to-card/20 py-16 sm:py-24 overflow-hidden"
+      className="w-full bg-gradient-to-b from-background to-card/20 py-20 sm:py-28 overflow-hidden"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <ScrollReveal direction="up">
-          <div className="text-center space-y-4 mb-12 sm:mb-16">
+          <div className="text-center space-y-4 mb-14 sm:mb-18">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase mx-auto">
               <Star className="size-3.5" />
               CUSTOMER REVIEWS
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-foreground">
               What Our Customers Say
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">
-              Real reviews from real enthusiasts who trust MerchStore for their
-              automotive lifestyle gear.
+              Real reviews from real enthusiasts who trust MerchStore for
+              their automotive lifestyle gear.
             </p>
           </div>
         </ScrollReveal>
@@ -139,28 +148,36 @@ export default function TestimonialsCarousel() {
                 const testimonial = testimonials[idx];
                 return (
                   <div
-                    key={`${idx}-${position}`}
+                    key={`${idx}-${activeIndex}`}
                     className={cn(
-                      "relative p-6 lg:p-8 rounded-2xl border bg-card/30 backdrop-blur-sm transition-all duration-500",
+                      "relative p-6 lg:p-8 rounded-2xl glass-card transition-all duration-500",
                       position === 0
                         ? "border-primary/30 shadow-lg shadow-primary/5"
-                        : "border-border/40 hover:border-primary/20"
+                        : "hover:border-primary/20"
                     )}
+                    style={{
+                      animation: `slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) ${
+                        position * 100
+                      }ms forwards`,
+                    }}
                   >
                     {/* Quote icon */}
-                    <Quote className="size-8 text-primary/15 absolute top-4 right-4" />
+                    <Quote className="size-8 text-primary/10 absolute top-4 right-4" />
 
-                    {/* Stars */}
+                    {/* Stars with shimmer effect */}
                     <div className="flex gap-0.5 mb-4">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
                           className={cn(
-                            "size-4",
+                            "size-4 transition-all duration-300",
                             i < testimonial.rating
                               ? "fill-amber-400 text-amber-400"
                               : "text-muted-foreground/30"
                           )}
+                          style={{
+                            animationDelay: `${i * 100}ms`,
+                          }}
                         />
                       ))}
                     </div>
@@ -175,10 +192,20 @@ export default function TestimonialsCarousel() {
                       Purchased: {testimonial.product}
                     </p>
 
-                    {/* Author */}
-                    <div className="flex items-center gap-3 pt-4 border-t border-border/40">
-                      <div className="size-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
-                        {getInitials(testimonial.name)}
+                    {/* Author with gradient avatar ring */}
+                    <div className="flex items-center gap-3 pt-4 border-t border-border/30">
+                      <div className="relative">
+                        {/* Animated gradient ring */}
+                        <div
+                          className="absolute -inset-[2px] rounded-full animate-counter-spin"
+                          style={{
+                            background:
+                              "conic-gradient(oklch(0.63 0.25 24), oklch(0.5 0.2 40), oklch(0.63 0.25 24), transparent)",
+                          }}
+                        />
+                        <div className="relative size-10 rounded-full bg-card flex items-center justify-center text-primary text-xs font-black">
+                          {getInitials(testimonial.name)}
+                        </div>
                       </div>
                       <div>
                         <p className="text-sm font-bold text-foreground">
@@ -199,8 +226,15 @@ export default function TestimonialsCarousel() {
               {(() => {
                 const testimonial = testimonials[activeIndex];
                 return (
-                  <div className="relative p-6 rounded-2xl border border-primary/30 bg-card/30 backdrop-blur-sm shadow-lg shadow-primary/5">
-                    <Quote className="size-8 text-primary/15 absolute top-4 right-4" />
+                  <div
+                    key={activeIndex}
+                    className="relative p-6 rounded-2xl glass-card border-primary/30 shadow-lg shadow-primary/5"
+                    style={{
+                      animation:
+                        "slide-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                    }}
+                  >
+                    <Quote className="size-8 text-primary/10 absolute top-4 right-4" />
                     <div className="flex gap-0.5 mb-4">
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
@@ -220,9 +254,18 @@ export default function TestimonialsCarousel() {
                     <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider mb-4">
                       Purchased: {testimonial.product}
                     </p>
-                    <div className="flex items-center gap-3 pt-4 border-t border-border/40">
-                      <div className="size-10 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
-                        {getInitials(testimonial.name)}
+                    <div className="flex items-center gap-3 pt-4 border-t border-border/30">
+                      <div className="relative">
+                        <div
+                          className="absolute -inset-[2px] rounded-full animate-counter-spin"
+                          style={{
+                            background:
+                              "conic-gradient(oklch(0.63 0.25 24), oklch(0.5 0.2 40), oklch(0.63 0.25 24), transparent)",
+                          }}
+                        />
+                        <div className="relative size-10 rounded-full bg-card flex items-center justify-center text-primary text-xs font-black">
+                          {getInitials(testimonial.name)}
+                        </div>
                       </div>
                       <div>
                         <p className="text-sm font-bold text-foreground">
@@ -238,11 +281,11 @@ export default function TestimonialsCarousel() {
               })()}
             </div>
 
-            {/* Navigation arrows */}
-            <div className="flex items-center justify-center gap-4 mt-8">
+            {/* Navigation */}
+            <div className="flex items-center justify-center gap-4 mt-10">
               <button
                 onClick={goPrev}
-                className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+                className="size-10 rounded-full border border-border bg-card/50 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all duration-300 cursor-pointer shadow-sm"
                 aria-label="Previous testimonial"
               >
                 <ChevronLeft className="size-5" />
@@ -255,10 +298,10 @@ export default function TestimonialsCarousel() {
                     key={index}
                     onClick={() => goTo(index)}
                     className={cn(
-                      "h-2 rounded-full transition-all duration-300 cursor-pointer",
+                      "h-2 rounded-full transition-all duration-500 cursor-pointer",
                       index === activeIndex
                         ? "w-8 bg-primary"
-                        : "w-2 bg-foreground/20 hover:bg-foreground/40"
+                        : "w-2 bg-foreground/15 hover:bg-foreground/30"
                     )}
                     aria-label={`Go to testimonial ${index + 1}`}
                   />
@@ -267,7 +310,7 @@ export default function TestimonialsCarousel() {
 
               <button
                 onClick={goNext}
-                className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+                className="size-10 rounded-full border border-border bg-card/50 backdrop-blur-sm flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-all duration-300 cursor-pointer shadow-sm"
                 aria-label="Next testimonial"
               >
                 <ChevronRight className="size-5" />

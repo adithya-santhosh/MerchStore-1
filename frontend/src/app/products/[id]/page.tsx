@@ -26,7 +26,6 @@ export default async function ProductPage({ params }: PageProps) {
   const product = await getProductById(id);
   const imageSrc = getProductImageSrc(product.ImageURL);
 
-  // Fallback category path
   const isCarAccessory = product.category.toLowerCase().includes("car") || 
                           product.category.toLowerCase().includes("accessory") ||
                           product.category.toLowerCase().includes("gear");
@@ -34,11 +33,16 @@ export default async function ProductPage({ params }: PageProps) {
   const categoryUrl = isCarAccessory ? "/products/car-accessories" : "/products";
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="flex flex-col min-h-screen bg-background text-foreground overflow-hidden">
       <Navbar />
 
-      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">
+      <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 relative">
         
+        {/* Futuristic Background Gradients & Grids */}
+        <div className="absolute top-0 right-0 -z-10 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 -z-10 w-[600px] h-[600px] bg-primary/3 rounded-full blur-[100px] pointer-events-none" />
+        <div className="absolute inset-0 -z-20 opacity-[0.015]" style={{ backgroundImage: "linear-gradient(var(--border) 1px, transparent 1px), linear-gradient(90deg, var(--border) 1px, transparent 1px)", backgroundSize: "4rem 4rem" }} />
+
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8 sm:mb-12">
           <Link href="/" className="hover:text-primary transition-colors cursor-pointer">
@@ -65,7 +69,7 @@ export default async function ProductPage({ params }: PageProps) {
         </nav>
 
         {/* 2-Column Split Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           
           {/* Left Column: Image Showcase */}
           <div className="lg:col-span-6">
@@ -78,7 +82,7 @@ export default async function ProductPage({ params }: PageProps) {
           </div>
 
           {/* Right Column: Content and Actions */}
-          <div className="lg:col-span-6 space-y-6 sm:space-y-8">
+          <div className="lg:col-span-6 space-y-8 lg:pt-8">
             
             {/* Category Tag & Meta */}
             <div className="space-y-3">
@@ -127,26 +131,72 @@ export default async function ProductPage({ params }: PageProps) {
                   <p className="text-[11px] text-muted-foreground mt-0.5">On orders above ₹499</p>
                 </div>
               </div>
+            </ScrollReveal>
 
-              <div className="flex items-start gap-3">
-                <RotateCcw className="size-5 text-primary shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-foreground">Easy Exchange</h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">7-day hassle-free window</p>
+            <ScrollReveal direction="up" delay={400}>
+              <div className="p-6 rounded-2xl border border-primary/10 bg-card/30 backdrop-blur-sm shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+                <div className="text-4xl sm:text-5xl font-black">
+                  <AnimatedPrice price={product.price} />
+                </div>
+                <p className="text-[11px] font-bold text-muted-foreground mt-2 uppercase tracking-widest">
+                  Inclusive of all taxes. Free shipping applied.
+                </p>
+                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                  <Activity className="size-20" />
                 </div>
               </div>
+            </ScrollReveal>
 
-              <div className="flex items-start gap-3">
-                <ShieldCheck className="size-5 text-emerald-500 shrink-0 mt-0.5" />
-                <div>
-                  <h4 className="text-xs font-bold text-foreground">Secure Payments</h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">Processed by Razorpay</p>
-                </div>
+            <ScrollReveal direction="up" delay={500}>
+              <div className="space-y-3">
+                <h3 className="text-sm font-black text-foreground uppercase tracking-widest flex items-center gap-2">
+                  <Sparkles className="size-4 text-primary" /> Specifications
+                </h3>
+                <p className="text-base text-muted-foreground leading-relaxed p-5 rounded-2xl bg-card/20 border border-border/40 backdrop-blur-sm">
+                  {product.description || "No description provided for this premium merch item. Engineered for performance."}
+                </p>
               </div>
-            </div>
+            </ScrollReveal>
+
+            <ScrollReveal direction="up" delay={600}>
+              <ProductActions productId={product.id} />
+            </ScrollReveal>
+
+            <ScrollReveal direction="up" delay={700}>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 border-t border-border/40">
+                
+                <div className="glass-card p-4 rounded-xl hover:border-primary/30 transition-colors group">
+                  <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3 relative">
+                    <div className="absolute inset-0 bg-primary/20 rounded-lg animate-pulse-ring" />
+                    <Truck className="size-5 relative z-10 transition-transform group-hover:-translate-y-1" />
+                  </div>
+                  <h4 className="text-xs font-black text-foreground uppercase tracking-wider">Free Delivery</h4>
+                  <p className="text-[10px] text-muted-foreground mt-1">Priority routing</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl hover:border-primary/30 transition-colors group">
+                  <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary mb-3 relative">
+                    <div className="absolute inset-0 bg-primary/20 rounded-lg animate-pulse-ring" />
+                    <RotateCcw className="size-5 relative z-10 transition-transform group-hover:-rotate-90" />
+                  </div>
+                  <h4 className="text-xs font-black text-foreground uppercase tracking-wider">Easy Exchange</h4>
+                  <p className="text-[10px] text-muted-foreground mt-1">7-day window</p>
+                </div>
+
+                <div className="glass-card p-4 rounded-xl hover:border-emerald-500/30 transition-colors group">
+                  <div className="size-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-3 relative">
+                    <div className="absolute inset-0 bg-emerald-500/20 rounded-lg animate-pulse-ring" />
+                    <ShieldCheck className="size-5 relative z-10 transition-transform group-hover:scale-110" />
+                  </div>
+                  <h4 className="text-xs font-black text-foreground uppercase tracking-wider">Secure Auth</h4>
+                  <p className="text-[10px] text-muted-foreground mt-1">Encrypted checkout</p>
+                </div>
+
+              </div>
+            </ScrollReveal>
 
           </div>
-
         </div>
 
         {/* Product Reviews Section */}
