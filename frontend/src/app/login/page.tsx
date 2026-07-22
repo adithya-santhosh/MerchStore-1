@@ -23,7 +23,7 @@ function LoginForm() {
     setSubmitting(true);
 
     try {
-      await login(email, password);
+      await login(email, password, callbackUrl);
     } catch (err: any) {
       setError(err.message || "Invalid email or password");
       setSubmitting(false);

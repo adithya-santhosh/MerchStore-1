@@ -32,7 +32,7 @@ interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, callbackUrl?: string) => Promise<void>;
   register: (firstName: string, lastName: string, email: string, password: string, isMember?: boolean) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -97,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, callbackUrl?: string) => {
     setLoading(true);
     try {
       const sessionToken = typeof window !== "undefined" ? localStorage.getItem("sessionToken") : null;
@@ -121,8 +121,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem("sessionToken");
       }
       
-      // Redirect based on role
-      if (data.user.role === "ADMIN") {
+      router.refresh();
+
+      // Redirect based on callbackUrl or role
+      if (callbackUrl && callbackUrl !== "/login") {
+        router.push(callbackUrl);
+      } else if (data.user.role === "ADMIN") {
         router.push("/admin/products");
       } else if (data.user.role === "VENDOR" || data.user.role === "vendor") {
         router.push("/vendor/dashboard");
@@ -130,8 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         router.push("/");
       }
     } catch (err) {
-      setLoading(false);
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
