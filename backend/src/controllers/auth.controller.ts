@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { registerUser, loginUser, getUserById, updateUserProfile, becomeMemberUser } from "../services/auth.service";
+import { registerUser, loginUser, getUserById, updateUserProfile, becomeMemberUser, requestPasswordReset, resetPassword } from "../services/auth.service";
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -76,4 +76,33 @@ export const becomeMember = async (req: Request, res: Response) => {
     res.status(500).json({ message: error.message || "Failed to activate membership" });
   }
 };
+
+export const forgotPassword = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    const result = await requestPasswordReset(email);
+    res.json(result);
+  } catch (error: any) {
+    console.error("Error in forgotPassword controller:", error);
+    res.status(400).json({ message: error.message || "Failed to process password reset request" });
+  }
+};
+
+export const resetPasswordHandler = async (req: Request, res: Response) => {
+  try {
+    const { token, newPassword } = req.body;
+    if (!token || !newPassword) {
+      return res.status(400).json({ message: "Reset token and new password are required" });
+    }
+    const result = await resetPassword(token, newPassword);
+    res.json(result);
+  } catch (error: any) {
+    console.error("Error in resetPasswordHandler controller:", error);
+    res.status(400).json({ message: error.message || "Failed to reset password" });
+  }
+};
+
 

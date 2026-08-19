@@ -1,5 +1,5 @@
 import { razorpay } from "../lib/razorpay";
-import { CreateOrderInput, prepareCheckout, finalizeOrder } from "./order.service";
+import { CreateOrderInput, prepareCheckout, finalizeOrder, triggerOrderConfirmationEmail } from "./order.service";
 import { PaymentStatus } from "@prisma/client";
 import crypto from "crypto";
 
@@ -43,8 +43,12 @@ export const verifyRazorpayPayment = async (input: VerifyRazorpayPaymentInput) =
     ...createOrderInput
   } = input;
 
-  // Verify the signature
-  const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_SECRET!);
+  // Verify the signature — guard explicitly so we never sign with "undefined"
+  const razorpaySecret = process.env.RAZORPAY_SECRET;
+  if (!razorpaySecret) {
+    throw new Error("Server configuration error: Razorpay secret is not set. Cannot verify payment.");
+  }
+  const hmac = crypto.createHmac("sha256", razorpaySecret);
   hmac.update(razorpayOrderId + "|" + razorpayPaymentId);
   const generatedSignature = hmac.digest("hex");
 
@@ -62,6 +66,12 @@ export const verifyRazorpayPayment = async (input: VerifyRazorpayPaymentInput) =
     gatewaySignature: razorpaySignature
   });
 
+  // Idempotently trigger order confirmation email asynchronously
+  triggerOrderConfirmationEmail(order.id).catch((err) =>
+    console.error("[PaymentService] Razorpay confirmation email trigger error:", err)
+  );
+
   return order;
 };
+
 

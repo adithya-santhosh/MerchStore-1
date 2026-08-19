@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma";
 import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
+import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "./email.service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -246,13 +247,53 @@ export const finalizeOrder = async (
   return mapOrder(order);
 }
 
+export const triggerOrderConfirmationEmail = async (orderId: number): Promise<void> => {
+  try {
+    const result = await prisma.order.updateMany({
+      where: {
+        id: orderId,
+        confirmationEmailSentAt: null,
+      },
+      data: {
+        confirmationEmailSentAt: new Date(),
+      },
+    });
+
+    if (result.count === 1) {
+      const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: true,
+          user: true,
+          shippingAddress: true,
+        },
+      });
+
+      if (order && order.user?.email) {
+        sendOrderConfirmationEmail({
+          to: order.user.email,
+          order,
+        }).catch((err) => console.error("[OrderService] sendOrderConfirmationEmail background error:", err));
+      }
+    }
+  } catch (error) {
+    console.error("[OrderService] Error triggering order confirmation email:", error);
+  }
+};
+
 export const createOrder = async (input: CreateOrderInput) => {
-  const { userId, address, paymentMethod } = input;
+  const { paymentMethod } = input;
   
   const checkout  = await prepareCheckout(input);
+  const order = await finalizeOrder(checkout, input);
 
-  return await finalizeOrder(checkout, input);
+  if (paymentMethod === "cod") {
+    triggerOrderConfirmationEmail(order.id).catch((err) =>
+      console.error("[OrderService] COD confirmation email trigger error:", err)
+    );
+  }
 
+  return order;
 };
 
 
@@ -388,6 +429,15 @@ export const updateOrderStatus = async (orderId: number, status: string) => {
       shippingAddress: true,
     },
   });
+
+  if (order.user?.email) {
+    sendOrderStatusEmail({
+      to: order.user.email,
+      order,
+      newStatus: status
+    }).catch((err) => console.error("[OrderService] Status email background error:", err));
+  }
+
   return order;
 };
 

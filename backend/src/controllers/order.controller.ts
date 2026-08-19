@@ -14,7 +14,7 @@ import {
 export const placeOrder = async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { address, couponCode, paymentMethod, sessionToken, taxRate, shippingCost } = req.body;
+    const { address, couponCode, paymentMethod, sessionToken } = req.body;
 
     if (!address || !address.addressLine1 || !address.city || !address.state || !address.postalCode) {
       return res.status(400).json({ message: "Shipping address is incomplete." });
@@ -30,8 +30,9 @@ export const placeOrder = async (req: Request, res: Response) => {
       couponCode,
       paymentMethod,
       sessionToken,
-      taxRate:      typeof taxRate === "number" ? taxRate : 0.18,
-      shippingCost: typeof shippingCost === "number" ? shippingCost : 0,
+      // Tax rate and shipping cost are always computed server-side
+      taxRate: 0.18,
+      shippingCost: 0,
     });
 
     res.status(201).json(order);

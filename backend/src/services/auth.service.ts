@@ -1,7 +1,9 @@
 import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import { UserRole } from "@prisma/client";
+import { sendWelcomeEmail, sendPasswordResetEmail } from "./email.service";
 
 // JWT_SECRET is guaranteed to be set — server.ts exits at startup if it isn't
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -50,6 +52,12 @@ export const registerUser = async (data: RegisterInput) => {
       isMember: !!data.isMember
     }
   });
+
+  // Asynchronously send welcome email without blocking user registration
+  sendWelcomeEmail({
+    to: user.email,
+    name: `${user.firstName} ${user.lastName}`
+  }).catch((err) => console.error("[AuthService] Welcome email background error:", err));
 
   const token = jwt.sign(
     {
@@ -241,4 +249,89 @@ export const becomeMemberUser = async (id: number) => {
     isMember: user.isMember
   };
 };
+
+export const requestPasswordReset = async (email: string) => {
+  const normalizedEmail = email.toLowerCase().trim();
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail }
+  });
+
+  // Always return success message to prevent email enumeration
+  if (!user) {
+    return { message: "If an account with that email exists, a password reset link has been sent." };
+  }
+
+  // Generate 32-byte secure random hex token
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 60 minutes expiry
+
+  // Invalidate any existing unused reset tokens for this user
+  await prisma.passwordResetToken.updateMany({
+    where: { userId: user.id, usedAt: null },
+    data: { usedAt: new Date() }
+  });
+
+  // Save new token hash
+  await prisma.passwordResetToken.create({
+    data: {
+      userId: user.id,
+      tokenHash,
+      expiresAt
+    }
+  });
+
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
+
+  // Send password reset email asynchronously
+  sendPasswordResetEmail({
+    to: user.email,
+    name: `${user.firstName} ${user.lastName}`,
+    resetUrl
+  }).catch((err) => console.error("[AuthService] Reset password email background error:", err));
+
+  return { message: "If an account with that email exists, a password reset link has been sent." };
+};
+
+export const resetPassword = async (rawToken: string, newPassword: string) => {
+  if (!rawToken || !newPassword || newPassword.length < 6) {
+    throw new Error("Invalid request. Password must be at least 6 characters.");
+  }
+
+  const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
+  const resetToken = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { user: true }
+  });
+
+  if (!resetToken) {
+    throw new Error("Invalid or expired password reset token.");
+  }
+
+  if (resetToken.usedAt !== null) {
+    throw new Error("This password reset link has already been used.");
+  }
+
+  if (resetToken.expiresAt < new Date()) {
+    throw new Error("This password reset link has expired. Please request a new one.");
+  }
+
+  // Hash new password
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+  // Update user password and mark token as used
+  await prisma.user.update({
+    where: { id: resetToken.userId },
+    data: { passwordHash: newPasswordHash }
+  });
+
+  await prisma.passwordResetToken.update({
+    where: { id: resetToken.id },
+    data: { usedAt: new Date() }
+  });
+
+  return { message: "Password updated successfully. You can now log in with your new password." };
+};
+
 

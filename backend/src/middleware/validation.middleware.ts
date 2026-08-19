@@ -87,3 +87,29 @@ export const couponValidateSchema = z.object({
   code: z.string().min(1, "Coupon code is required").max(50).toUpperCase(),
   orderAmount: z.number().positive("Order amount must be positive"),
 });
+
+// ─── Coupon CRUD Schemas ──────────────────────────────────────────────────────
+
+export const createCouponSchema = z.object({
+  code: z.string().min(1, "Code is required").max(50).toUpperCase().trim(),
+  type: z.enum(["percent", "fixed"]),
+  value: z.number().positive("Discount value must be positive"),
+  minOrderAmount: z.number().nonnegative().optional(),
+  maxUses: z.number().int().positive().optional(),
+  expiresAt: z.string().datetime().optional().nullable(),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const updateCouponSchema = createCouponSchema.partial();
+
+// ─── Profile Update Schema ────────────────────────────────────────────────────
+
+export const updateProfileSchema = z.object({
+  firstName: z.string().min(1, "First name is required").max(50).trim(),
+  lastName: z.string().min(1, "Last name is required").max(50).trim(),
+  phone: z
+    .string()
+    .regex(/^[+]?[\d\s\-().]{7,15}$/, "Invalid phone number format")
+    .optional()
+    .nullable(),
+});

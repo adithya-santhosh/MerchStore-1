@@ -12,8 +12,6 @@ export const createPaymentOrder = async (
             address,
             couponCode,
             sessionToken,
-            taxRate,
-            shippingCost,
         } = req.body;
 
         const payment = await createRazorpayOrder({
@@ -22,14 +20,9 @@ export const createPaymentOrder = async (
             couponCode,
             paymentMethod: "razorpay",
             sessionToken,
-            taxRate:
-                typeof taxRate === "number"
-                    ? taxRate
-                    : 0.18,
-            shippingCost:
-                typeof shippingCost === "number"
-                    ? shippingCost
-                    : 0,
+            // Tax rate and shipping cost are always computed server-side
+            taxRate: 0.18,
+            shippingCost: 0,
         });
 
         res.status(200).json(payment);
@@ -39,6 +32,7 @@ export const createPaymentOrder = async (
 
     res.status(400).json({
         message: error.message,
+        // Only expose stack trace when explicitly running in development mode
         stack: process.env.NODE_ENV === "development"
             ? error.stack
             : undefined,
@@ -59,8 +53,6 @@ export const verifyPayment = async (
             address,
             couponCode,
             sessionToken,
-            taxRate,
-            shippingCost,
         } = req.body;
 
         if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
@@ -73,14 +65,9 @@ export const verifyPayment = async (
             couponCode,
             paymentMethod: "razorpay",
             sessionToken,
-            taxRate:
-                typeof taxRate === "number"
-                    ? taxRate
-                    : 0.18,
-            shippingCost:
-                typeof shippingCost === "number"
-                    ? shippingCost
-                    : 0,
+            // Tax rate and shipping cost are always computed server-side
+            taxRate: 0.18,
+            shippingCost: 0,
             razorpayOrderId,
             razorpayPaymentId,
             razorpaySignature,
@@ -92,6 +79,7 @@ export const verifyPayment = async (
         console.error("Payment Verification Error:", error);
         res.status(400).json({
             message: error.message,
+            // Only expose stack trace when explicitly running in development mode
             stack: process.env.NODE_ENV === "development"
                 ? error.stack
                 : undefined,
