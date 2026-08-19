@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import { Response, Request } from "express";
 import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata, getProductsAdmin, getProductStats, bulkUpdateProducts, searchProducts } from "../services/product.service";
 
@@ -10,7 +11,7 @@ export const getProducts = async (req: Request, res: Response) => {
     const products = await getAllProducts(category, subCategory, vehicle, brand);
     res.json(products);
   } catch (error: any) {
-    console.error("Error in getProducts controller:", error);
+    logger.error({ err: error }, "Error in getProducts controller");
     res.status(500).json({ message: error.message || "Failed to fetch products" });
   }
 };
@@ -90,7 +91,7 @@ export const getNavMetadata = async (req: Request, res: Response) => {
         const metadata = await getNavigationMetadata();
         res.json(metadata);
     } catch (error) {
-        console.error("Failed to fetch navigation metadata:", error);
+        logger.error({ err: error }, "Failed to fetch navigation metadata");
         res.status(500).json({ message: "Failed to fetch navigation metadata" });
     }
 }
@@ -115,7 +116,7 @@ export const searchProductsCtrl = async (req: Request, res: Response) => {
         const result = await searchProducts(params);
         res.json(result);
     } catch (error: any) {
-        console.error("Error in searchProducts controller:", error);
+        logger.error({ err: error }, "Error in searchProducts controller");
         res.status(500).json({ message: error.message || "Failed to search products" });
     }
 };
@@ -136,7 +137,7 @@ export const getProductsAdminCtrl = async (req: Request, res: Response) => {
         });
         res.json(result);
     } catch (error) {
-        console.error("Failed to fetch admin products:", error);
+        logger.error({ err: error }, "Failed to fetch admin products");
         res.status(500).json({ message: "Failed to fetch products" });
     }
 };
@@ -148,7 +149,7 @@ export const getProductStatsCtrl = async (req: Request, res: Response) => {
         const stats = await getProductStats();
         res.json(stats);
     } catch (error) {
-        console.error("Failed to fetch product stats:", error);
+        logger.error({ err: error }, "Failed to fetch product stats");
         res.status(500).json({ message: "Failed to fetch product stats" });
     }
 };
@@ -167,7 +168,7 @@ export const bulkUpdateProductsCtrl = async (req: Request, res: Response) => {
         const result = await bulkUpdateProducts(ids.map(Number), action);
         res.json(result);
     } catch (error: any) {
-        console.error("Failed to bulk update products:", error);
+        logger.error({ err: error }, "Failed to bulk update products");
         res.status(500).json({ message: error.message || "Failed to bulk update products" });
     }
 };

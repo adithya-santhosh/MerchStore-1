@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import { Request, Response } from "express";
 import {
   getVendorByUserId,
@@ -17,7 +18,7 @@ export const getMyOrders = async (req: Request, res: Response) => {
     const orders = await getVendorOrders(vendor.id);
     res.json(orders);
   } catch (error: any) {
-    console.error("getMyOrders error:", error);
+    logger.error({ err: error }, "getMyOrders error");
     res.status(500).json({ message: error.message || "Failed to fetch vendor orders." });
   }
 };
@@ -41,7 +42,7 @@ export const shipOrder = async (req: Request, res: Response) => {
     const shipment = await submitVendorShipment(vendor.id, orderId, { carrier, trackingNumber });
     res.json({ message: "Shipment details saved successfully.", shipment });
   } catch (error: any) {
-    console.error("shipOrder error:", error);
+    logger.error({ err: error }, "shipOrder error");
     res.status(error.message.includes("belong") ? 403 : 500).json({ message: error.message });
   }
 };
@@ -56,7 +57,7 @@ export const createVendorAccount = async (req: Request, res: Response) => {
     const vendor = await createVendor({ email, password, firstName, lastName, companyName });
     res.status(201).json(vendor);
   } catch (error: any) {
-    console.error("createVendorAccount error:", error);
+    logger.error({ err: error }, "createVendorAccount error");
     const status = error.message?.includes("Unique") ? 409 : 500;
     res.status(status).json({ message: error.message || "Failed to create vendor." });
   }

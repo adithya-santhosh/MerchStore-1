@@ -5,7 +5,7 @@ import { Cart, CartItem } from "@/types/cart";
 import { useAuth } from "./useAuth";
 import { getCookie } from "@/utils/cookie";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface SystemSettings {
   tax_rate: number;
@@ -96,6 +96,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const response = await fetch(url, {
           cache: "no-store",
+          credentials: "include",
           headers
         });
 
@@ -143,6 +144,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const response = await fetch(`${API_URL}/api/cart/items`, {
         method: "POST",
+        credentials: "include",
         headers,
         body: JSON.stringify({ productId, quantity }),
       });
@@ -177,6 +179,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const response = await fetch(`${API_URL}/api/cart/items`, {
         method: "PUT",
+        credentials: "include",
         headers,
         body: JSON.stringify({ productId, quantity }),
       });
@@ -207,6 +210,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const response = await fetch(`${API_URL}/api/cart/items/${productId}`, {
         method: "DELETE",
+        credentials: "include",
         headers,
       });
 

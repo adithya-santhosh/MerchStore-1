@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import { Request, Response } from "express";
 import { getAllCustomers, getCustomerById, getCustomerStats } from "../services/customer.service";
 
@@ -14,7 +15,7 @@ export const listCustomers = async (req: Request, res: Response) => {
     });
     res.json(result);
   } catch (error) {
-    console.error("Failed to fetch customers:", error);
+    logger.error({ err: error }, "Failed to fetch customers");
     res.status(500).json({ message: "Failed to fetch customers" });
   }
 };
@@ -33,7 +34,7 @@ export const getCustomer = async (req: Request, res: Response) => {
     }
     res.json(customer);
   } catch (error) {
-    console.error("Failed to fetch customer:", error);
+    logger.error({ err: error }, "Failed to fetch customer");
     res.status(500).json({ message: "Failed to fetch customer" });
   }
 };
@@ -45,7 +46,7 @@ export const getCustomerStatsCtrl = async (req: Request, res: Response) => {
     const stats = await getCustomerStats();
     res.json(stats);
   } catch (error) {
-    console.error("Failed to fetch customer stats:", error);
+    logger.error({ err: error }, "Failed to fetch customer stats");
     res.status(500).json({ message: "Failed to fetch customer stats" });
   }
 };

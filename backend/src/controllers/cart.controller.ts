@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import { Request, Response } from "express";
 import { getOrCreateCart, addItemToCart, removeItemFromCart } from "../services/cart.service";
 
@@ -13,7 +14,7 @@ export const getCart = async (req: Request, res: Response) => {
     const cart = await getOrCreateCart(sessionToken, req.user?.id);
     res.json(cart);
   } catch (error: any) {
-    console.error("Error in getCart controller:", error);
+    logger.error({ err: error }, "Error in getCart controller");
     res.status(500).json({ message: error.message || "Failed to retrieve cart" });
   }
 };
@@ -40,7 +41,7 @@ export const addToCart = async (req: Request, res: Response) => {
     const cart = await addItemToCart(sessionToken, userId, prodId, qty, true);
     res.json(cart);
   } catch (error: any) {
-    console.error("Error in addToCart controller:", error);
+    logger.error({ err: error }, "Error in addToCart controller");
     res.status(500).json({ message: error.message || "Failed to add item to cart" });
   }
 };
@@ -67,7 +68,7 @@ export const updateQuantity = async (req: Request, res: Response) => {
     const cart = await addItemToCart(sessionToken, userId, prodId, qty, false);
     res.json(cart);
   } catch (error: any) {
-    console.error("Error in updateQuantity controller:", error);
+    logger.error({ err: error }, "Error in updateQuantity controller");
     res.status(500).json({ message: error.message || "Failed to update item quantity" });
   }
 };
@@ -88,7 +89,7 @@ export const removeFromCart = async (req: Request, res: Response) => {
     const cart = await removeItemFromCart(sessionToken, userId, productId);
     res.json(cart);
   } catch (error: any) {
-    console.error("Error in removeFromCart controller:", error);
+    logger.error({ err: error }, "Error in removeFromCart controller");
     res.status(500).json({ message: error.message || "Failed to remove item from cart" });
   }
 };

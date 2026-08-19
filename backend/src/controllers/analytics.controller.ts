@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import { Request, Response } from "express";
 import {
   getDashboardStats,
@@ -30,7 +31,7 @@ export const getDashboard = async (req: Request, res: Response) => {
       statusBreakdown,
     });
   } catch (error) {
-    console.error("Failed to fetch dashboard data:", error);
+    logger.error({ err: error }, "Failed to fetch dashboard data");
     res.status(500).json({ message: "Failed to fetch dashboard data" });
   }
 };

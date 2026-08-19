@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import { Request, Response } from "express";
 import {
   createOrder,
@@ -37,7 +38,7 @@ export const placeOrder = async (req: Request, res: Response) => {
 
     res.status(201).json(order);
   } catch (error: any) {
-    console.error("Error in placeOrder controller:", error);
+    logger.error({ err: error }, "Error in placeOrder controller");
     res.status(400).json({ message: error.message || "Failed to place order." });
   }
 };
@@ -48,7 +49,7 @@ export const listOrders = async (req: Request, res: Response) => {
     const orders = await getOrdersByUser(req.user!.id);
     res.json(orders);
   } catch (error: any) {
-    console.error("Error in listOrders controller:", error);
+    logger.error({ err: error }, "Error in listOrders controller");
     res.status(500).json({ message: error.message || "Failed to fetch orders." });
   }
 };
@@ -66,7 +67,7 @@ export const getOrder = async (req: Request, res: Response) => {
     const order = await getOrderById(orderId, userId);
     res.json(order);
   } catch (error: any) {
-    console.error("Error in getOrder controller:", error);
+    logger.error({ err: error }, "Error in getOrder controller");
     const status = error.message === "Order not found" ? 404 : 500;
     res.status(status).json({ message: error.message || "Failed to fetch order." });
   }
@@ -80,7 +81,7 @@ export const adminListOrders = async (req: Request, res: Response) => {
     const orders = await getAllOrdersAdmin();
     res.json(orders);
   } catch (error: any) {
-    console.error("Error in adminListOrders controller:", error);
+    logger.error({ err: error }, "Error in adminListOrders controller");
     res.status(500).json({ message: error.message || "Failed to fetch orders." });
   }
 };
@@ -95,7 +96,7 @@ export const adminGetOrder = async (req: Request, res: Response) => {
     const order = await getOrderByIdAdmin(orderId);
     res.json(order);
   } catch (error: any) {
-    console.error("Error in adminGetOrder controller:", error);
+    logger.error({ err: error }, "Error in adminGetOrder controller");
     const status = error.message === "Order not found" ? 404 : 500;
     res.status(status).json({ message: error.message || "Failed to fetch order." });
   }
@@ -117,7 +118,7 @@ export const adminUpdateStatus = async (req: Request, res: Response) => {
     const updated = await updateOrderStatus(orderId, status);
     res.json(updated);
   } catch (error: any) {
-    console.error("Error in adminUpdateStatus controller:", error);
+    logger.error({ err: error }, "Error in adminUpdateStatus controller");
     res.status(400).json({ message: error.message || "Failed to update status." });
   }
 };

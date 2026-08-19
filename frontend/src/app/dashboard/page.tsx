@@ -3,14 +3,13 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useAuth } from "@/hooks/useAuth";
-import { getMyOrders, updateProfile, Order, OrderItem } from "@/lib/api";
-import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/ProductCard";
+import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
-import { getWishlist, WishlistItem } from "@/lib/api";
+import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI } from "@/lib/api";
 import { 
   User, 
   ShoppingBag, 
@@ -31,7 +30,8 @@ import {
   Package,
   ArrowUpRight,
   Heart,
-  Truck
+  Truck,
+  Lock
 } from "lucide-react";
 
 // Color mappings for order statuses
@@ -75,6 +75,14 @@ function DashboardContent() {
   const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
   const [wishlistLoading, setWishlistLoading] = useState(true);
 
+  // Change Password state
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordSubmitting, setPasswordSubmitting] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+
   useEffect(() => {
     if (user) {
       setFirstName(user.firstName || "");
@@ -105,6 +113,16 @@ function DashboardContent() {
       .catch(err => console.error("Failed to load settings:", err));
   }, []);
 
+  useEffect(() => {
+    if (activeTab === "wishlist") {
+      setWishlistLoading(true);
+      getWishlist()
+        .then(setWishlistItems)
+        .catch(err => console.error("Error loading wishlist:", err))
+        .finally(() => setWishlistLoading(false));
+    }
+  }, [activeTab]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex flex-col justify-between">
@@ -131,16 +149,6 @@ function DashboardContent() {
     ["pending", "confirmed", "processing", "shipped"].includes(o.status.toLowerCase())
   ).length;
 
-  useEffect(() => {
-    if (activeTab === "wishlist") {
-      setWishlistLoading(true);
-      getWishlist()
-        .then(setWishlistItems)
-        .catch(err => console.error("Error loading wishlist:", err))
-        .finally(() => setWishlistLoading(false));
-    }
-  }, [activeTab]);
-
 
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
@@ -160,6 +168,36 @@ function DashboardContent() {
       setFormError(err.message || "Failed to update profile details. Please try again.");
     } finally {
       setFormSubmitting(false);
+    }
+  };
+
+  const handleChangePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New password and confirm password do not match.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters long.");
+      return;
+    }
+
+    setPasswordSubmitting(true);
+    try {
+      await changePasswordAPI(currentPassword, newPassword);
+      setPasswordSuccess("Password updated successfully!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setPasswordSuccess(""), 4000);
+    } catch (err: any) {
+      setPasswordError(err.message || "Failed to update password. Please try again.");
+    } finally {
+      setPasswordSubmitting(false);
     }
   };
 
@@ -712,6 +750,87 @@ function DashboardContent() {
                       </Button>
                     </div>
                   </form>
+
+                  {/* Change Password Card */}
+                  <div className="border-t border-border/40 pt-8 mt-8">
+                    <h2 className="text-lg font-bold flex items-center gap-2">
+                      <Lock className="size-5 text-primary" /> Security & Change Password
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-1">Update your account password safely.</p>
+
+                    {passwordError && (
+                      <div className="mt-4 p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl flex items-start gap-2.5 animate-in fade-in">
+                        <AlertCircle className="size-5 shrink-0 mt-0.5" />
+                        <span className="text-xs font-semibold">{passwordError}</span>
+                      </div>
+                    )}
+
+                    {passwordSuccess && (
+                      <div className="mt-4 p-4 bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 rounded-xl flex items-start gap-2.5 animate-in fade-in">
+                        <CheckCircle2 className="size-5 shrink-0 mt-0.5" />
+                        <span className="text-xs font-semibold">{passwordSuccess}</span>
+                      </div>
+                    )}
+
+                    <form onSubmit={handleChangePasswordSubmit} className="space-y-4 mt-6">
+                      <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Current Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                          <input
+                            type="password"
+                            required
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3 text-sm font-semibold bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                            placeholder="Enter current password"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">New Password</label>
+                          <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <input
+                              type="password"
+                              required
+                              value={newPassword}
+                              onChange={(e) => setNewPassword(e.target.value)}
+                              className="w-full pl-11 pr-4 py-3 text-sm font-semibold bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                              placeholder="At least 6 characters"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Confirm New Password</label>
+                          <div className="relative">
+                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                            <input
+                              type="password"
+                              required
+                              value={confirmPassword}
+                              onChange={(e) => setConfirmPassword(e.target.value)}
+                              className="w-full pl-11 pr-4 py-3 text-sm font-semibold bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                              placeholder="Confirm new password"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3">
+                        <Button
+                          type="submit"
+                          disabled={passwordSubmitting}
+                          className="px-6 py-5 text-xs font-bold shadow-lg shadow-primary/10 rounded-xl uppercase tracking-wider cursor-pointer"
+                        >
+                          {passwordSubmitting ? "Updating Password..." : "Update Password"}
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               )}
 

@@ -2,8 +2,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { purchaseMembershipRazorpay } from "@/lib/api";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Address {
   id: number;
@@ -33,7 +34,7 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   login: (email: string, password: string, callbackUrl?: string) => Promise<void>;
-  register: (firstName: string, lastName: string, email: string, password: string, isMember?: boolean) => Promise<void>;
+  register: (firstName: string, lastName: string, email: string, password: string, isMember?: boolean, phone?: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
   isAdmin: boolean;
@@ -67,19 +68,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  const fetchProfile = async (token: string) => {
+  // The JWT lives in an HttpOnly cookie now, so client JS can't read it to
+  // decide login state up front — we always ask the backend, which reads the
+  // cookie itself and sends it automatically via `credentials: "include"`.
+  const fetchProfile = async () => {
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        credentials: "include",
       });
       if (response.ok) {
         const data = await response.json();
         setUser(data);
       } else {
-        // Clear corrupt or expired token
-        logout();
+        setUser(null);
+        deleteCookie("role");
       }
     } catch (err) {
       console.error("Failed to load user profile:", err);
@@ -89,12 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const token = getCookie("token");
-    if (token) {
-      fetchProfile(token);
-    } else {
-      setTimeout(() => setLoading(false), 0);
-    }
+    fetchProfile();
   }, []);
 
   const login = async (email: string, password: string, callbackUrl?: string) => {
@@ -103,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const sessionToken = typeof window !== "undefined" ? localStorage.getItem("sessionToken") : null;
       const response = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, sessionToken })
       });
@@ -113,7 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const data = await response.json();
-      setCookie("token", data.token);
+      // The backend sets the auth token as an HttpOnly cookie itself — only
+      // the (non-sensitive) role is kept in a JS-readable cookie for UI hints.
       setCookie("role", data.user.role);
       setUser(data.user);
 
@@ -140,13 +139,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (firstName: string, lastName: string, email: string, password: string, isMember: boolean = false) => {
+  const register = async (firstName: string, lastName: string, email: string, password: string, isMember: boolean = false, phone?: string) => {
     setLoading(true);
     try {
       const response = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firstName, lastName, email, password, isMember })
+        body: JSON.stringify({ firstName, lastName, email, password, isMember, phone: phone || undefined })
       });
 
       if (!response.ok) {
@@ -155,7 +155,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const data = await response.json();
-      setCookie("token", data.token);
       setCookie("role", data.user.role);
       setUser(data.user);
       router.push("/");
@@ -166,7 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    deleteCookie("token");
+    // Fire-and-forget: the cookie is HttpOnly, so only the backend can clear it.
+    fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
     deleteCookie("role");
     setUser(null);
     router.push("/login");
@@ -175,13 +175,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (firstName: string, lastName: string, phone?: string | null) => {
     setLoading(true);
     try {
-      const token = getCookie("token");
-      if (!token) throw new Error("Not authenticated");
       const response = await fetch(`${API_URL}/api/auth/profile`, {
         method: "PUT",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({ firstName, lastName, phone })
       });
@@ -202,20 +200,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const becomeMember = async () => {
     setLoading(true);
     try {
-      const token = getCookie("token");
-      if (!token) throw new Error("Not authenticated");
-      const response = await fetch(`${API_URL}/api/auth/become-member`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.message || "Failed to join membership");
-      }
-      const data = await response.json();
-      setUser(data);
+      const updatedUser = await purchaseMembershipRazorpay();
+      setUser(updatedUser);
     } catch (err) {
       setLoading(false);
       throw err;

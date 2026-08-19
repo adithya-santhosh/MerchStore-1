@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend (typecheck, test, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      JWT_SECRET: ci-test-jwt-secret-do-not-use-in-production
+      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      NODE_ENV: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+  frontend:
+    name: Frontend (lint, typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      # `npm run lint` isn't wired in yet — the repo currently has ~80 pre-existing
+      # lint errors unrelated to CI setup (no-explicit-any, a couple of
+      # react-hooks rules). Enable this once that backlog is cleared, otherwise
+      # CI is red from the first run for reasons unrelated to a given PR.
+      # - name: Lint
+      #   run: npm run lint

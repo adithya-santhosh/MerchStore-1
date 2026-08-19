@@ -1,8 +1,7 @@
 import { Product } from "@/types/products";
 import { getCookie } from "@/utils/cookie";
 
-//const API_URL = import.meta.env.VITE_API_URL;
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 /// This function will go to backend and fetch all the product info
 export async function getProducts(params?: { category?: string; subCategory?: string; vehicle?: string; brand?: string }) :Promise<Product []>{
@@ -68,6 +67,7 @@ export async function deleteProduct(id: number) {
     `${API_URL}/api/products/${id}`,
     {
       method: "DELETE",
+      credentials: "include",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
@@ -85,6 +85,7 @@ export async function createProduct(product: Omit<Product,"id" | "createdAt" |"u
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products`,{
     method :"POST",
+    credentials: "include",
     headers : {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -101,6 +102,7 @@ export async function updateProduct(id: string | number, product: Omit<Product, 
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -240,15 +242,21 @@ export interface NavMetadata {
 }
 
 export async function getNavigationMetadata(): Promise<NavMetadata> {
-  const response = await fetch(`${API_URL}/api/products/navigation/metadata`, {
-    cache: "no-store",
-  });
+  try {
+    const response = await fetch(`${API_URL}/api/products/navigation/metadata`, {
+      cache: "no-store",
+    });
 
-  if (!response.ok) {
-    throw new Error("Failed to fetch navigation metadata");
+    if (!response.ok) {
+      console.warn("Failed to fetch navigation metadata, returning fallback empty metadata.");
+      return { categories: [], brands: [], vehicles: [] };
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Network error fetching navigation metadata:", error);
+    return { categories: [], brands: [], vehicles: [] };
   }
-
-  return response.json();
 }
 
 // ─── Order API Helpers ────────────────────────────────────────────────────────
@@ -314,6 +322,7 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/orders`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -349,6 +358,7 @@ export async function createPaymentOrder(payload: CreatePaymentOrderPayload): Pr
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/payment/create-order`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -379,6 +389,7 @@ export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Orde
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/payment/verify`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -466,6 +477,7 @@ export interface AdminOrderDetail {
 export async function getAllOrders(): Promise<AdminOrderRow[]> {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/orders/admin/all`, {
+    credentials: "include",
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     cache: "no-store",
   });
@@ -476,6 +488,7 @@ export async function getAllOrders(): Promise<AdminOrderRow[]> {
 export async function getAdminOrderById(id: number): Promise<AdminOrderDetail> {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/orders/admin/${id}`, {
+    credentials: "include",
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     cache: "no-store",
   });
@@ -487,6 +500,7 @@ export async function updateAdminOrderStatus(id: number, status: string): Promis
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/orders/admin/${id}/status`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -501,6 +515,7 @@ export async function updateAdminOrderStatus(id: number, status: string): Promis
 export async function getOrderById(id: number): Promise<Order> {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/orders/${id}`, {
+    credentials: "include",
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -550,6 +565,7 @@ export async function getAdminProducts(params: {
   const response = await fetch(
     `${API_URL}/api/products/admin?${query.toString()}`,
     {
+      credentials: "include",
       headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
       cache: "no-store",
     }
@@ -561,6 +577,7 @@ export async function getAdminProducts(params: {
 export async function getProductStats(token?: string): Promise<ProductStats> {
   const finalToken = token || getCookie("token");
   const response = await fetch(`${API_URL}/api/products/admin/stats`, {
+    credentials: "include",
     headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
     cache: "no-store",
   });
@@ -575,6 +592,7 @@ export async function bulkUpdateProducts(
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products/admin/bulk`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -665,6 +683,7 @@ export async function getAdminCustomers(params: {
   const response = await fetch(
     `${API_URL}/api/customers/admin?${query.toString()}`,
     {
+      credentials: "include",
       headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
       cache: "no-store",
     }
@@ -679,6 +698,7 @@ export async function getAdminCustomerById(
 ): Promise<AdminCustomerDetail> {
   const finalToken = token || getCookie("token");
   const response = await fetch(`${API_URL}/api/customers/admin/${id}`, {
+    credentials: "include",
     headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
     cache: "no-store",
   });
@@ -689,6 +709,7 @@ export async function getAdminCustomerById(
 export async function getCustomerStatsApi(token?: string): Promise<CustomerStats> {
   const finalToken = token || getCookie("token");
   const response = await fetch(`${API_URL}/api/customers/admin/stats`, {
+    credentials: "include",
     headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
     cache: "no-store",
   });
@@ -726,6 +747,7 @@ export async function getDashboardData(
   const finalToken = token || getCookie("token");
   const query = days ? `?days=${days}` : "";
   const response = await fetch(`${API_URL}/api/analytics/dashboard${query}`, {
+    credentials: "include",
     headers: { ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}) },
     cache: "no-store",
   });
@@ -736,6 +758,7 @@ export async function getDashboardData(
 export async function getMyOrders(token?: string): Promise<Order[]> {
   const finalToken = token || getCookie("token");
   const response = await fetch(`${API_URL}/api/orders`, {
+    credentials: "include",
     headers: {
       ...(finalToken ? { Authorization: `Bearer ${finalToken}` } : {}),
     },
@@ -753,6 +776,7 @@ export async function updateProfile(payload: { firstName: string; lastName: stri
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/auth/profile`, {
     method: "PUT",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -809,10 +833,10 @@ export async function getReviewStats(productId: number): Promise<ReviewStats> {
 }
 
 export async function getMyReview(productId: number): Promise<Review | null> {
-  const token = getCookie("token");
-  if (!token) return null;
+  // No client-readable token to gate on (HttpOnly cookie) — just ask the
+  // backend and treat a non-OK response (401/404) as "no review yet".
   const response = await fetch(`${API_URL}/api/reviews/${productId}/mine`, {
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
     cache: "no-store",
   });
   if (!response.ok) return null;
@@ -826,6 +850,7 @@ export async function submitReview(
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/reviews/${productId}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -843,6 +868,7 @@ export async function deleteReviewApi(reviewId: number): Promise<void> {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/reviews/${reviewId}`, {
     method: "DELETE",
+    credentials: "include",
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
@@ -875,10 +901,10 @@ export interface WishlistItem {
 }
 
 export async function getWishlist(): Promise<WishlistItem[]> {
-  const token = getCookie("token");
-  if (!token) return [];
+  // No client-readable token to gate on (HttpOnly cookie) — a 401 just
+  // means "not logged in", handled the same as an empty wishlist.
   const response = await fetch(`${API_URL}/api/wishlist`, {
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
     cache: "no-store",
   });
   if (!response.ok) return [];
@@ -886,10 +912,8 @@ export async function getWishlist(): Promise<WishlistItem[]> {
 }
 
 export async function getWishlistIds(): Promise<number[]> {
-  const token = getCookie("token");
-  if (!token) return [];
   const response = await fetch(`${API_URL}/api/wishlist/ids`, {
-    headers: { Authorization: `Bearer ${token}` },
+    credentials: "include",
     cache: "no-store",
   });
   if (!response.ok) return [];
@@ -897,22 +921,16 @@ export async function getWishlistIds(): Promise<number[]> {
 }
 
 export async function addToWishlistApi(productId: number): Promise<void> {
-  const token = getCookie("token");
   await fetch(`${API_URL}/api/wishlist/${productId}`, {
     method: "POST",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    credentials: "include",
   });
 }
 
 export async function removeFromWishlistApi(productId: number): Promise<void> {
-  const token = getCookie("token");
   await fetch(`${API_URL}/api/wishlist/${productId}`, {
     method: "DELETE",
-    headers: {
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
+    credentials: "include",
   });
 }
 
@@ -921,6 +939,7 @@ export async function getVendorOrders(): Promise<any[]> {
   const token = getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors/orders`, {
     cache: "no-store",
+    credentials: "include",
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
   });
   if (!res.ok) throw new Error("Failed to fetch vendor orders");
@@ -931,6 +950,7 @@ export async function submitVendorShipment(orderId: number, data: { carrier: str
   const token = getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors/orders/${orderId}/ship`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -945,6 +965,7 @@ export async function getAllVendors(token?: string): Promise<any[]> {
   const authToken = token || getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors`, {
     cache: "no-store",
+    credentials: "include",
     headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
   });
   if (!res.ok) throw new Error("Failed to fetch vendors");
@@ -961,6 +982,7 @@ export async function createVendorAccount(data: {
   const authToken = token || getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -978,6 +1000,7 @@ export async function assignProductVendor(productId: number, vendorId: number | 
   const authToken = token || getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors/products/${productId}/assign`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
@@ -987,3 +1010,110 @@ export async function assignProductVendor(productId: number, vendorId: number | 
   if (!res.ok) throw new Error("Failed to assign vendor");
   return res.json();
 }
+
+export async function purchaseMembershipRazorpay(userToken?: string): Promise<any> {
+  // No client-readable token to pre-check (HttpOnly cookie) — the create-order
+  // call below will fail with 401 if the user isn't actually logged in.
+
+  // 1. Load Razorpay script if not already loaded
+  if (typeof window !== "undefined" && !(window as any).Razorpay) {
+    await new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = resolve;
+      script.onerror = () => reject(new Error("Failed to load Razorpay payment SDK."));
+      document.body.appendChild(script);
+    });
+  }
+
+  // 2. Create membership order on backend
+  const response = await fetch(`${API_URL}/api/payment/create-membership-order`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+    },
+  });
+
+  if (!response.ok) {
+    const errData = await response.json();
+    throw new Error(errData.message || "Failed to create membership order.");
+  }
+
+  const orderData = await response.json();
+
+  // 3. Open Razorpay popup
+  return new Promise((resolve, reject) => {
+    const options = {
+      key: orderData.key,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "MerchStore VIP Membership",
+      description: `One-Time Membership Joining Fee (₹${orderData.membershipFee})`,
+      order_id: orderData.orderId,
+      handler: async function (paymentResponse: any) {
+        try {
+          const verifyRes = await fetch(`${API_URL}/api/payment/verify-membership`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+            },
+            body: JSON.stringify({
+              razorpayOrderId: paymentResponse.razorpay_order_id,
+              razorpayPaymentId: paymentResponse.razorpay_payment_id,
+              razorpaySignature: paymentResponse.razorpay_signature,
+            }),
+          });
+
+          if (!verifyRes.ok) {
+            const errData = await verifyRes.json();
+            throw new Error(errData.message || "Membership payment verification failed.");
+          }
+
+          const updatedUser = await verifyRes.json();
+          resolve(updatedUser);
+        } catch (err) {
+          reject(err);
+        }
+      },
+      theme: {
+        color: "#0ea5e9",
+      },
+      modal: {
+        ondismiss: function () {
+          reject(new Error("Membership payment cancelled."));
+        },
+      },
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.on("payment.failed", function (response: any) {
+      reject(new Error(response.error?.description || "Membership payment failed."));
+    });
+    rzp.open();
+  });
+}
+
+export async function changePasswordAPI(currentPassword: string, newPassword: string, token?: string): Promise<any> {
+  const res = await fetch(`${API_URL}/api/auth/change-password`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "Failed to change password");
+  }
+
+  return res.json();
+}
+
+

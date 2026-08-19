@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -49,7 +50,7 @@ export const registerUser = async (data: RegisterInput) => {
       lastName: data.lastName.trim(),
       phone: data.phone || null,
       role,
-      isMember: !!data.isMember
+      isMember: false
     }
   });
 
@@ -57,7 +58,7 @@ export const registerUser = async (data: RegisterInput) => {
   sendWelcomeEmail({
     to: user.email,
     name: `${user.firstName} ${user.lastName}`
-  }).catch((err) => console.error("[AuthService] Welcome email background error:", err));
+  }).catch((err) => logger.error({ err: err }, "[AuthService] Welcome email background error"));
 
   const token = jwt.sign(
     {
@@ -289,7 +290,7 @@ export const requestPasswordReset = async (email: string) => {
     to: user.email,
     name: `${user.firstName} ${user.lastName}`,
     resetUrl
-  }).catch((err) => console.error("[AuthService] Reset password email background error:", err));
+  }).catch((err) => logger.error({ err: err }, "[AuthService] Reset password email background error"));
 
   return { message: "If an account with that email exists, a password reset link has been sent." };
 };
@@ -333,5 +334,33 @@ export const resetPassword = async (rawToken: string, newPassword: string) => {
 
   return { message: "Password updated successfully. You can now log in with your new password." };
 };
+
+export const changeUserPassword = async (userId: number, currentPassword: string, newPassword: string) => {
+  if (!currentPassword || !newPassword || newPassword.length < 6) {
+    throw new Error("New password must be at least 6 characters long.");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId }
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!isValid) {
+    throw new Error("Current password is incorrect.");
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await prisma.user.update({
+    where: { id: userId },
+    data: { passwordHash: newHash }
+  });
+
+  return { message: "Password updated successfully." };
+};
+
 
 

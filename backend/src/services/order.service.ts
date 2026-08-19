@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "./email.service";
@@ -173,10 +174,12 @@ export const finalizeOrder = async (
       },
     });
 
-    // Step 5b: Generate a unique order number
+    // Step 5b: Generate a unique order number (retry until no collision —
+    // a single retry could still collide under concurrent order creation)
     let orderNumber = generateOrderNumber();
-    const collision = await tx.order.findUnique({ where: { orderNumber } });
-    if (collision) orderNumber = generateOrderNumber();
+    while (await tx.order.findUnique({ where: { orderNumber } })) {
+      orderNumber = generateOrderNumber();
+    }
 
     // Step 5c + 6: Create order with nested order items in one write
     const newOrder = await tx.order.create({
@@ -221,12 +224,18 @@ export const finalizeOrder = async (
       },
     });
 
-    // Step 7: Reduce stock for each product
+    // Step 7: Reduce stock for each product — conditioned on current stock so
+    // two concurrent checkouts can't both decrement past zero (TOCTOU guard).
     for (const item of cart.items) {
-      await tx.product.update({
-        where: { id: item.productId },
+      const stockUpdate = await tx.product.updateMany({
+        where: { id: item.productId, stockQty: { gte: item.quantity } },
         data:  { stockQty: { decrement: item.quantity } },
       });
+      if (stockUpdate.count === 0) {
+        throw new Error(
+          `"${item.product.name}" no longer has enough stock to fulfill this order.`
+        );
+      }
     }
 
     // Bonus: Increment coupon usage counter
@@ -273,11 +282,11 @@ export const triggerOrderConfirmationEmail = async (orderId: number): Promise<vo
         sendOrderConfirmationEmail({
           to: order.user.email,
           order,
-        }).catch((err) => console.error("[OrderService] sendOrderConfirmationEmail background error:", err));
+        }).catch((err) => logger.error({ err: err }, "[OrderService] sendOrderConfirmationEmail background error"));
       }
     }
   } catch (error) {
-    console.error("[OrderService] Error triggering order confirmation email:", error);
+    logger.error({ err: error }, "[OrderService] Error triggering order confirmation email");
   }
 };
 
@@ -289,7 +298,7 @@ export const createOrder = async (input: CreateOrderInput) => {
 
   if (paymentMethod === "cod") {
     triggerOrderConfirmationEmail(order.id).catch((err) =>
-      console.error("[OrderService] COD confirmation email trigger error:", err)
+      logger.error({ err: err }, "[OrderService] COD confirmation email trigger error")
     );
   }
 
@@ -435,7 +444,7 @@ export const updateOrderStatus = async (orderId: number, status: string) => {
       to: order.user.email,
       order,
       newStatus: status
-    }).catch((err) => console.error("[OrderService] Status email background error:", err));
+    }).catch((err) => logger.error({ err: err }, "[OrderService] Status email background error"));
   }
 
   return order;

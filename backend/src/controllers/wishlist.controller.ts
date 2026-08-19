@@ -1,3 +1,4 @@
+import logger from "../lib/logger";
 import { Request, Response } from "express";
 import {
   getWishlist,
@@ -12,7 +13,7 @@ export const getWishlistCtrl = async (req: Request, res: Response) => {
     const items = await getWishlist(req.user!.id);
     res.json(items);
   } catch (error: any) {
-    console.error("Error fetching wishlist:", error);
+    logger.error({ err: error }, "Error fetching wishlist");
     res.status(500).json({ message: error.message || "Failed to fetch wishlist" });
   }
 };
@@ -23,7 +24,7 @@ export const getWishlistIdsCtrl = async (req: Request, res: Response) => {
     const ids = await getWishlistIds(req.user!.id);
     res.json(ids);
   } catch (error: any) {
-    console.error("Error fetching wishlist IDs:", error);
+    logger.error({ err: error }, "Error fetching wishlist IDs");
     res.status(500).json({ message: error.message || "Failed to fetch wishlist IDs" });
   }
 };
@@ -38,7 +39,7 @@ export const addToWishlistCtrl = async (req: Request, res: Response) => {
     const result = await addToWishlist(req.user!.id, productId);
     res.status(201).json(result);
   } catch (error: any) {
-    console.error("Error adding to wishlist:", error);
+    logger.error({ err: error }, "Error adding to wishlist");
     const statusCode = error.message.includes("not found") ? 404 : 500;
     res.status(statusCode).json({ message: error.message || "Failed to add to wishlist" });
   }
@@ -54,7 +55,7 @@ export const removeFromWishlistCtrl = async (req: Request, res: Response) => {
     const result = await removeFromWishlist(req.user!.id, productId);
     res.json(result);
   } catch (error: any) {
-    console.error("Error removing from wishlist:", error);
+    logger.error({ err: error }, "Error removing from wishlist");
     res.status(500).json({ message: error.message || "Failed to remove from wishlist" });
   }
 };

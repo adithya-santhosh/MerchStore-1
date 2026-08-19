@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getCookie } from "@/utils/cookie";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface Coupon {
   id: number;
@@ -101,6 +101,7 @@ export default function AdminSettingsPage() {
       }
       const res = await fetch(`${API_URL}/api/coupons`, {
         cache: "no-store",
+        credentials: "include",
         headers
       });
       if (res.ok) {
@@ -135,6 +136,7 @@ export default function AdminSettingsPage() {
       }
       const res = await fetch(`${API_URL}/api/settings`, {
         method: "PUT",
+        credentials: "include",
         headers,
         body: JSON.stringify({
           tax_rate: settings.tax_rate / 100, // convert percentage back to decimal
@@ -182,6 +184,7 @@ export default function AdminSettingsPage() {
       }
       const res = await fetch(`${API_URL}/api/coupons`, {
         method: "POST",
+        credentials: "include",
         headers,
         body: JSON.stringify({
           code: newCoupon.code,
@@ -229,6 +232,7 @@ export default function AdminSettingsPage() {
       }
       const res = await fetch(`${API_URL}/api/coupons/${coupon.id}`, {
         method: "PUT",
+        credentials: "include",
         headers,
         body: JSON.stringify({ isActive: !coupon.isActive })
       });
@@ -252,6 +256,7 @@ export default function AdminSettingsPage() {
       }
       const res = await fetch(`${API_URL}/api/coupons/${id}`, {
         method: "DELETE",
+        credentials: "include",
         headers
       });
       if (res.ok) {

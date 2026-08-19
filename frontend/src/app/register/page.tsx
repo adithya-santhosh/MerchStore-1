@@ -3,13 +3,14 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft, User, CheckCircle2, ChevronRight } from "lucide-react";
+import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft, User, CheckCircle2, ChevronRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -28,7 +29,7 @@ export default function RegisterPage() {
       .catch(err => console.error("Failed to load settings:", err));
   }, []);
 
-  const { register } = useAuth();
+  const { register, becomeMember } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +37,17 @@ export default function RegisterPage() {
     setSubmitting(true);
 
     try {
-      await register(firstName, lastName, email, password, isMember);
+      // 1. Register account
+      await register(firstName, lastName, email, password, false, phone);
+
+      // 2. If user selected membership, launch Razorpay payment popup
+      if (isMember) {
+        try {
+          await becomeMember();
+        } catch (memErr: any) {
+          console.warn("Membership payment skipped or cancelled:", memErr);
+        }
+      }
     } catch (err: any) {
       setError(err.message || "Registration failed. Try again.");
       setSubmitting(false);
@@ -119,6 +130,21 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="w-full bg-background border border-input rounded-xl px-10 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-semibold"
+              />
+            </div>
+          </div>
+
+          {/* Phone Number */}
+          <div className="space-y-1.5">
+            <label className="text-foreground font-bold">Phone Number (Optional)</label>
+            <div className="relative">
+              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+              <input
+                type="tel"
+                placeholder="+91 98765 43210"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 className="w-full bg-background border border-input rounded-xl px-10 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-semibold"
               />
             </div>
