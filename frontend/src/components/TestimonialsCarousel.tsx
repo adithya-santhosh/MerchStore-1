@@ -116,11 +116,11 @@ export default function TestimonialsCarousel() {
         {/* Section Header */}
         <ScrollReveal direction="up">
           <div className="text-center space-y-4 mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-primary/5 text-[11px] font-bold tracking-[0.2em] text-primary uppercase mx-auto">
               <Star className="size-3.5" />
-              CUSTOMER REVIEWS
+              Field Reports
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold uppercase tracking-tight text-foreground">
               What Our Customers Say
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">
@@ -141,9 +141,9 @@ export default function TestimonialsCarousel() {
                   <div
                     key={`${idx}-${position}`}
                     className={cn(
-                      "relative p-6 lg:p-8 rounded-2xl border bg-card/30 backdrop-blur-sm transition-all duration-500",
+                      "relative p-6 lg:p-8 border bg-card/30 transition-all duration-500",
                       position === 0
-                        ? "border-primary/30 shadow-lg shadow-primary/5"
+                        ? "border-primary/30"
                         : "border-border/40 hover:border-primary/20"
                     )}
                   >
@@ -199,7 +199,7 @@ export default function TestimonialsCarousel() {
               {(() => {
                 const testimonial = testimonials[activeIndex];
                 return (
-                  <div className="relative p-6 rounded-2xl border border-primary/30 bg-card/30 backdrop-blur-sm shadow-lg shadow-primary/5">
+                  <div className="relative p-6 border border-primary/30 bg-card/30">
                     <Quote className="size-8 text-primary/15 absolute top-4 right-4" />
                     <div className="flex gap-0.5 mb-4">
                       {Array.from({ length: 5 }).map((_, i) => (

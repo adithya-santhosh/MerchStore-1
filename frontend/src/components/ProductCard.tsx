@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Product } from "@/types/products";
 import { getProductImageSrc } from "@/lib/utils";
-import { ArrowRight, Sparkles, ShoppingBag } from "lucide-react";
+import { ArrowRight, ImageOff, ShoppingBag } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import WishlistButton from "./WishlistButton";
 
@@ -24,15 +24,16 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link
       href={`/products/${product.id}`}
-      className="group flex flex-col justify-between rounded-2xl border border-border bg-card/40 shadow-sm hover:shadow-lg hover:border-primary hover:shadow-primary/5 transition-all duration-300 overflow-hidden min-h-[380px] cursor-pointer"
+      className="group flex flex-col justify-between border border-border bg-card/40 hover:border-primary transition-all duration-300 overflow-hidden min-h-[380px] cursor-pointer relative"
     >
-      
+      <div className="absolute top-0 left-0 w-0 h-0.5 bg-gradient-to-r from-primary to-accent group-hover:w-full transition-all duration-500 z-10" />
+
       {/* Top Section: Category & Image */}
       <div className="p-5 space-y-4">
-        
-        {/* Category Badge & Sparkle */}
+
+        {/* Category Badge & Wishlist */}
         <div className="flex justify-between items-center">
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          <span className="font-mono text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {product.category}
           </span>
           <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -41,7 +42,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Product Image Visual */}
-        <div className="relative w-full h-40 rounded-xl border border-border/40 overflow-hidden bg-muted/20 flex items-center justify-center p-4">
+        <div className="relative w-full h-40 border border-border/40 overflow-hidden bg-muted/20 flex items-center justify-center p-4">
           {imageSrc ? (
             <img
               src={imageSrc}
@@ -51,7 +52,7 @@ export default function ProductCard({ product }: ProductCardProps) {
             />
           ) : (
             <div className="flex flex-col items-center justify-center text-center space-y-2">
-              <Sparkles className="size-6 text-primary/40" />
+              <ImageOff className="size-6 text-primary/40" />
               <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
                 No Image
               </span>
@@ -61,7 +62,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Product Title */}
-        <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+        <h3 className="font-heading text-base font-semibold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
           {product.name}
         </h3>
 
@@ -75,11 +76,11 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Bottom Section: Price & View Arrow / Cart */}
       <div className="px-5 pb-5 pt-2">
         <div className="flex items-center justify-between pt-4 border-t border-border/40">
-          
-          {/* Price displayed in bold red (primary color) */}
+
+          {/* Price */}
           <div className="flex flex-col">
-            <span className="text-xs text-muted-foreground font-semibold">Price</span>
-            <span className="text-lg font-black text-primary transition-colors">
+            <span className="font-mono text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">Price</span>
+            <span className="font-heading text-lg font-bold text-primary transition-colors">
               ₹{product.price.toLocaleString("en-IN")}
             </span>
           </div>
@@ -89,15 +90,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             {/* Quick Add To Cart */}
             <button
               onClick={handleQuickAddToCart}
-              className="size-9 rounded-full bg-muted border border-border hover:border-transparent hover:bg-primary hover:text-primary-foreground flex items-center justify-center text-muted-foreground transition-all duration-300 cursor-pointer"
+              className="size-9 bg-muted border border-border hover:border-transparent hover:bg-primary hover:text-primary-foreground flex items-center justify-center text-muted-foreground transition-all duration-300 cursor-pointer"
               title="Add to Cart"
               aria-label="Quick Add to Cart"
             >
               <ShoppingBag className="size-4" />
             </button>
 
-            {/* Glowing Arrow CTA */}
-            <div className="size-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300">
+            {/* Arrow CTA */}
+            <div className="size-9 bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-accent group-hover:text-accent-foreground transition-all duration-300">
               <ArrowRight className="size-4" />
             </div>
           </div>

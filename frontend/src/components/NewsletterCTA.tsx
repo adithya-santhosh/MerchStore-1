@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, ArrowRight, CheckCircle, Sparkles } from "lucide-react";
+import { Mail, ArrowRight, CheckCircle, Radio } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ScrollReveal from "@/components/ScrollReveal";
 
@@ -23,35 +23,25 @@ export default function NewsletterCTA() {
   };
 
   return (
-    <section className="w-full relative overflow-hidden">
+    <section className="w-full relative overflow-hidden blueprint-grid">
       {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-primary/5" />
-
-      {/* Decorative grid overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)",
-          backgroundSize: "40px 40px",
-        }}
-      />
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-accent/10" />
 
       {/* Decorative glow orbs */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-accent/10 rounded-full blur-3xl" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <ScrollReveal direction="up">
           <div className="max-w-2xl mx-auto text-center space-y-6">
             {/* Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
-              <Sparkles className="size-3.5" />
-              EXCLUSIVE ACCESS
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-primary/5 text-[11px] font-bold tracking-[0.2em] text-primary uppercase">
+              <Radio className="size-3.5" />
+              Exclusive Access
             </div>
 
             {/* Headline */}
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
+            <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-foreground leading-tight">
               Join The{" "}
               <span className="text-primary">Garage</span>
             </h2>
@@ -64,7 +54,7 @@ export default function NewsletterCTA() {
 
             {/* Form */}
             {isSubmitted ? (
-              <div className="flex items-center justify-center gap-3 py-4 px-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 mx-auto max-w-md animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <div className="flex items-center justify-center gap-3 py-4 px-6 border border-emerald-500/30 bg-emerald-500/5 mx-auto max-w-md animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <CheckCircle className="size-5 text-emerald-500 shrink-0" />
                 <p className="text-sm font-semibold text-emerald-400">
                   You&apos;re in! Watch your inbox for exclusive drops.
@@ -83,14 +73,14 @@ export default function NewsletterCTA() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your email"
                     required
-                    className="w-full h-12 pl-10 pr-4 rounded-xl border border-border bg-card/50 backdrop-blur-sm text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                    className="w-full h-12 pl-10 pr-4 border border-border bg-card/50 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                   />
                 </div>
                 <Button
                   type="submit"
                   size="lg"
                   disabled={isLoading}
-                  className="h-12 px-6 shadow-lg group cursor-pointer shrink-0"
+                  className="h-12 px-6 shadow-lg group cursor-pointer shrink-0 clip-corner"
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-2">

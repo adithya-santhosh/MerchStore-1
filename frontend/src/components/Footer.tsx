@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Sparkles, MessageSquare, ShieldCheck } from "lucide-react";
+import { MessageSquare, ShieldCheck } from "lucide-react";
+import Logo from "./Logo";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -12,11 +13,9 @@ export default function Footer() {
           {/* Brand Info */}
           <div className="space-y-4 md:col-span-2">
             <Link href="/" className="flex items-center gap-2 group w-max">
-              <div className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-                <Sparkles className="size-4" />
-              </div>
-              <span className="text-lg font-bold tracking-tight">
-                Merch<span className="text-primary font-black">Store</span>
+              <Logo className="size-7 text-foreground" />
+              <span className="font-heading text-lg font-bold uppercase tracking-tight">
+                Merch<span className="text-primary">Store</span>
               </span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">

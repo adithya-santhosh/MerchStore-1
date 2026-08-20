@@ -96,17 +96,17 @@ export default function StatsCounter() {
   return (
     <section
       ref={sectionRef}
-      className="w-full bg-gradient-to-b from-background via-card/30 to-background py-16 sm:py-20"
+      className="w-full bg-background py-16 sm:py-20 border-b border-border/40"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {stats.map((stat, index) => (
             <ScrollReveal key={stat.label} delay={index * 120} direction="up">
               <div className="flex flex-col items-center text-center space-y-3">
-                <div className="size-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-1">
-                  <stat.icon className="size-6" />
+                <div className="size-12 flex items-center justify-center text-primary border border-primary/25 bg-primary/5 mb-1">
+                  <stat.icon className="size-5" />
                 </div>
-                <span className="text-3xl sm:text-4xl lg:text-5xl font-black text-foreground tracking-tight">
+                <span className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground tracking-tight">
                   <AnimatedCounter
                     endValue={stat.endValue}
                     suffix={stat.suffix}
@@ -114,7 +114,7 @@ export default function StatsCounter() {
                     isVisible={isVisible}
                   />
                 </span>
-                <span className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                <span className="font-mono text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-widest">
                   {stat.label}
                 </span>
               </div>

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
-  Sparkles,
+  Crosshair,
   Gauge,
   Shield,
   Wrench,
@@ -72,34 +72,20 @@ export default function FeaturedSpotlight() {
   const imageSrc = getProductImageSrc(product.ImageURL) || "/images/categories/camping_overland.png";
 
   return (
-    <section className="w-full bg-gradient-to-br from-background via-card/40 to-background overflow-hidden">
-      {/* Decorative grid pattern overlay */}
-      <div
-        className="absolute inset-0 opacity-[0.02]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px)",
-          backgroundSize: "60px 60px",
-        }}
-      />
-
+    <section className="w-full bg-card/10 overflow-hidden border-b border-border/40">
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left: Product Image */}
           <ScrollReveal direction="left">
-            <div className="relative">
-              {/* Glow effect behind image */}
-              <div className="absolute -inset-4 bg-primary/5 rounded-3xl blur-3xl" />
-              <div className="relative aspect-square max-w-lg mx-auto rounded-3xl border border-border/40 bg-card/30 overflow-hidden p-6 sm:p-10">
+            <div className="relative corner-brackets">
+              <div className="relative aspect-square max-w-lg mx-auto border border-border/40 bg-background blueprint-grid-fine overflow-hidden p-6 sm:p-10">
                 <img
                   src={imageSrc}
                   alt={product.name}
                   className="w-full h-full object-contain drop-shadow-2xl"
                   loading="lazy"
                 />
-                {/* Corner accent */}
-                <div className="absolute top-4 left-4 size-16 border-t-2 border-l-2 border-primary/30 rounded-tl-2xl" />
-                <div className="absolute bottom-4 right-4 size-16 border-b-2 border-r-2 border-primary/30 rounded-br-2xl" />
+                <Crosshair className="absolute top-3 right-3 size-4 text-primary/50" />
               </div>
             </div>
           </ScrollReveal>
@@ -108,13 +94,13 @@ export default function FeaturedSpotlight() {
           <ScrollReveal direction="right" delay={150}>
             <div className="space-y-6">
               {/* Badge */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
-                <Sparkles className="size-3.5" />
-                FEATURED PRODUCT
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-primary/5 text-[11px] font-bold tracking-[0.2em] text-primary uppercase">
+                <span className="size-1.5 bg-primary animate-pulse" />
+                Featured Build
               </div>
 
               {/* Title */}
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-foreground leading-tight">
+              <h2 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-bold uppercase tracking-tight text-foreground leading-tight">
                 {product.name}
               </h2>
 
@@ -124,13 +110,13 @@ export default function FeaturedSpotlight() {
               </p>
 
               {/* Spec list */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-border/40 border border-border/40 pt-2">
                 {specs.map((spec) => (
                   <div
                     key={spec.label}
-                    className="flex items-start gap-3 p-3 rounded-xl border border-border/40 bg-card/20 hover:border-primary/30 hover:bg-card/40 transition-all duration-300"
+                    className="flex items-start gap-3 p-3 bg-background hover:bg-card/40 transition-all duration-300"
                   >
-                    <div className="shrink-0 size-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                    <div className="shrink-0 size-9 flex items-center justify-center text-primary border border-primary/20 bg-primary/5">
                       <spec.icon className="size-4" />
                     </div>
                     <div>
@@ -148,17 +134,17 @@ export default function FeaturedSpotlight() {
               {/* Price + CTA */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4">
                 <div className="space-y-0.5">
-                  <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
+                  <span className="font-mono text-[10px] text-muted-foreground font-semibold uppercase tracking-widest">
                     Starting at
                   </span>
-                  <p className="text-3xl sm:text-4xl font-black text-primary">
+                  <p className="font-heading text-3xl sm:text-4xl font-bold text-primary">
                     ₹{product.price.toLocaleString("en-IN")}
                   </p>
                 </div>
                 <div className="flex gap-3">
                   <Button
                     size="lg"
-                    className="shadow-lg group cursor-pointer"
+                    className="shadow-lg group cursor-pointer clip-corner"
                     asChild
                   >
                     <Link
@@ -172,7 +158,7 @@ export default function FeaturedSpotlight() {
                   <Button
                     size="lg"
                     variant="outline"
-                    className="cursor-pointer"
+                    className="cursor-pointer clip-corner"
                     asChild
                   >
                     <Link href="/products">Browse All</Link>

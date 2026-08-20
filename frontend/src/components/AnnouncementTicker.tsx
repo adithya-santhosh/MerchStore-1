@@ -4,10 +4,10 @@ import { useState } from "react";
 import { X } from "lucide-react";
 
 const messages = [
-  "🔥 FREE SHIPPING ON ORDERS ABOVE ₹5,000",
-  "🆕 NEW DROP EVERY FRIDAY",
-  "🎟️ USE CODE LAUNCH10 FOR 10% OFF",
-  "⭐ TRUSTED BY 10,000+ ENTHUSIASTS",
+  "FREE SHIPPING ON ORDERS ABOVE ₹5,000",
+  "NEW SPEC DROPS EVERY FRIDAY",
+  "CODE LAUNCH10 FOR 10% OFF YOUR FIRST BUILD",
+  "10,000+ RIGS OUTFITTED AND COUNTING",
 ];
 
 export default function AnnouncementTicker() {
@@ -29,7 +29,7 @@ export default function AnnouncementTicker() {
           {track.map((msg, i) => (
             <span
               key={i}
-              className="text-[11px] sm:text-xs font-bold tracking-wide uppercase"
+              className="font-mono text-[11px] sm:text-xs font-semibold tracking-[0.15em] uppercase"
             >
               {msg}
             </span>
@@ -43,7 +43,7 @@ export default function AnnouncementTicker() {
           {track.map((msg, i) => (
             <span
               key={`dup-${i}`}
-              className="text-[11px] sm:text-xs font-bold tracking-wide uppercase"
+              className="font-mono text-[11px] sm:text-xs font-semibold tracking-[0.15em] uppercase"
             >
               {msg}
             </span>

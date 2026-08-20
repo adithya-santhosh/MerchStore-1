@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import ProductCard from "@/components/ProductCard";
 import { getProducts } from "@/lib/api";
 import { Product } from "@/types/products";
-import { Sparkles, ChevronLeft, ChevronRight } from "lucide-react";
+import { Radio, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function NewLaunch() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -111,11 +111,11 @@ export default function NewLaunch() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-12 sm:mb-16">
           
           <div className="space-y-4 text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
-              <Sparkles className="size-3.5" />
-              LATEST DROPS
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 border border-primary/20 bg-primary/5 text-[11px] font-bold tracking-[0.2em] text-primary uppercase">
+              <Radio className="size-3.5" />
+              Latest Drops
             </div>
-            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground">
+            <h2 className="font-heading text-3xl sm:text-4xl font-bold uppercase tracking-tight text-foreground">
               New Launches
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl">
@@ -127,14 +127,14 @@ export default function NewLaunch() {
           <div className="flex gap-2">
             <button
               onClick={() => handleScroll("left")}
-              className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+              className="size-10 border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer"
               aria-label="Scroll left"
             >
               <ChevronLeft className="size-5" />
             </button>
             <button
               onClick={() => handleScroll("right")}
-              className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+              className="size-10 border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer"
               aria-label="Scroll right"
             >
               <ChevronRight className="size-5" />

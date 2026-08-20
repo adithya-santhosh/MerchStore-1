@@ -28,20 +28,20 @@ const trustItems = [
 
 export default function TrustBar() {
   return (
-    <section className="w-full border-y border-border/40 bg-card/20 backdrop-blur-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+    <section className="w-full border-b border-border/40 bg-card/20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-7">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
           {trustItems.map((item, index) => (
             <ScrollReveal key={item.title} delay={index * 100} direction="up">
               <div className="flex items-start gap-3 sm:gap-4">
-                <div className="shrink-0 size-10 sm:size-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
-                  <item.icon className="size-5 sm:size-6" />
+                <div className="shrink-0 size-10 sm:size-11 flex items-center justify-center text-primary border border-primary/25 bg-primary/5">
+                  <item.icon className="size-5" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="text-sm sm:text-base font-bold text-foreground">
+                  <h3 className="text-sm sm:text-base font-semibold text-foreground">
                     {item.title}
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-muted-foreground">
+                  <p className="font-mono text-[10px] sm:text-[11px] text-muted-foreground tracking-wide">
                     {item.subtitle}
                   </p>
                 </div>

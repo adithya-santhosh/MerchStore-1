@@ -5,9 +5,10 @@ import NewLaunch from "@/components/NewLaunch";
 import Footer from "@/components/Footer";
 import AnnouncementTicker from "@/components/AnnouncementTicker";
 import TrustBar from "@/components/TrustBar";
-// import StatsCounter from "@/components/StatsCounter";
+import VehicleShowcase from "@/components/VehicleShowcase";
+import StatsCounter from "@/components/StatsCounter";
 import FeaturedSpotlight from "@/components/FeaturedSpotlight";
-// import TestimonialsCarousel from "@/components/TestimonialsCarousel";
+import TestimonialsCarousel from "@/components/TestimonialsCarousel";
 import NewsletterCTA from "@/components/NewsletterCTA";
 import BackToTop from "@/components/BackToTop";
 
@@ -17,12 +18,14 @@ export default function Home() {
       <AnnouncementTicker />
       <Navbar />
       <Hero />
+      <div className="h-1 w-full stripe-divider" aria-hidden="true" />
       <TrustBar />
       <CategoryShowcase />
-      {/* <StatsCounter /> */}
+      <VehicleShowcase />
+      <StatsCounter />
       <FeaturedSpotlight />
       <NewLaunch />
-      {/* <TestimonialsCarousel /> */}
+      <TestimonialsCarousel />
       <NewsletterCTA />
       <Footer />
       <BackToTop />

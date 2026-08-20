@@ -10,7 +10,6 @@ import {
   ShoppingBag,
   User,
   Search,
-  Sparkles,
   Shield,
   Tag,
   Car,
@@ -23,6 +22,7 @@ import { getNavigationMetadata, NavMetadata } from "@/lib/api";
 import { useCart } from "@/hooks/useCart";
 import CartSidebar from "./CartSidebar";
 import SearchOverlay from "./SearchOverlay";
+import Logo from "./Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 
@@ -129,13 +129,12 @@ export default function Navbar() {
           <div className="flex justify-between items-center h-16 sm:h-20">
             {/* Logo Section */}
             <div className="flex-shrink-0">
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="size-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-transform duration-300 group-hover:rotate-12">
-                  <Sparkles className="size-5" />
+              <Link href="/" className="flex items-center gap-2.5 group">
+                <div className="size-9 flex items-center justify-center text-foreground transition-transform duration-300 group-hover:scale-110">
+                  <Logo className="size-8" />
                 </div>
-                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                  Merch
-                  <span className="text-primary font-black">Store</span>
+                <span className="font-heading text-xl font-bold uppercase tracking-tight text-foreground">
+                  Merch<span className="text-primary">Store</span>
                 </span>
               </Link>
             </div>
