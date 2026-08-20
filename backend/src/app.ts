@@ -21,6 +21,33 @@ import vendorRoutes from "./routes/vendor.routes";
 // Supertest without also binding a port (app.listen lives in server.ts only).
 const app = express();
 
+// ─── Proxy Trust ──────────────────────────────────────────────────────────────
+// Render (like most PaaS hosts) terminates TLS at a proxy, so the client's real
+// address arrives in the X-Forwarded-For header. Without this setting Express
+// reports the *proxy's* address as req.ip for every request, which makes
+// express-rate-limit bucket the entire internet into one shared counter — i.e.
+// 20 auth attempts per 15 minutes across all customers combined, not per person.
+//
+// This is deliberately a HOP COUNT, never `true`. Trusting every hop would let a
+// client spoof X-Forwarded-For and sidestep rate limiting completely. Render is
+// a single hop; raise this to 2 if you later put a CDN (e.g. Cloudflare) in
+// front of it.
+const TRUST_PROXY_HOPS = process.env.TRUST_PROXY_HOPS
+  ? Number(process.env.TRUST_PROXY_HOPS)
+  : process.env.NODE_ENV === "production"
+    ? 1
+    : 0;
+
+if (Number.isNaN(TRUST_PROXY_HOPS) || TRUST_PROXY_HOPS < 0) {
+  logger.error(
+    { value: process.env.TRUST_PROXY_HOPS },
+    "FATAL: TRUST_PROXY_HOPS must be a non-negative integer. Refusing to start."
+  );
+  process.exit(1);
+}
+
+app.set("trust proxy", TRUST_PROXY_HOPS);
+
 // ─── Request Logging ──────────────────────────────────────────────────────────
 app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === "/health" } }));
 

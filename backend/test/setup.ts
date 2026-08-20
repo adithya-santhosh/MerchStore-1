@@ -6,3 +6,6 @@ process.env.NODE_ENV = "test";
 // client without a real database. Tests that exercise DB-touching code mock
 // "../lib/prisma" directly instead of relying on this connection working.
 process.env.DATABASE_URL ||= "postgresql://test:test@localhost:5432/test";
+// Mirror the deployed topology (one proxy hop, as on Render) so tests exercise
+// the same client-IP resolution production uses for rate limiting.
+process.env.TRUST_PROXY_HOPS ||= "1";
