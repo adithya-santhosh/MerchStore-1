@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Sparkles, MessageSquare, ShieldCheck } from "lucide-react";
+import { siteConfig } from "@/lib/site-config";
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -7,10 +8,10 @@ export default function Footer() {
   return (
     <footer className="border-t border-border bg-card/30 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 mb-12">
-          
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-8 md:gap-12 mb-12">
+
           {/* Brand Info */}
-          <div className="space-y-4 md:col-span-2">
+          <div className="space-y-4 col-span-2">
             <Link href="/" className="flex items-center gap-2 group w-max">
               <div className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
                 <Sparkles className="size-4" />
@@ -98,8 +99,40 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/faq" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
-                  FAQs & Delivery
+                <Link href="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  Shipping & Delivery
+                </Link>
+              </li>
+              <li>
+                <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  Returns & Refunds
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Legal Links */}
+          <div>
+            <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">Legal</h3>
+            <ul className="space-y-2.5">
+              <li>
+                <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  Terms & Conditions
+                </Link>
+              </li>
+              <li>
+                <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  Cancellation & Refund
+                </Link>
+              </li>
+              <li>
+                <Link href="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                  Shipping Policy
                 </Link>
               </li>
             </ul>
@@ -110,7 +143,7 @@ export default function Footer() {
         {/* Footer Bottom */}
         <div className="pt-8 border-t border-border/50 flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-muted-foreground">
-            &copy; {currentYear} MerchStore. All rights reserved. Designed with precision.
+            &copy; {currentYear} {siteConfig.legalName}. All rights reserved.
           </p>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <ShieldCheck className="size-4 text-emerald-500" />
