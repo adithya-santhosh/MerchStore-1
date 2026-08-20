@@ -85,7 +85,7 @@ export default function ProductForm() {
     const loadVendors = async () => {
       try {
         const data = await getAllVendors();
-        setVendors(data);
+        setVendors(data.vendors);
       } catch (e) {
         console.error("Failed to load vendors", e);
       }

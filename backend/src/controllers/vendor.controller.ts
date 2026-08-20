@@ -63,12 +63,16 @@ export const createVendorAccount = async (req: Request, res: Response) => {
   }
 };
 
-// ─── Admin: List all vendors ──────────────────────────────────────────────────
+// ─── Admin: List all vendors (paginated) ──────────────────────────────────────
 export const listVendors = async (req: Request, res: Response) => {
   try {
-    const vendors = await getAllVendors();
-    res.json(vendors);
+    const result = await getAllVendors({
+      ...(req.query.page  ? { page: Number(req.query.page) }   : {}),
+      ...(req.query.limit ? { limit: Number(req.query.limit) } : {}),
+    });
+    res.json(result);
   } catch (error: any) {
+    logger.error({ err: error }, "listVendors error");
     res.status(500).json({ message: error.message || "Failed to fetch vendors." });
   }
 };

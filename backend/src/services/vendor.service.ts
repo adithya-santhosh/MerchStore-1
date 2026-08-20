@@ -161,26 +161,41 @@ export const createVendor = async (data: {
   };
 };
 
-// ─── Admin: List all vendors ──────────────────────────────────────────────────
-export const getAllVendors = async () => {
-  const vendors = await prisma.vendor.findMany({
-    include: {
-      user: { select: { id: true, email: true, firstName: true, lastName: true } },
-      products: { select: { id: true, name: true } }
-    },
-    orderBy: { createdAt: "desc" }
-  });
+// ─── Admin: List all vendors (paginated — the table can grow unbounded) ──────
+export const getAllVendors = async (params: { page?: number; limit?: number } = {}) => {
+  const page  = Math.max(1, params.page || 1);
+  const limit = Math.min(200, Math.max(1, params.limit || 100));
+  const skip  = (page - 1) * limit;
 
-  return vendors.map(v => ({
-    id: v.id,
-    companyName: v.companyName,
-    userId: v.userId,
-    email: v.user.email,
-    firstName: v.user.firstName,
-    lastName: v.user.lastName,
-    productCount: v.products.length,
-    products: v.products
-  }));
+  const [vendors, total] = await Promise.all([
+    prisma.vendor.findMany({
+      include: {
+        user: { select: { id: true, email: true, firstName: true, lastName: true } },
+        products: { select: { id: true, name: true } }
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.vendor.count(),
+  ]);
+
+  return {
+    vendors: vendors.map(v => ({
+      id: v.id,
+      companyName: v.companyName,
+      userId: v.userId,
+      email: v.user.email,
+      firstName: v.user.firstName,
+      lastName: v.user.lastName,
+      productCount: v.products.length,
+      products: v.products
+    })),
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
 };
 
 // ─── Admin: Assign product to vendor ─────────────────────────────────────────

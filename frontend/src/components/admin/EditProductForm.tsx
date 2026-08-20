@@ -83,7 +83,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
     const loadVendors = async () => {
       try {
         const data = await getAllVendors();
-        setVendors(data);
+        setVendors(data.vendors);
       } catch (e) {
         console.error("Failed to load vendors", e);
       }

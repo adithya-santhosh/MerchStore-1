@@ -33,7 +33,7 @@ export default function AdminVendorsPage() {
     try {
       setLoading(true);
       const data = await getAllVendors();
-      setVendors(data);
+      setVendors(data.vendors);
     } catch (err: any) {
       setError(err.message);
     } finally {

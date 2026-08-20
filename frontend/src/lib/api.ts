@@ -474,9 +474,23 @@ export interface AdminOrderDetail {
   }[];
 }
 
-export async function getAllOrders(): Promise<AdminOrderRow[]> {
+export interface AdminOrdersResponse {
+  orders: AdminOrderRow[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export async function getAllOrders(params: { page?: number; limit?: number } = {}): Promise<AdminOrdersResponse> {
   const token = getCookie("token");
-  const response = await fetch(`${API_URL}/api/orders/admin/all`, {
+  const query = new URLSearchParams();
+  // The admin orders page currently loads everything and filters client-side,
+  // so default to a generous page size until it grows real pagination controls.
+  query.append("limit", String(params.limit ?? 200));
+  if (params.page) query.append("page", String(params.page));
+
+  const response = await fetch(`${API_URL}/api/orders/admin/all?${query.toString()}`, {
     credentials: "include",
     headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
     cache: "no-store",
@@ -961,9 +975,26 @@ export async function submitVendorShipment(orderId: number, data: { carrier: str
   return res.json();
 }
 
-export async function getAllVendors(token?: string): Promise<any[]> {
+export interface AdminVendorsResponse {
+  vendors: any[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export async function getAllVendors(
+  token?: string,
+  params: { page?: number; limit?: number } = {}
+): Promise<AdminVendorsResponse> {
   const authToken = token || getCookie("token");
-  const res = await fetch(`${API_URL}/api/vendors`, {
+  const query = new URLSearchParams();
+  // The admin vendors page currently loads everything (no pagination UI yet),
+  // so default to a generous page size until it grows real pagination controls.
+  query.append("limit", String(params.limit ?? 200));
+  if (params.page) query.append("page", String(params.page));
+
+  const res = await fetch(`${API_URL}/api/vendors?${query.toString()}`, {
     cache: "no-store",
     credentials: "include",
     headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },

@@ -75,11 +75,14 @@ export const getOrder = async (req: Request, res: Response) => {
 
 // ─── Admin Endpoints ──────────────────────────────────────────────────────────
 
-// GET /api/orders/admin/all — list every order (admin only)
+// GET /api/orders/admin/all — list every order (admin only, paginated)
 export const adminListOrders = async (req: Request, res: Response) => {
   try {
-    const orders = await getAllOrdersAdmin();
-    res.json(orders);
+    const result = await getAllOrdersAdmin({
+      ...(req.query.page  ? { page: Number(req.query.page) }   : {}),
+      ...(req.query.limit ? { limit: Number(req.query.limit) } : {}),
+    });
+    res.json(result);
   } catch (error: any) {
     logger.error({ err: error }, "Error in adminListOrders controller");
     res.status(500).json({ message: error.message || "Failed to fetch orders." });

@@ -333,32 +333,48 @@ export const getOrderById = async (orderId: number, userId: number) => {
   return mapOrderDetail(order);
 };
 
-// ─── Admin: List ALL orders ───────────────────────────────────────────────────
+// ─── Admin: List ALL orders (paginated — the table can grow unbounded) ────────
 
-export const getAllOrdersAdmin = async () => {
-  const orders = await prisma.order.findMany({
-    include: {
-      user:            { select: { id: true, firstName: true, lastName: true, email: true } },
-      payment:         true,
-      shippingAddress: true,
-    },
-    orderBy: { createdAt: "desc" },
-  });
-  return orders.map((o) => ({
-    id:          o.id,
-    orderNumber: o.orderNumber,
-    status:      o.status,
-    totalAmount: Number(o.totalAmount),
-    createdAt:   o.createdAt,
-    customer: {
-      id:        o.user.id,
-      name:      `${o.user.firstName} ${o.user.lastName}`.trim(),
-      email:     o.user.email,
-    },
-    payment: o.payment
-      ? { gateway: o.payment.gateway, status: o.payment.status }
-      : null,
-  }));
+export const getAllOrdersAdmin = async (params: { page?: number; limit?: number } = {}) => {
+  const page  = Math.max(1, params.page || 1);
+  const limit = Math.min(200, Math.max(1, params.limit || 100));
+  const skip  = (page - 1) * limit;
+
+  const [orders, total] = await Promise.all([
+    prisma.order.findMany({
+      include: {
+        user:            { select: { id: true, firstName: true, lastName: true, email: true } },
+        payment:         true,
+        shippingAddress: true,
+      },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.order.count(),
+  ]);
+
+  return {
+    orders: orders.map((o) => ({
+      id:          o.id,
+      orderNumber: o.orderNumber,
+      status:      o.status,
+      totalAmount: Number(o.totalAmount),
+      createdAt:   o.createdAt,
+      customer: {
+        id:        o.user.id,
+        name:      `${o.user.firstName} ${o.user.lastName}`.trim(),
+        email:     o.user.email,
+      },
+      payment: o.payment
+        ? { gateway: o.payment.gateway, status: o.payment.status }
+        : null,
+    })),
+    total,
+    page,
+    limit,
+    totalPages: Math.max(1, Math.ceil(total / limit)),
+  };
 };
 
 // ─── Admin: Get single order (full detail, not scoped to userId) ──────────────

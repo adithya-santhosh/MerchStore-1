@@ -49,7 +49,7 @@ export default function AdminOrdersPage() {
     if (showLoader) setRefreshing(true);
     try {
       const data = await getAllOrders();
-      setOrders(data);
+      setOrders(data.orders);
     } catch (e) {
       console.error(e);
     } finally {
