@@ -45,9 +45,9 @@ export default function AdminSettingsPage() {
 
   // Settings states
   const [settings, setSettings] = useState<SystemSettings>({
-    tax_rate: 18,
-    shipping_limit: 499,
-    shipping_cost: 99,
+    tax_rate: 0,
+    shipping_limit: 0,
+    shipping_cost: 0,
     membership_fee: 999
   });
   const [settingsLoading, setSettingsLoading] = useState(true);

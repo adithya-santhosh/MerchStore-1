@@ -271,13 +271,13 @@ export interface OrderAddress {
   country?: string;
 }
 
+// Tax and shipping are computed server-side from store settings — the client
+// never sends money-related values.
 export interface CreateOrderPayload {
   address: OrderAddress;
   couponCode?: string;
   paymentMethod: "cod" | "razorpay";
   sessionToken?: string;
-  taxRate: number;
-  shippingCost: number;
 }
 
 export interface OrderItem {
@@ -342,8 +342,6 @@ export interface CreatePaymentOrderPayload {
   address: OrderAddress;
   couponCode?: string;
   sessionToken?: string;
-  taxRate: number;
-  shippingCost: number;
 }
 
 export interface RazorpayOrderResponse {
@@ -381,8 +379,6 @@ export interface VerifyPaymentPayload {
   address: OrderAddress;
   couponCode?: string;
   sessionToken?: string;
-  taxRate: number;
-  shippingCost: number;
 }
 
 export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Order> {
@@ -1146,5 +1142,7 @@ export async function changePasswordAPI(currentPassword: string, newPassword: st
 
   return res.json();
 }
+
+// PASSWORD_RESET_HELPERS_PLACEHOLDER
 
 

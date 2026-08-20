@@ -13,10 +13,25 @@ vi.mock("./email.service", () => ({
   sendOrderStatusEmail: vi.fn(),
 }));
 
+vi.mock("./settings.service", () => ({
+  getSettings: vi.fn(),
+}));
+
 import prisma from "../lib/prisma";
+import { getSettings } from "./settings.service";
 import { prepareCheckout, finalizeOrder, CreateOrderInput, PreparedCheckout } from "./order.service";
 
 const mockedPrisma = vi.mocked(prisma, true);
+const mockedGetSettings = vi.mocked(getSettings);
+
+/** Store config helper — defaults to the live setup: no GST, no shipping. */
+const settingsOf = (over: Partial<{ tax_rate: number; shipping_limit: number; shipping_cost: number }> = {}) => ({
+  tax_rate: 0,
+  shipping_limit: 0,
+  shipping_cost: 0,
+  membership_fee: 999,
+  ...over,
+});
 
 const baseInput: CreateOrderInput = {
   userId: 1,
@@ -27,8 +42,6 @@ const baseInput: CreateOrderInput = {
     postalCode: "560001",
   },
   paymentMethod: "cod",
-  taxRate: 0.18,
-  shippingCost: 50,
 };
 
 const cartWithOneItem = (opts: { quantity: number; unitPrice: number; stockQty: number }) => ({
@@ -46,6 +59,7 @@ const cartWithOneItem = (opts: { quantity: number; unitPrice: number; stockQty: 
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedGetSettings.mockResolvedValue(settingsOf());
 });
 
 describe("prepareCheckout", () => {
@@ -55,7 +69,7 @@ describe("prepareCheckout", () => {
     await expect(prepareCheckout(baseInput)).rejects.toThrow(/cart is empty/i);
   });
 
-  it("computes subtotal, tax, and total from cart items", async () => {
+  it("charges exactly the listed price — no GST, no shipping added", async () => {
     mockedPrisma.cart.findFirst.mockResolvedValue(
       cartWithOneItem({ quantity: 2, unitPrice: 100, stockQty: 5 }) as any
     );
@@ -63,9 +77,45 @@ describe("prepareCheckout", () => {
     const result = await prepareCheckout(baseInput);
 
     expect(result.subtotal).toBe(200);
-    expect(result.taxAmount).toBeCloseTo(36); // 18% of 200
-    expect(result.totalAmount).toBeCloseTo(200 + 50 + 36); // subtotal + shipping + tax
+    expect(result.taxAmount).toBe(0);
+    expect(result.shippingCost).toBe(0);
     expect(result.discountAmount).toBe(0);
+    expect(result.totalAmount).toBe(200); // total === subtotal
+  });
+
+  it("derives tax and shipping from store settings, not from the caller", async () => {
+    mockedPrisma.cart.findFirst.mockResolvedValue(
+      cartWithOneItem({ quantity: 2, unitPrice: 100, stockQty: 5 }) as any
+    );
+    mockedGetSettings.mockResolvedValue(
+      settingsOf({ tax_rate: 0.18, shipping_limit: 499, shipping_cost: 99 })
+    );
+
+    // Client-supplied tax/shipping must be ignored entirely — this is what
+    // previously let the displayed total drift from the charged total.
+    const result = await prepareCheckout({
+      ...baseInput,
+      taxRate: 0.99,
+      shippingCost: 9999,
+    } as CreateOrderInput);
+
+    expect(result.taxAmount).toBeCloseTo(36); // 18% of 200, from settings
+    expect(result.shippingCost).toBe(99);     // below the 499 threshold
+    expect(result.totalAmount).toBeCloseTo(200 + 99 + 36);
+  });
+
+  it("waives shipping once the free-shipping threshold is met", async () => {
+    mockedPrisma.cart.findFirst.mockResolvedValue(
+      cartWithOneItem({ quantity: 1, unitPrice: 600, stockQty: 5 }) as any
+    );
+    mockedGetSettings.mockResolvedValue(
+      settingsOf({ shipping_limit: 499, shipping_cost: 99 })
+    );
+
+    const result = await prepareCheckout(baseInput);
+
+    expect(result.shippingCost).toBe(0);
+    expect(result.totalAmount).toBe(600);
   });
 
   it("rejects an item that exceeds available stock", async () => {
@@ -139,9 +189,9 @@ describe("finalizeOrder — stock race guard", () => {
     subtotal: 100,
     discountAmount: 0,
     resolvedCouponCode: undefined,
-    taxAmount: 18,
-    shippingCost: 50,
-    totalAmount: 168,
+    taxAmount: 0,
+    shippingCost: 0,
+    totalAmount: 100,
   };
 
   it("rolls back when a concurrent order already claimed the stock", async () => {

@@ -2,6 +2,7 @@ import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
 import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "./email.service";
+import { getSettings } from "./settings.service";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -15,14 +16,15 @@ export interface AddressInput {
   country?: string;
 }
 
+// Note: tax and shipping are deliberately NOT part of this input. They are
+// derived server-side from system settings inside prepareCheckout, so a client
+// can never influence what it is charged.
 export interface CreateOrderInput {
   userId: number;
   address: AddressInput;
   couponCode?: string;
   paymentMethod: "cod" | "razorpay";
   sessionToken?: string;
-  taxRate: number;
-  shippingCost: number;
 }
 
 export type PreparedCheckout = {
@@ -44,7 +46,7 @@ const generateOrderNumber = (): string => {
 };
 
 export const prepareCheckout = async (input: CreateOrderInput) => {
-   const { userId, address, couponCode, paymentMethod, sessionToken, taxRate, shippingCost } = input;
+   const { userId, address, couponCode, paymentMethod, sessionToken } = input;
 
     // ── Step 1: Validate input ────────────────────────────────────────────────
   if (!address.addressLine1?.trim()) throw new Error("Shipping address is required.");
@@ -108,7 +110,14 @@ export const prepareCheckout = async (input: CreateOrderInput) => {
     }
   }
 
-  const taxAmount   = subtotal * taxRate;
+  // Tax and shipping come from server-side settings only — never from the
+  // client — so the amount charged always matches the store's configuration.
+  // Both default to 0, i.e. the listed price is the price paid.
+  const settings = await getSettings();
+  const taxAmount = subtotal * settings.tax_rate;
+  const shippingCost =
+    subtotal >= settings.shipping_limit ? 0 : settings.shipping_cost;
+
   const totalAmount = Math.max(0, subtotal + shippingCost + taxAmount - discountAmount);
 
   // ── Step 4: Check inventory ───────────────────────────────────────────────

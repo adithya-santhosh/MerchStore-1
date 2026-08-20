@@ -20,15 +20,14 @@ export const createPaymentOrder = async (
             sessionToken,
         } = req.body;
 
+        // Tax and shipping are derived server-side from system settings — see
+        // prepareCheckout. Nothing money-related is accepted from the client.
         const payment = await createRazorpayOrder({
             userId,
             address,
             couponCode,
             paymentMethod: "razorpay",
             sessionToken,
-            // Tax rate and shipping cost are always computed server-side
-            taxRate: 0.18,
-            shippingCost: 0,
         });
 
         res.status(200).json(payment);
@@ -65,15 +64,14 @@ export const verifyPayment = async (
             return res.status(400).json({ message: "Missing Razorpay payment parameters." });
         }
 
+        // Tax and shipping are derived server-side from system settings — see
+        // prepareCheckout. Nothing money-related is accepted from the client.
         const order = await verifyRazorpayPayment({
             userId,
             address,
             couponCode,
             paymentMethod: "razorpay",
             sessionToken,
-            // Tax rate and shipping cost are always computed server-side
-            taxRate: 0.18,
-            shippingCost: 0,
             razorpayOrderId,
             razorpayPaymentId,
             razorpaySignature,

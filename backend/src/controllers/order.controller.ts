@@ -25,15 +25,14 @@ export const placeOrder = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid payment method. Use 'cod' or 'razorpay'." });
     }
 
+    // Tax and shipping are derived server-side from system settings — see
+    // prepareCheckout. Nothing money-related is accepted from the client.
     const order = await createOrder({
       userId,
       address,
       couponCode,
       paymentMethod,
       sessionToken,
-      // Tax rate and shipping cost are always computed server-side
-      taxRate: 0.18,
-      shippingCost: 0,
     });
 
     res.status(201).json(order);

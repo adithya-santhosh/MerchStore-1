@@ -304,8 +304,6 @@ export default function CheckoutPage() {
           address: addressPayload,
           couponCode: couponDetails?.code,
           sessionToken,
-          taxRate,
-          shippingCost,
         });
 
         // 3. Open Razorpay checkout
@@ -327,8 +325,6 @@ export default function CheckoutPage() {
                 address: addressPayload,
                 couponCode: couponDetails?.code,
                 sessionToken,
-                taxRate,
-                shippingCost,
               });
 
               clearCart();
@@ -363,8 +359,6 @@ export default function CheckoutPage() {
           couponCode: couponDetails?.code,
           paymentMethod: "cod",
           sessionToken,
-          taxRate,
-          shippingCost,
         });
 
         clearCart();
@@ -898,10 +892,12 @@ export default function CheckoutPage() {
                     <span className="text-foreground">₹{shippingCost}</span>
                   )}
                 </div>
-                <div className="flex justify-between text-muted-foreground font-semibold">
-                  <span>GST ({(taxRate * 100).toFixed(0)}%)</span>
-                  <span className="text-foreground">₹{Math.round(taxAmount).toLocaleString("en-IN")}</span>
-                </div>
+                {taxAmount > 0 && (
+                  <div className="flex justify-between text-muted-foreground font-semibold">
+                    <span>GST ({(taxRate * 100).toFixed(0)}%)</span>
+                    <span className="text-foreground">₹{Math.round(taxAmount).toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 {couponDetails && (
                   <div className="flex justify-between text-emerald-500 font-bold animate-in fade-in">
                     <span>Discount ({couponDetails.code})</span>

@@ -348,7 +348,9 @@ export default function AdminOrderDetailPage() {
                   ? <span className="text-emerald-500">Free</span>
                   : `₹${order.shippingCost.toLocaleString("en-IN")}`}
               />
-              <InfoRow label="GST"       value={`₹${Math.round(order.taxAmount).toLocaleString("en-IN")}`} />
+              {order.taxAmount > 0 && (
+                <InfoRow label="GST"     value={`₹${Math.round(order.taxAmount).toLocaleString("en-IN")}`} />
+              )}
               {order.discountAmount > 0 && (
                 <InfoRow
                   label={`Discount${order.couponCode ? ` (${order.couponCode})` : ""}`}

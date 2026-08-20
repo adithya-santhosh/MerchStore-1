@@ -94,13 +94,14 @@ const addressSchema = z.object({
   country: z.string().max(2).default("IN"),
 });
 
+// taxRate/shippingCost are intentionally absent — they are derived server-side
+// from system settings, so any values a client sends are ignored (Zod strips
+// unknown keys) rather than trusted.
 export const placeOrderSchema = z.object({
   address: addressSchema,
   couponCode: z.string().max(50).optional(),
   paymentMethod: z.enum(["cod", "razorpay"]),
   sessionToken: z.string().optional(),
-  taxRate: z.number().min(0).max(1).optional(),
-  shippingCost: z.number().min(0).optional(),
 });
 
 export const couponValidateSchema = z.object({

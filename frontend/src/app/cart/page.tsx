@@ -97,7 +97,9 @@ export default function CartPage() {
               {/* Left Side: Cart Items List */}
               <div className="lg:col-span-8 space-y-5">
                 
-                {/* Free Shipping Progress Bar */}
+                {/* Free Shipping Progress Bar — only meaningful when a
+                    spend threshold actually exists (shipping is free below it) */}
+                {shippingThreshold > 0 && (
                 <div className="p-5 rounded-3xl border border-border/80 bg-card/25 space-y-3 shadow-sm">
                   <div className="flex justify-between items-center text-xs">
                     <span className="font-semibold text-foreground">
@@ -122,6 +124,7 @@ export default function CartPage() {
                     />
                   </div>
                 </div>
+                )}
 
                 {/* Items List */}
                 <div className="space-y-4">
@@ -214,10 +217,12 @@ export default function CartPage() {
                       )}
                     </div>
 
-                    <div className="flex justify-between text-muted-foreground font-semibold">
-                      <span>GST ({(taxRate * 100).toFixed(0)}%)</span>
-                      <span className="text-foreground">₹{estimatedTax.toLocaleString("en-IN")}</span>
-                    </div>
+                    {estimatedTax > 0 && (
+                      <div className="flex justify-between text-muted-foreground font-semibold">
+                        <span>GST ({(taxRate * 100).toFixed(0)}%)</span>
+                        <span className="text-foreground">₹{estimatedTax.toLocaleString("en-IN")}</span>
+                      </div>
+                    )}
 
                     {promoApplied && couponDetails && (
                       <div className="flex justify-between text-emerald-500 font-semibold animate-in fade-in">

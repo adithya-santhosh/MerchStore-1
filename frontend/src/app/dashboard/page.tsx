@@ -1088,13 +1088,19 @@ function DashboardContent() {
 
               <div className="flex justify-between items-center text-muted-foreground">
                 <span>Shipping Cost</span>
-                <span>₹{Number(selectedOrder.shippingCost).toLocaleString("en-IN")}</span>
+                {Number(selectedOrder.shippingCost) === 0 ? (
+                  <span className="text-emerald-500 font-bold uppercase text-xs">Free</span>
+                ) : (
+                  <span>₹{Number(selectedOrder.shippingCost).toLocaleString("en-IN")}</span>
+                )}
               </div>
 
-              <div className="flex justify-between items-center text-muted-foreground">
-                <span>Tax Amount</span>
-                <span>₹{Number(selectedOrder.taxAmount).toLocaleString("en-IN")}</span>
-              </div>
+              {Number(selectedOrder.taxAmount) > 0 && (
+                <div className="flex justify-between items-center text-muted-foreground">
+                  <span>Tax Amount</span>
+                  <span>₹{Number(selectedOrder.taxAmount).toLocaleString("en-IN")}</span>
+                </div>
+              )}
 
               <div className="flex justify-between items-center text-sm font-black text-foreground pt-2 border-t border-border/30">
                 <span className="text-sm">Grand Total (INR)</span>

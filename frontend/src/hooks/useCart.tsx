@@ -38,10 +38,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [isSidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const { user } = useAuth();
+  // Defaults mirror the server's (no GST, no shipping) so totals don't flicker
+  // to a different number between first paint and /api/settings resolving.
   const [settings, setSettings] = useState<SystemSettings>({
-    tax_rate: 0.18,
-    shipping_limit: 499,
-    shipping_cost: 99
+    tax_rate: 0,
+    shipping_limit: 0,
+    shipping_cost: 0
   });
 
   // Initialize session token from localStorage

@@ -294,10 +294,12 @@ function ConfirmationPageContent() {
                     <span className="text-foreground">₹{order.shippingCost.toLocaleString("en-IN")}</span>
                   )}
                 </div>
-                <div className="flex justify-between text-muted-foreground font-semibold">
-                  <span>GST</span>
-                  <span className="text-foreground">₹{Math.round(order.taxAmount).toLocaleString("en-IN")}</span>
-                </div>
+                {order.taxAmount > 0 && (
+                  <div className="flex justify-between text-muted-foreground font-semibold">
+                    <span>GST</span>
+                    <span className="text-foreground">₹{Math.round(order.taxAmount).toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 {order.discountAmount > 0 && (
                   <div className="flex justify-between text-emerald-500 font-bold">
                     <span>Discount{order.couponCode && ` (${order.couponCode})`}</span>

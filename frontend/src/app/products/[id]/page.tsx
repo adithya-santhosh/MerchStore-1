@@ -124,7 +124,7 @@ export default async function ProductPage({ params }: PageProps) {
                 <Truck className="size-5 text-primary shrink-0 mt-0.5" />
                 <div>
                   <h4 className="text-xs font-bold text-foreground">Free Delivery</h4>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">On orders above ₹499</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">On every order, no minimum</p>
                 </div>
               </div>
 

@@ -60,8 +60,9 @@ export default function CartSidebar() {
 
           {/* Items List */}
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-            {/* Free Shipping Progress Bar */}
-            {itemsCount > 0 && (
+            {/* Free Shipping Progress Bar — only meaningful when a spend
+                threshold actually exists (shipping is free below it) */}
+            {itemsCount > 0 && shippingThreshold > 0 && (
               <div className="p-4 rounded-2xl border border-border bg-card/20 space-y-2.5 mb-2 shadow-sm">
                 <div className="flex justify-between items-center text-[11px]">
                   <span className="font-semibold text-foreground leading-normal">

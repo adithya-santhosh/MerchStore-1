@@ -130,14 +130,22 @@ export const getOrderConfirmationEmailHtml = (order: any, frontendUrl: string): 
                   </tr>`
                       : ""
                   }
-                  <tr>
+                  ${
+                    Number(order.taxAmount) > 0
+                      ? `<tr>
                     <td style="padding: 4px 0; color: #94a3b8; font-size: 14px;">Tax:</td>
                     <td style="padding: 4px 0; color: #f8fafc; font-size: 14px; text-align: right;">₹${Number(order.taxAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                  <tr>
+                  </tr>`
+                      : ""
+                  }
+                  ${
+                    Number(order.shippingCost) > 0
+                      ? `<tr>
                     <td style="padding: 4px 0; color: #94a3b8; font-size: 14px;">Shipping:</td>
                     <td style="padding: 4px 0; color: #f8fafc; font-size: 14px; text-align: right;">₹${Number(order.shippingCost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                  </tr>
+                  </tr>`
+                      : ""
+                  }
                   <tr style="border-top: 1px solid #334155;">
                     <td style="padding: 12px 0 0 0; color: #f8fafc; font-size: 16px; font-weight: 700;">Grand Total:</td>
                     <td style="padding: 12px 0 0 0; color: #38bdf8; font-size: 18px; font-weight: 700; text-align: right;">₹${Number(order.totalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
