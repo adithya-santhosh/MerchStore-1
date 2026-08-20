@@ -102,9 +102,6 @@ export const becomeMember = async (req: Request, res: Response) => {
 export const forgotPassword = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    if (!email) {
-      return res.status(400).json({ message: "Email is required" });
-    }
     const result = await requestPasswordReset(email);
     res.json(result);
   } catch (error: any) {
@@ -116,9 +113,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
 export const resetPasswordHandler = async (req: Request, res: Response) => {
   try {
     const { token, newPassword } = req.body;
-    if (!token || !newPassword) {
-      return res.status(400).json({ message: "Reset token and new password are required" });
-    }
     const result = await resetPassword(token, newPassword);
     res.json(result);
   } catch (error: any) {
@@ -133,9 +127,6 @@ export const changePassword = async (req: Request, res: Response) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
     const { currentPassword, newPassword } = req.body;
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ message: "Current password and new password are required" });
-    }
     const result = await changeUserPassword(req.user.id, currentPassword, newPassword);
     res.json(result);
   } catch (error: any) {

@@ -5,6 +5,9 @@ import {
   placeOrderSchema,
   couponValidateSchema,
   createCouponSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  changePasswordSchema,
 } from "./validation.middleware";
 
 describe("registerSchema", () => {
@@ -95,6 +98,66 @@ describe("couponValidateSchema", () => {
 
   it("rejects a non-positive order amount", () => {
     const result = couponValidateSchema.safeParse({ code: "SAVE10", orderAmount: 0 });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("forgotPasswordSchema", () => {
+  it("accepts a valid email and lowercases it", () => {
+    const result = forgotPasswordSchema.parse({ email: "User@Example.com" });
+    expect(result.email).toBe("user@example.com");
+  });
+
+  it("rejects a missing email", () => {
+    const result = forgotPasswordSchema.safeParse({});
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects an invalid email", () => {
+    const result = forgotPasswordSchema.safeParse({ email: "not-an-email" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("resetPasswordSchema", () => {
+  it("accepts a valid token and password", () => {
+    const result = resetPasswordSchema.safeParse({ token: "abc123", newPassword: "password123" });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a missing token", () => {
+    const result = resetPasswordSchema.safeParse({ newPassword: "password123" });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a password shorter than 8 characters", () => {
+    const result = resetPasswordSchema.safeParse({ token: "abc123", newPassword: "short1" });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe("changePasswordSchema", () => {
+  it("accepts a valid current/new password pair", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "oldpassword1",
+      newPassword: "newpassword1",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects an empty current password", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "",
+      newPassword: "newpassword1",
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a new password shorter than 8 characters", () => {
+    const result = changePasswordSchema.safeParse({
+      currentPassword: "oldpassword1",
+      newPassword: "short1",
+    });
     expect(result.success).toBe(false);
   });
 });

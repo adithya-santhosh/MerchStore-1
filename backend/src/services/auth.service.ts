@@ -296,8 +296,8 @@ export const requestPasswordReset = async (email: string) => {
 };
 
 export const resetPassword = async (rawToken: string, newPassword: string) => {
-  if (!rawToken || !newPassword || newPassword.length < 6) {
-    throw new Error("Invalid request. Password must be at least 6 characters.");
+  if (!rawToken || !newPassword || newPassword.length < 8) {
+    throw new Error("Invalid request. Password must be at least 8 characters.");
   }
 
   const tokenHash = crypto.createHash("sha256").update(rawToken).digest("hex");
@@ -336,8 +336,8 @@ export const resetPassword = async (rawToken: string, newPassword: string) => {
 };
 
 export const changeUserPassword = async (userId: number, currentPassword: string, newPassword: string) => {
-  if (!currentPassword || !newPassword || newPassword.length < 6) {
-    throw new Error("New password must be at least 6 characters long.");
+  if (!currentPassword || !newPassword || newPassword.length < 8) {
+    throw new Error("New password must be at least 8 characters long.");
   }
 
   const user = await prisma.user.findUnique({
