@@ -1143,6 +1143,51 @@ export async function changePasswordAPI(currentPassword: string, newPassword: st
   return res.json();
 }
 
-// PASSWORD_RESET_HELPERS_PLACEHOLDER
+// ─── Password Reset ───────────────────────────────────────────────────────────
+
+/**
+ * Pulls the first field-level message out of a 422 validation response, falling
+ * back to the top-level message. Keeps Zod errors readable in the UI instead of
+ * showing a bare "Validation failed".
+ */
+async function readApiError(res: Response, fallback: string): Promise<string> {
+  try {
+    const err = await res.json();
+    if (Array.isArray(err?.errors) && err.errors.length > 0) {
+      return err.errors[0].message || err.message || fallback;
+    }
+    return err?.message || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function requestPasswordResetAPI(email: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to send the reset link. Please try again."));
+  }
+
+  return res.json();
+}
+
+export async function resetPasswordAPI(token: string, newPassword: string): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, newPassword }),
+  });
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to reset your password. Please try again."));
+  }
+
+  return res.json();
+}
 
 
