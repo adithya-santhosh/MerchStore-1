@@ -21,6 +21,51 @@ describe("app", () => {
   });
 });
 
+describe("error handling", () => {
+  it("returns JSON 404 for an unknown route, not an HTML page", async () => {
+    const res = await request(app).get("/api/does-not-exist");
+    expect(res.status).toBe(404);
+    expect(res.headers["content-type"]).toMatch(/json/);
+    expect(res.body.message).toMatch(/not found/i);
+  });
+
+  it("rejects a disallowed CORS origin with 403 rather than 500", async () => {
+    const res = await request(app)
+      .get("/health")
+      .set("Origin", "https://not-our-frontend.example.com");
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe("Origin not allowed");
+    // The whole point: a blocked origin must not look like a server fault.
+    expect(res.status).not.toBe(500);
+  });
+
+  it("still allows a permitted origin through", async () => {
+    const res = await request(app)
+      .get("/health")
+      .set("Origin", "http://localhost:3000");
+
+    expect(res.status).toBe(200);
+    expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
+  });
+
+  it("answers 400 for malformed JSON instead of crashing", async () => {
+    const res = await request(app)
+      .post("/api/auth/login")
+      .set("Content-Type", "application/json")
+      .send('{"email": "broken"'); // deliberately truncated
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/malformed json/i);
+  });
+
+  it("never leaks a stack trace to the client", async () => {
+    const res = await request(app).get("/api/does-not-exist");
+    expect(JSON.stringify(res.body)).not.toMatch(/at .*\(/);
+    expect(res.body).not.toHaveProperty("stack");
+  });
+});
+
 describe("proxy trust / rate-limit isolation", () => {
   it("trusts a bounded number of proxy hops rather than every hop", () => {
     // `true` would let any client forge X-Forwarded-For and evade rate limiting.
