@@ -2,19 +2,13 @@ import logger from "../lib/logger";
 import { Request, Response } from "express";
 import { registerUser, loginUser, getUserById, updateUserProfile, becomeMemberUser, requestPasswordReset, resetPassword, changeUserPassword } from "../services/auth.service";
 
-// ─── Auth Cookie ──────────────────────────────────────────────────────────────
-// The JWT is set as an HttpOnly cookie so client-side JS (and therefore XSS)
-// can never read it. `sameSite: "none"` is required when the frontend and
-// backend live on different sites (typical prod deploy); "lax" is used in
-// dev where both run on localhost (same-site, different port).
-const AUTH_COOKIE_NAME = "token";
-const AUTH_COOKIE_OPTIONS = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as "none" | "lax",
-  path: "/",
-};
-const AUTH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days — matches JWT expiry
+// Auth cookie settings live in lib/auth-cookie.ts — see the notes there on why
+// SameSite depends on whether the frontend and API share a registrable domain.
+import {
+  AUTH_COOKIE_NAME,
+  AUTH_COOKIE_OPTIONS,
+  AUTH_COOKIE_MAX_AGE,
+} from "../lib/auth-cookie";
 
 export const register = async (req: Request, res: Response) => {
   try {
