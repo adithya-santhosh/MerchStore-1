@@ -29,9 +29,13 @@ const app = express();
 // 20 auth attempts per 15 minutes across all customers combined, not per person.
 //
 // This is deliberately a HOP COUNT, never `true`. Trusting every hop would let a
-// client spoof X-Forwarded-For and sidestep rate limiting completely. Render is
-// a single hop; raise this to 2 if you later put a CDN (e.g. Cloudflare) in
-// front of it.
+// client spoof X-Forwarded-For and sidestep rate limiting completely.
+//
+// Set TRUST_PROXY_HOPS to match the real chain. Render fronts every service with
+// Cloudflare (visible as `Server: cloudflare` / `cf-ray` in responses), so the
+// chain there is Cloudflare -> Render router -> app and the correct value is 2.
+// Too low and req.ip resolves to a rotating edge IP, scattering rate-limit
+// buckets; too high and a client can forge X-Forwarded-For.
 const TRUST_PROXY_HOPS = process.env.TRUST_PROXY_HOPS
   ? Number(process.env.TRUST_PROXY_HOPS)
   : process.env.NODE_ENV === "production"
