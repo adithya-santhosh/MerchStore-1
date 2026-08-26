@@ -8,9 +8,11 @@ vi.mock("../lib/prisma", () => ({
   },
 }));
 
+// Resolved promises, not bare vi.fn() — the service attaches .catch() to these
+// to fire them in the background, which would throw on an undefined return.
 vi.mock("./email.service", () => ({
-  sendOrderConfirmationEmail: vi.fn(),
-  sendOrderStatusEmail: vi.fn(),
+  sendOrderConfirmationEmail: vi.fn().mockResolvedValue(undefined),
+  sendOrderStatusEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("./settings.service", () => ({
@@ -19,7 +21,14 @@ vi.mock("./settings.service", () => ({
 
 import prisma from "../lib/prisma";
 import { getSettings } from "./settings.service";
-import { prepareCheckout, finalizeOrder, CreateOrderInput, PreparedCheckout } from "./order.service";
+import {
+  prepareCheckout,
+  finalizeOrder,
+  cancelOrder,
+  isCancellable,
+  CreateOrderInput,
+  PreparedCheckout,
+} from "./order.service";
 
 const mockedPrisma = vi.mocked(prisma, true);
 const mockedGetSettings = vi.mocked(getSettings);
@@ -233,5 +242,117 @@ describe("finalizeOrder — stock race guard", () => {
     await finalizeOrder(checkout, baseInput);
 
     expect(tx.order.findUnique).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ─── Cancellation ─────────────────────────────────────────────────────────────
+
+/** Minimal `tx` covering everything cancelOrder touches. */
+const makeCancelTx = (order: any) => {
+  const updatedOrder = { ...order, status: "CANCELLED", user: { email: "c@d.com" } };
+  return {
+    order: {
+      findUnique: vi.fn().mockResolvedValue(order),
+      update: vi.fn().mockResolvedValue(updatedOrder),
+    },
+    product: { update: vi.fn().mockResolvedValue({}) },
+    coupon: { updateMany: vi.fn().mockResolvedValue({ count: 1 }) },
+    payment: { update: vi.fn().mockResolvedValue({}) },
+  };
+};
+
+const orderFixture = (over: Record<string, any> = {}) => ({
+  id: 1,
+  orderNumber: "ORD-2026-00001",
+  userId: 7,
+  status: "PENDING",
+  totalAmount: 1999,
+  couponCode: null,
+  notes: null,
+  items: [{ productId: 10, quantity: 2 }],
+  payment: { id: 5, status: "PENDING", gateway: "cod", gatewayPaymentId: null },
+  ...over,
+});
+
+describe("isCancellable", () => {
+  it("allows cancellation only before dispatch", () => {
+    expect(isCancellable("PENDING" as any)).toBe(true);
+    expect(isCancellable("CONFIRMED" as any)).toBe(true);
+    expect(isCancellable("PROCESSING" as any)).toBe(true);
+    expect(isCancellable("SHIPPED" as any)).toBe(false);
+    expect(isCancellable("DELIVERED" as any)).toBe(false);
+    expect(isCancellable("CANCELLED" as any)).toBe(false);
+  });
+});
+
+describe("cancelOrder", () => {
+  it("puts the reserved stock back on the shelf", async () => {
+    const tx = makeCancelTx(orderFixture());
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await cancelOrder(1, { userId: 7 });
+
+    // The checkout decremented 2 units; cancelling must return exactly 2.
+    expect(tx.product.update).toHaveBeenCalledWith({
+      where: { id: 10 },
+      data: { stockQty: { increment: 2 } },
+    });
+  });
+
+  it("returns the coupon redemption when one was used", async () => {
+    const tx = makeCancelTx(orderFixture({ couponCode: "SAVE10" }));
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await cancelOrder(1, { userId: 7 });
+
+    expect(tx.coupon.updateMany).toHaveBeenCalledWith({
+      where: { code: "SAVE10", usedCount: { gt: 0 } },
+      data: { usedCount: { decrement: 1 } },
+    });
+  });
+
+  it("refuses to cancel someone else's order, reporting it as not found", async () => {
+    const tx = makeCancelTx(orderFixture({ userId: 999 }));
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    // Must not leak that the order exists.
+    await expect(cancelOrder(1, { userId: 7 })).rejects.toThrow("Order not found");
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses a customer cancellation once the order has shipped", async () => {
+    const tx = makeCancelTx(orderFixture({ status: "SHIPPED" }));
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await expect(cancelOrder(1, { userId: 7 })).rejects.toThrow(/no longer be cancelled/i);
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it("lets an admin (no userId) cancel a shipped order", async () => {
+    const tx = makeCancelTx(orderFixture({ status: "SHIPPED" }));
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await cancelOrder(1);
+
+    expect(tx.product.update).toHaveBeenCalled();
+  });
+
+  it("rejects double cancellation so stock is never credited twice", async () => {
+    const tx = makeCancelTx(orderFixture({ status: "CANCELLED" }));
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await expect(cancelOrder(1, { userId: 7 })).rejects.toThrow(/already been cancelled/i);
+    expect(tx.product.update).not.toHaveBeenCalled();
+  });
+
+  it("leaves a captured payment as PAID so the refund owed stays visible", async () => {
+    const paid = orderFixture({ payment: { id: 5, status: "PAID", gateway: "razorpay", gatewayPaymentId: "pay_x" } });
+    const tx = makeCancelTx(paid);
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await cancelOrder(1, { userId: 7 });
+
+    // Marking it REFUNDED here would record a refund that never happened.
+    expect(tx.payment.update).not.toHaveBeenCalled();
   });
 });

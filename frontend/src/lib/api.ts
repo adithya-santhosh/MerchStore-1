@@ -1143,6 +1143,33 @@ export async function changePasswordAPI(currentPassword: string, newPassword: st
   return res.json();
 }
 
+/** Order statuses a customer can still cancel from — mirrors the backend. */
+export const CANCELLABLE_ORDER_STATUSES = ["pending", "confirmed", "processing"];
+
+export function isOrderCancellable(status: string): boolean {
+  return CANCELLABLE_ORDER_STATUSES.includes(status.toLowerCase());
+}
+
+export async function cancelOrderApi(orderId: number, reason?: string): Promise<Order> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/orders/${orderId}/cancel`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(reason ? { reason } : {}),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || "Failed to cancel order");
+  }
+
+  return response.json();
+}
+
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
 /**

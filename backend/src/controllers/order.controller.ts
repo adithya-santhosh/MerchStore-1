@@ -7,6 +7,7 @@ import {
   getAllOrdersAdmin,
   getOrderByIdAdmin,
   updateOrderStatus,
+  cancelOrder,
 } from "../services/order.service";
 
 // ─── Customer Endpoints ───────────────────────────────────────────────────────
@@ -69,6 +70,33 @@ export const getOrder = async (req: Request, res: Response) => {
     logger.error({ err: error }, "Error in getOrder controller");
     const status = error.message === "Order not found" ? 404 : 500;
     res.status(status).json({ message: error.message || "Failed to fetch order." });
+  }
+};
+
+// PATCH /api/orders/:id/cancel — customer cancels their own order
+export const cancelMyOrder = async (req: Request, res: Response) => {
+  try {
+    const orderId = Number(req.params.id);
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return res.status(400).json({ message: "Invalid order ID." });
+    }
+
+    const { reason } = req.body ?? {};
+    const order = await cancelOrder(orderId, {
+      userId: req.user!.id,
+      ...(typeof reason === "string" && reason.trim()
+        ? { reason: reason.trim().slice(0, 500) }
+        : {}),
+    });
+
+    res.json(order);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error in cancelMyOrder controller");
+    const message = error.message || "Failed to cancel order.";
+    // "Not found" covers both a missing order and one belonging to someone
+    // else, so a customer can't probe which order IDs exist.
+    const status = message === "Order not found" ? 404 : 400;
+    res.status(status).json({ message });
   }
 };
 

@@ -446,6 +446,127 @@ export const getOrderByIdAdmin = async (orderId: number) => {
   };
 };
 
+// ─── Cancellation ─────────────────────────────────────────────────────────────
+
+/**
+ * Statuses a customer may still cancel from. Mirrors the published Cancellation
+ * & Refund Policy: cancellable up until the order is handed to the courier.
+ */
+export const CANCELLABLE_STATUSES: OrderStatus[] = [
+  OrderStatus.PENDING,
+  OrderStatus.CONFIRMED,
+  OrderStatus.PROCESSING,
+];
+
+export const isCancellable = (status: OrderStatus): boolean =>
+  CANCELLABLE_STATUSES.includes(status);
+
+/**
+ * Cancels an order and reverses its side effects atomically: stock goes back on
+ * the shelf and any coupon use is given back.
+ *
+ * Pass `userId` for a customer-initiated cancellation — the order must belong to
+ * them. Omit it for an admin cancellation, which may cancel from any status.
+ *
+ * Money is deliberately NOT moved here. The payment row is left untouched, so
+ * "a CANCELLED order whose payment is still PAID" is exactly the set of refunds
+ * owed — no extra schema state needed. The gateway refund is issued separately
+ * so no automated path can move real money on its own.
+ */
+export const cancelOrder = async (
+  orderId: number,
+  { userId, reason }: { userId?: number; reason?: string } = {}
+) => {
+  const cancelled = await prisma.$transaction(async (tx) => {
+    const order = await tx.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, payment: true },
+    });
+
+    if (!order) throw new Error("Order not found");
+
+    // Customers may only touch their own orders. Report the same "not found"
+    // as a missing order so this can't be used to probe which IDs exist.
+    if (userId !== undefined && order.userId !== userId) {
+      throw new Error("Order not found");
+    }
+
+    if (order.status === OrderStatus.CANCELLED) {
+      throw new Error("This order has already been cancelled.");
+    }
+
+    // Admins can cancel from any state (e.g. to reverse a mistaken dispatch);
+    // customers are held to the published policy.
+    if (userId !== undefined && !isCancellable(order.status)) {
+      throw new Error(
+        `This order can no longer be cancelled because it is already ${order.status.toLowerCase()}. Please contact support to arrange a return.`
+      );
+    }
+
+    // Put the stock back — the checkout decremented it when the order was placed.
+    for (const item of order.items) {
+      await tx.product.update({
+        where: { id: item.productId },
+        data:  { stockQty: { increment: item.quantity } },
+      });
+    }
+
+    // Give the coupon use back so the customer isn't charged a redemption for
+    // an order that never happened.
+    if (order.couponCode) {
+      await tx.coupon.updateMany({
+        where: { code: order.couponCode, usedCount: { gt: 0 } },
+        data:  { usedCount: { decrement: 1 } },
+      });
+    }
+
+    // The payment row is intentionally left as-is. Marking it REFUNDED here
+    // would record a refund that hasn't happened; leaving it PAID on a
+    // CANCELLED order is what identifies a refund as owed.
+
+    return tx.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.CANCELLED,
+        notes: reason
+          ? `${order.notes ? `${order.notes}\n` : ""}Cancellation reason: ${reason}`
+          : order.notes,
+      },
+      include: {
+        user:            { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        items:           true,
+        payment:         true,
+        shippingAddress: true,
+      },
+    });
+  });
+
+  // Surfaced at warn level so refunds owed are greppable in the logs until
+  // there's a proper admin refunds queue.
+  if (cancelled.payment?.status === PaymentStatus.PAID) {
+    logger.warn(
+      {
+        orderId: cancelled.id,
+        orderNumber: cancelled.orderNumber,
+        amount: Number(cancelled.totalAmount),
+        gateway: cancelled.payment.gateway,
+        gatewayPaymentId: cancelled.payment.gatewayPaymentId,
+      },
+      "REFUND REQUIRED: cancelled order had a captured payment"
+    );
+  }
+
+  if (cancelled.user?.email) {
+    sendOrderStatusEmail({
+      to: cancelled.user.email,
+      order: cancelled,
+      newStatus: OrderStatus.CANCELLED,
+    }).catch((err) => logger.error({ err }, "[OrderService] Cancellation email error"));
+  }
+
+  return mapOrder(cancelled);
+};
+
 // ─── Admin: Update order status ───────────────────────────────────────────────
 
 export const updateOrderStatus = async (orderId: number, status: string) => {
@@ -453,6 +574,14 @@ export const updateOrderStatus = async (orderId: number, status: string) => {
   if (!validStatuses.includes(status as OrderStatus)) {
     throw new Error(`Invalid status. Must be one of: ${validStatuses.join(", ")}`);
   }
+
+  // Cancelling has side effects — restock, coupon reversal, refund flagging —
+  // so route it through cancelOrder rather than a bare status write. Previously
+  // an admin cancel silently lost that stock forever.
+  if (status === OrderStatus.CANCELLED) {
+    return cancelOrder(orderId);
+  }
+
   const order = await prisma.order.update({
     where: { id: orderId },
     data:  { status: status as OrderStatus },

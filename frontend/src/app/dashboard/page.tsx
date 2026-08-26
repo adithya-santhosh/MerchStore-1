@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
-import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI } from "@/lib/api";
+import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI, cancelOrderApi, isOrderCancellable } from "@/lib/api";
 import { 
   User, 
   ShoppingBag, 
@@ -54,6 +54,38 @@ function DashboardContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  // ── Order cancellation ──────────────────────────────────────────────────────
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState("");
+
+  // Clear any half-finished cancellation when switching to a different order,
+  // so a previous error or open confirmation never carries over.
+  useEffect(() => {
+    setConfirmingCancel(false);
+    setCancelReason("");
+    setCancelError("");
+  }, [selectedOrder?.id]);
+
+  const handleCancelOrder = async () => {
+    if (!selectedOrder) return;
+    setCancelling(true);
+    setCancelError("");
+    try {
+      const updated = await cancelOrderApi(selectedOrder.id, cancelReason.trim() || undefined);
+      // Reflect the new status in both the list and the open modal without a refetch.
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
+      setSelectedOrder((prev) => (prev ? { ...prev, ...updated } : prev));
+      setConfirmingCancel(false);
+      setCancelReason("");
+    } catch (err: any) {
+      setCancelError(err.message || "Could not cancel this order. Please try again.");
+    } finally {
+      setCancelling(false);
+    }
+  };
   
   const [membershipFee, setMembershipFee] = useState<number>(999);
   const [membershipLoading, setMembershipLoading] = useState(false);
@@ -1107,6 +1139,68 @@ function DashboardContent() {
                 <span className="text-base text-primary">₹{Number(selectedOrder.totalAmount).toLocaleString("en-IN")}</span>
               </div>
             </div>
+
+            {/* Cancellation — only offered while the order can still be stopped */}
+            {isOrderCancellable(selectedOrder.status) && (
+              <div className="border-t border-border/60 pt-5 mt-5 space-y-3">
+                {cancelError && (
+                  <div className="p-3 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl text-xs flex items-start gap-2">
+                    <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                    <span>{cancelError}</span>
+                  </div>
+                )}
+
+                {confirmingCancel ? (
+                  <div className="space-y-3">
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Cancel order <span className="font-bold text-foreground">{selectedOrder.orderNumber}</span>?
+                      {Number(selectedOrder.totalAmount) > 0 &&
+                        selectedOrder.payment?.status?.toUpperCase() === "PAID" && (
+                          <> Your refund of ₹{Number(selectedOrder.totalAmount).toLocaleString("en-IN")} will be
+                          returned to your original payment method within 5–7 business days.</>
+                        )}
+                    </p>
+                    <input
+                      type="text"
+                      value={cancelReason}
+                      onChange={(e) => setCancelReason(e.target.value)}
+                      placeholder="Reason (optional)"
+                      className="w-full bg-background border border-input rounded-xl px-3.5 py-2.5 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground"
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleCancelOrder}
+                        disabled={cancelling}
+                        className="flex-1 py-5 text-xs font-bold rounded-xl cursor-pointer bg-destructive hover:bg-destructive/90 text-white"
+                      >
+                        {cancelling ? "Cancelling..." : "Yes, cancel this order"}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => { setConfirmingCancel(false); setCancelError(""); }}
+                        disabled={cancelling}
+                        className="flex-1 py-5 text-xs font-bold rounded-xl cursor-pointer"
+                      >
+                        Keep order
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={() => setConfirmingCancel(true)}
+                      className="w-full py-5 text-xs font-bold rounded-xl cursor-pointer text-destructive border-destructive/30 hover:bg-destructive/5"
+                    >
+                      Cancel this order
+                    </Button>
+                    <p className="text-[10px] text-muted-foreground text-center leading-relaxed">
+                      Free to cancel until your order is dispatched.
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
 
           </div>
         </div>
