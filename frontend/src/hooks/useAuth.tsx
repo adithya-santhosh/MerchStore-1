@@ -69,10 +69,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const router = useRouter();
 
-  // The JWT lives in an HttpOnly cookie now, so client JS can't read it to
-  // decide login state up front — we always ask the backend, which reads the
-  // cookie itself and sends it automatically via `credentials: "include"`.
+  // The JWT lives in an HttpOnly cookie, so client JS can't read it to decide
+  // login state — the backend reads it itself via `credentials: "include"`.
+  //
+  // The non-sensitive `role` cookie IS readable, and is written and cleared in
+  // lockstep with the session, so its absence is a reliable "definitely signed
+  // out". Checking it first lets an anonymous visitor skip the /me request
+  // entirely, which saves a round-trip on every page load and avoids the
+  // browser logging the resulting 401 as a console error (the browser reports
+  // failed responses itself; JS cannot suppress that).
   const fetchProfile = async () => {
+    if (!getCookie("role")) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/api/auth/me`, {
         credentials: "include",
@@ -81,6 +93,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const data = await response.json();
         setUser(data);
       } else {
+        // Session gone or rejected — clear the hint cookie so subsequent loads
+        // take the fast path above instead of retrying a doomed request.
         setUser(null);
         deleteCookie("role");
       }

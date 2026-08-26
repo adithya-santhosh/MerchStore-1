@@ -54,6 +54,22 @@ export default function Hero() {
       className="relative w-full h-[85vh] sm:h-[92vh] min-h-[500px] max-h-[900px] overflow-hidden bg-background"
       aria-label="Hero"
     >
+      {/* Poster still — this is the Largest Contentful Paint element.
+          It must be a real <img> in the initial HTML, not a CSS
+          background-image: the browser's preload scanner reads markup before
+          stylesheets are applied, so a background URL isn't discovered until
+          CSS parses, and it can't carry fetchPriority. Rendered unconditionally
+          (rather than only while !isLoaded) so it's present in the very first
+          HTML response, with the video fading in over it once ready. */}
+      <img
+        src={HERO_POSTER}
+        alt=""
+        aria-hidden="true"
+        fetchPriority="high"
+        decoding="async"
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
       {/* Background Video.
           preload="metadata" rather than "auto": autoPlay already fetches what
           it needs to begin, so this avoids committing a mobile visitor to
@@ -72,14 +88,6 @@ export default function Hero() {
       >
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
-
-      {/* Fallback poster image (visible until video loads) */}
-      {!isLoaded && (
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${HERO_POSTER})` }}
-        />
-      )}
 
       {/* Gradient overlays */}
       <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/40 to-transparent z-10" />

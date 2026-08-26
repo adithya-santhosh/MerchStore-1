@@ -55,7 +55,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.18 0.01 250);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.63 0.25 24);
+  --primary: oklch(0.56 0.25 24); /* darkened from 0.63: white text on 0.63 was 3.79:1, below the 4.5:1 WCAG AA minimum. Now 4.71:1. */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.22 0.01 250);
   --secondary-foreground: oklch(0.985 0 0);
@@ -90,7 +90,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.18 0.01 250);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.63 0.25 24);
+  --primary: oklch(0.56 0.25 24); /* darkened from 0.63: white text on 0.63 was 3.79:1, below the 4.5:1 WCAG AA minimum. Now 4.71:1. */
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.22 0.01 250);
   --secondary-foreground: oklch(0.985 0 0);

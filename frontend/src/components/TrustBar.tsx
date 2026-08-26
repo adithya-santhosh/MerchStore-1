@@ -38,9 +38,11 @@ export default function TrustBar() {
                   <item.icon className="size-5 sm:size-6" />
                 </div>
                 <div className="space-y-0.5">
-                  <h3 className="text-sm sm:text-base font-bold text-foreground">
+                  {/* h2, not h3: these sit directly under the hero's h1, and
+                      the next section is an h2 — an h3 here skipped a level. */}
+                  <h2 className="text-sm sm:text-base font-bold text-foreground">
                     {item.title}
-                  </h3>
+                  </h2>
                   <p className="text-[11px] sm:text-xs text-muted-foreground">
                     {item.subtitle}
                   </p>
