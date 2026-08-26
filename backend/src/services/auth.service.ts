@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { UserRole } from "@prisma/client";
-import { sendWelcomeEmail, sendPasswordResetEmail } from "./email.service";
+import { sendWelcomeEmail, sendPasswordResetEmail, sendEmailVerification } from "./email.service";
+import { createEmailVerificationToken, readEmailVerificationToken } from "../lib/email-verification";
 
 // JWT_SECRET is guaranteed to be set — server.ts exits at startup if it isn't
 const JWT_SECRET = process.env.JWT_SECRET!;
@@ -60,6 +61,11 @@ export const registerUser = async (data: RegisterInput) => {
     name: `${user.firstName} ${user.lastName}`
   }).catch((err) => logger.error({ err: err }, "[AuthService] Welcome email background error"));
 
+  // Same for the confirmation link — registration must succeed even if mail does not.
+  sendVerificationEmailFor(user).catch((err) =>
+    logger.error({ err }, "[AuthService] Verification email background error")
+  );
+
   const token = jwt.sign(
     {
       id: user.id,
@@ -80,7 +86,8 @@ export const registerUser = async (data: RegisterInput) => {
       lastName: user.lastName,
       role: user.role,
       createdAt: user.createdAt,
-      isMember: user.isMember
+      isMember: user.isMember,
+    emailVerified: user.emailVerified
     },
     token
   };
@@ -182,7 +189,8 @@ export const loginUser = async (data: LoginInput) => {
       lastName: user.lastName,
       role: user.role,
       createdAt: user.createdAt,
-      isMember: user.isMember
+      isMember: user.isMember,
+    emailVerified: user.emailVerified
     },
     token
   };
@@ -205,6 +213,7 @@ export const getUserById = async (id: number) => {
     createdAt: user.createdAt,
     phone: user.phone,
     isMember: user.isMember,
+    emailVerified: user.emailVerified,
     addresses: user.addresses
   };
 };
@@ -230,6 +239,7 @@ export const updateUserProfile = async (id: number, data: { firstName: string; l
     createdAt: user.createdAt,
     phone: user.phone,
     isMember: user.isMember,
+    emailVerified: user.emailVerified,
     addresses: user.addresses
   };
 };
@@ -247,7 +257,8 @@ export const becomeMemberUser = async (id: number) => {
     role: user.role,
     createdAt: user.createdAt,
     phone: user.phone,
-    isMember: user.isMember
+    isMember: user.isMember,
+    emailVerified: user.emailVerified
   };
 };
 
@@ -364,3 +375,67 @@ export const changeUserPassword = async (userId: number, currentPassword: string
 
 
 
+
+// ─── Email Verification ───────────────────────────────────────────────────────
+
+/**
+ * Builds the verification link and emails it. Fire-and-forget at the call site:
+ * a failure here must never block registration.
+ */
+export const sendVerificationEmailFor = async (user: {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+}) => {
+  const token = createEmailVerificationToken(user.id, user.email);
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const verifyUrl = `${frontendUrl}/verify-email?token=${token}`;
+
+  await sendEmailVerification({
+    to: user.email,
+    name: `${user.firstName} ${user.lastName}`.trim(),
+    verifyUrl,
+  });
+};
+
+export const verifyEmailToken = async (token: string) => {
+  const payload = readEmailVerificationToken(token);
+  if (!payload) {
+    throw new Error("This verification link is invalid or has expired. Request a new one from your account page.");
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: payload.userId } });
+  if (!user) {
+    throw new Error("This verification link is invalid or has expired. Request a new one from your account page.");
+  }
+
+  // The token carries the address it was issued for; if the account's email has
+  // since changed, the old link must not verify the new address.
+  if (user.email !== payload.email) {
+    throw new Error("This link was issued for a different email address. Request a new one from your account page.");
+  }
+
+  if (user.emailVerified) {
+    return { message: "Your email is already confirmed.", alreadyVerified: true };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { emailVerified: true },
+  });
+
+  return { message: "Email confirmed. Thanks!", alreadyVerified: false };
+};
+
+export const resendVerificationEmail = async (userId: number) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new Error("User not found");
+
+  if (user.emailVerified) {
+    return { message: "Your email is already confirmed." };
+  }
+
+  await sendVerificationEmailFor(user);
+  return { message: "Verification email sent. Check your inbox." };
+};

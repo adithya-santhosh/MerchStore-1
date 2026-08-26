@@ -9,7 +9,7 @@ import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
-import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI, cancelOrderApi, isOrderCancellable } from "@/lib/api";
+import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI, cancelOrderApi, isOrderCancellable, resendVerificationApi } from "@/lib/api";
 import { 
   User, 
   ShoppingBag, 
@@ -31,7 +31,8 @@ import {
   ArrowUpRight,
   Heart,
   Truck,
-  Lock
+  Lock,
+  MailWarning,
 } from "lucide-react";
 
 // Color mappings for order statuses
@@ -54,6 +55,22 @@ function DashboardContent() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+
+  // ── Email verification prompt ───────────────────────────────────────────────
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
+
+  const handleResendVerification = async () => {
+    setResending(true);
+    try {
+      const res = await resendVerificationApi();
+      setResendMessage(res.message);
+    } catch (err: any) {
+      setResendMessage(err.message || "Could not send the email. Please try again.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   // ── Order cancellation ──────────────────────────────────────────────────────
   const [confirmingCancel, setConfirmingCancel] = useState(false);
@@ -275,6 +292,30 @@ function DashboardContent() {
         {/* Background Ambient Mesh Glows */}
         <div className="absolute top-0 right-1/4 -z-10 size-[500px] rounded-full bg-primary/2 opacity-20 blur-3xl" />
         <div className="absolute bottom-1/4 left-0 -z-10 size-[400px] rounded-full bg-primary/3 opacity-20 blur-3xl" />
+
+        {/* Unconfirmed email prompt — deliberately a nudge, not a blocker:
+            gating checkout on confirmation would cost sales. */}
+        {user.emailVerified === false && (
+          <div className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <MailWarning className="size-5 text-amber-500 shrink-0" />
+            <div className="flex-grow">
+              <p className="text-xs font-bold text-foreground">Confirm your email address</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
+                {resendMessage
+                  ? resendMessage
+                  : <>We sent a link to <span className="font-semibold text-foreground">{user.email}</span>. Confirming it makes sure order updates reach you.</>}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={handleResendVerification}
+              disabled={resending || resendMessage !== ""}
+              className="shrink-0 text-xs font-bold rounded-xl cursor-pointer py-5"
+            >
+              {resending ? "Sending..." : resendMessage ? "Sent" : "Resend link"}
+            </Button>
+          </div>
+        )}
 
         {/* Dashboard Title & Quick Stats */}
         <div className="space-y-8">

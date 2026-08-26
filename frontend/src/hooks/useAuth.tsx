@@ -27,6 +27,7 @@ interface UserProfile {
   createdAt: string;
   phone?: string | null;
   isMember?: boolean;
+  emailVerified?: boolean;
   addresses?: Address[];
 }
 

@@ -4,7 +4,8 @@ import {
   getWelcomeEmailHtml,
   getOrderConfirmationEmailHtml,
   getOrderStatusEmailHtml,
-  getPasswordResetEmailHtml
+  getPasswordResetEmailHtml,
+  getEmailVerificationHtml
 } from "./emailTemplates";
 
 // Lazy-initialize Resend SDK using environment variable
@@ -154,5 +155,38 @@ export const sendPasswordResetEmail = async (params: SendPasswordResetParams): P
     }
   } catch (error) {
     logger.error({ err: error }, "[EmailService ERROR] Exception in sendPasswordResetEmail");
+  }
+};
+
+export interface SendEmailVerificationParams {
+  to: string;
+  name: string;
+  verifyUrl: string;
+}
+
+export const sendEmailVerification = async (params: SendEmailVerificationParams): Promise<void> => {
+  try {
+    const resend = getResendClient();
+    const html = getEmailVerificationHtml(params.name, params.verifyUrl);
+
+    if (!resend) {
+      logger.info(`[EmailService DEV] Verification Email queued for ${params.to} (${params.verifyUrl})`);
+      return;
+    }
+
+    const response = await resend.emails.send({
+      from: getFromAddress(),
+      to: [params.to],
+      subject: "Confirm your email address",
+      html
+    });
+
+    if (response.error) {
+      logger.error({ err: response.error }, "[EmailService ERROR] Failed to send verification email");
+    } else {
+      logger.info(`[EmailService SUCCESS] Verification email sent to ${params.to} (ID: ${response.data?.id})`);
+    }
+  } catch (error) {
+    logger.error({ err: error }, "[EmailService ERROR] Exception in sendEmailVerification");
   }
 };

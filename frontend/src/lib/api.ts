@@ -1218,3 +1218,32 @@ export async function resetPasswordAPI(token: string, newPassword: string): Prom
 }
 
 
+
+// ─── Email Verification ───────────────────────────────────────────────────────
+
+export async function verifyEmailApi(token: string): Promise<{ message: string; alreadyVerified?: boolean }> {
+  const res = await fetch(`${API_URL}/api/auth/verify-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token }),
+  });
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Could not confirm your email. The link may have expired."));
+  }
+
+  return res.json();
+}
+
+export async function resendVerificationApi(): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/auth/resend-verification`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Could not send the verification email. Please try again."));
+  }
+
+  return res.json();
+}

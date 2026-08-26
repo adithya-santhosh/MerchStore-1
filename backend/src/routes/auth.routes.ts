@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, logout, me, updateProfile, becomeMember, forgotPassword, resetPasswordHandler, changePassword } from "../controllers/auth.controller";
+import { register, login, logout, me, updateProfile, becomeMember, forgotPassword, resetPasswordHandler, changePassword, verifyEmail, resendVerification } from "../controllers/auth.controller";
 import { requireAuth } from "../middleware/auth.middleware";
 import {
   validate,
@@ -19,12 +19,16 @@ router.post("/login",    validate(loginSchema),    login);
 router.post("/logout",   logout);
 router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 router.post("/reset-password",  validate(resetPasswordSchema),  resetPasswordHandler);
+// Public: the recipient clicks this straight from their inbox, often before
+// (or without) being signed in on that device.
+router.post("/verify-email",    verifyEmail);
 
 // Protected
 router.get("/me",            requireAuth, me);
 router.put("/profile",       requireAuth, validate(updateProfileSchema), updateProfile);
 router.put("/change-password", requireAuth, validate(changePasswordSchema), changePassword);
 router.post("/become-member",requireAuth, becomeMember);
+router.post("/resend-verification", requireAuth, resendVerification);
 
 export default router;
 

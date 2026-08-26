@@ -1,6 +1,6 @@
 import logger from "../lib/logger";
 import { Request, Response } from "express";
-import { registerUser, loginUser, getUserById, updateUserProfile, becomeMemberUser, requestPasswordReset, resetPassword, changeUserPassword } from "../services/auth.service";
+import { registerUser, loginUser, getUserById, updateUserProfile, becomeMemberUser, requestPasswordReset, resetPassword, changeUserPassword, verifyEmailToken, resendVerificationEmail } from "../services/auth.service";
 
 // Auth cookie settings live in lib/auth-cookie.ts — see the notes there on why
 // SameSite depends on whether the frontend and API share a registrable domain.
@@ -131,3 +131,30 @@ export const changePassword = async (req: Request, res: Response) => {
 
 
 
+
+export const verifyEmail = async (req: Request, res: Response) => {
+  try {
+    const { token } = req.body;
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ message: "Verification token is required" });
+    }
+    const result = await verifyEmailToken(token);
+    res.json(result);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error in verifyEmail controller");
+    res.status(400).json({ message: error.message || "Failed to verify email" });
+  }
+};
+
+export const resendVerification = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+    const result = await resendVerificationEmail(req.user.id);
+    res.json(result);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error in resendVerification controller");
+    res.status(400).json({ message: error.message || "Failed to resend verification email" });
+  }
+};

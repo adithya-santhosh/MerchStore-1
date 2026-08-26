@@ -310,3 +310,51 @@ export const getPasswordResetEmailHtml = (name: string, resetUrl: string): strin
   </html>
   `;
 };
+
+export const getEmailVerificationHtml = (name: string, verifyUrl: string): string => {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirm Your Email</title>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
+    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 20px;">
+      <tr>
+        <td align="center">
+          <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155;">
+            <tr>
+              <td style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); padding: 28px; text-align: center;">
+                <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800;">Confirm Your Email</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 32px;">
+                <p style="margin: 0 0 16px 0; color: #e2e8f0; font-size: 16px;">Hi ${name},</p>
+                <p style="margin: 0 0 24px 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
+                  Confirm this email address so we can send you order confirmations and delivery updates. This link is valid for 24 hours.
+                </p>
+                <div style="text-align: center; margin: 28px 0;">
+                  <a href="${verifyUrl}" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block;">
+                    Confirm Email Address
+                  </a>
+                </div>
+                <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">
+                  If the button doesn't work, paste this into your browser:<br>
+                  <span style="color: #38bdf8; word-break: break-all;">${verifyUrl}</span>
+                </p>
+                <p style="margin: 20px 0 0 0; color: #64748b; font-size: 12px; line-height: 1.6;">
+                  Didn't create an account? You can safely ignore this email — nothing will happen without confirmation.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+  </html>
+  `;
+};
