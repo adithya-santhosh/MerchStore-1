@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Recovery Gear",
+  description:
+    "Winches, tow ropes, shackles and traction boards for getting unstuck. Free delivery across India.",
+  path: "/products/car-accessories/recovery-gear",
+});
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

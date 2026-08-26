@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Automotive Merchandise",
+  description:
+    "Limited-run apparel, collectibles and wall art for automotive enthusiasts. Free delivery across India.",
+  path: "/products/merchandise",
+});
+
 import { getProducts } from "@/lib/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

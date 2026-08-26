@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "About Us",
+  description:
+    "Who we are and how we build. Off-road parts engineered in-house for real terrain, tested well past the warranty.",
+  path: "/about",
+});
+
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 

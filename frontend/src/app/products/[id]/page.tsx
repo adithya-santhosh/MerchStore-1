@@ -11,9 +11,37 @@ import RelatedProducts from "@/components/RelatedProducts";
 import { ShieldCheck, Truck, RotateCcw, Sparkles, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
+import { buildMetadata, formatPrice } from "@/lib/seo";
 
 interface PageProps {
   params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  if (!/^\d+$/.test(id)) return { title: "Product Not Found" };
+
+  try {
+    const product = await getProductById(id);
+
+    // Prefer the curated short description; otherwise trim the long one to a
+    // length search engines will actually display (~160 chars).
+    const raw = product.shortDescription?.trim() || product.description?.trim() || "";
+    const summary = raw.length > 155 ? `${raw.slice(0, 152).trimEnd()}…` : raw;
+
+    return buildMetadata({
+      title: product.name,
+      description:
+        summary ||
+        `${product.name} — available at ${formatPrice(product.price)} with free delivery across India.`,
+      path: `/products/${product.id}`,
+      image: getProductImageSrc(product.ImageURL),
+    });
+  } catch {
+    // A metadata failure must never take down the page itself.
+    return { title: "Product" };
+  }
 }
 
 export default async function ProductPage({ params }: PageProps) {

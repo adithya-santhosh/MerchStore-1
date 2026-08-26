@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Storage & Racks",
+  description:
+    "Roof racks, drawer systems and cargo storage that keep your kit secure. Free delivery across India.",
+  path: "/products/car-accessories/storage-racks",
+});
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

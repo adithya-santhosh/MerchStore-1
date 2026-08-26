@@ -4,6 +4,7 @@ import "./globals.css";
 import { CartProvider } from "@/hooks/useCart";
 import { AuthProvider } from "@/hooks/useAuth";
 import { WishlistProvider } from "@/hooks/useWishlist";
+import { siteConfig, siteUrl } from "@/lib/site-config";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,24 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MerchStore",
-  description: "Configure your rig or upgrade your lifestyle with our custom-engineered gear.",
+  // Lets every page express canonical/OG URLs as plain paths.
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: `${siteConfig.brandName} — Off-Road Parts & Automotive Merchandise`,
+    // Pages set just their own title; the brand is appended automatically.
+    template: `%s | ${siteConfig.brandName}`,
+  },
+  description:
+    "Armor, lighting, recovery and overland gear engineered for real terrain — plus limited-run automotive merchandise. Free delivery across India.",
+  applicationName: siteConfig.brandName,
+  openGraph: {
+    type: "website",
+    siteName: siteConfig.brandName,
+    locale: "en_IN",
+    url: siteUrl,
+  },
+  twitter: { card: "summary_large_image" },
+  robots: { index: true, follow: true },
 };
 
 export default function RootLayout({

@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Car Accessories & Off-Road Parts",
+  description:
+    "Armor, lighting, recovery gear, suspension, storage and overland systems for your build. Free delivery across India.",
+  path: "/products/car-accessories",
+});
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

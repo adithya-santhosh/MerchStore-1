@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Suspension & Wheels",
+  description:
+    "Lift kits, coilovers and off-road wheels for ground clearance and control. Free delivery across India.",
+  path: "/products/car-accessories/suspension-wheels",
+});
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

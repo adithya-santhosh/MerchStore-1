@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Camping & Overland",
+  description:
+    "Rooftop tents, awnings and basecamp systems for long-range overland travel. Free delivery across India.",
+  path: "/products/car-accessories/camping-overland",
+});
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

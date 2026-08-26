@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "All Products",
+  description:
+    "Browse the full catalogue — armor, lighting, recovery, suspension, storage and overland gear, plus automotive merchandise. Free delivery across India.",
+  path: "/products",
+});
+
 import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

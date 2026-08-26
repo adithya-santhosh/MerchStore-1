@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Lighting & Electrical",
+  description:
+    "LED light bars, pods and battery management systems for night and trail driving. Free delivery across India.",
+  path: "/products/car-accessories/lighting-electrical",
+});
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";

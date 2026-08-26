@@ -85,6 +85,25 @@ export const siteConfig = {
   deliveryEstimate: "3–7 business days",
 } as const;
 
+/**
+ * Absolute base URL used for SEO metadata, canonical links, sitemap and Open
+ * Graph tags. Order of preference:
+ *   1. NEXT_PUBLIC_SITE_URL  (set this in Vercel)
+ *   2. siteConfig.domain     (once the placeholder above is replaced)
+ *   3. localhost             (development fallback)
+ *
+ * Placeholder values are ignored rather than emitted as broken URLs — a
+ * canonical tag pointing at "[https://yourdomain.com]" is worse than none.
+ */
+export const siteUrl: string = (() => {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  const candidate =
+    fromEnv || (siteConfig.domain.startsWith("[") ? "" : siteConfig.domain);
+
+  if (!candidate) return "http://localhost:3000";
+  return candidate.replace(/\/+$/, ""); // no trailing slash
+})();
+
 /** Single-line address, e.g. for inline mentions in policy copy. */
 export const formattedAddress = [
   siteConfig.address.line1,

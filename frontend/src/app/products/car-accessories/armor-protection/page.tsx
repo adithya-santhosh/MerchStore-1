@@ -1,3 +1,13 @@
+import type { Metadata } from "next";
+import { buildMetadata } from "@/lib/seo";
+
+export const metadata: Metadata = buildMetadata({
+  title: "Armor & Protection",
+  description:
+    "Bumpers, skid plates and rock sliders built to take real hits. Free delivery across India.",
+  path: "/products/car-accessories/armor-protection",
+});
+
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
