@@ -34,10 +34,12 @@ export default function Hero() {
   }, []);
 
   const toggleMute = () => {
-    if (videoRef.current) {
-      videoRef.current.muted = isMuted;
-      setIsMuted(isMuted);
-    }
+    if (!videoRef.current) return;
+    // Both lines previously assigned the *current* value of isMuted, so the
+    // button re-applied the existing state and never actually unmuted.
+    const next = !isMuted;
+    videoRef.current.muted = next;
+    setIsMuted(next);
   };
 
   const scrollToContent = () => {
@@ -52,7 +54,10 @@ export default function Hero() {
       className="relative w-full h-[85vh] sm:h-[92vh] min-h-[500px] max-h-[900px] overflow-hidden bg-background"
       aria-label="Hero"
     >
-      {/* Background Video */}
+      {/* Background Video.
+          preload="metadata" rather than "auto": autoPlay already fetches what
+          it needs to begin, so this avoids committing a mobile visitor to
+          downloading the entire file before playback starts. */}
       <video
         ref={videoRef}
         autoPlay
@@ -63,7 +68,7 @@ export default function Hero() {
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
           isLoaded ? "opacity-100" : "opacity-0"
         }`}
-        preload="auto"
+        preload="metadata"
       >
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
