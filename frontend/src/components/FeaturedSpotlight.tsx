@@ -23,7 +23,7 @@ const fallbackProduct: Product = {
     "Hydraulic opening shelter system with integrated high-density foam mattress, fits 3 people. Engineered for extreme weather conditions with a reinforced ABS shell and marine-grade zippers.",
   price: 145000,
   category: "Camping & Overland",
-  ImageURL: "/images/categories/camping_overland.png",
+  ImageURL: "/images/categories/camping_overland.webp",
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString(),
 };
@@ -69,7 +69,7 @@ export default function FeaturedSpotlight() {
     loadFeatured();
   }, []);
 
-  const imageSrc = getProductImageSrc(product.ImageURL) || "/images/categories/camping_overland.png";
+  const imageSrc = getProductImageSrc(product.ImageURL) || "/images/categories/camping_overland.webp";
 
   return (
     <section className="w-full bg-gradient-to-br from-background via-card/40 to-background overflow-hidden">

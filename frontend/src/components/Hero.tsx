@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
  */
 
 const HERO_VIDEO = "/hero/tharherovideo.mp4";
-const HERO_POSTER = "/hero/Thar-profender-2-suspension-3-rotated.jpg";
+const HERO_POSTER = "/hero/Thar-profender-2-suspension-3-rotated.webp";
 
 export default function Hero() {
   const videoRef = useRef<HTMLVideoElement>(null);
