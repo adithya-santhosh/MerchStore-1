@@ -10,6 +10,7 @@ import { useCart } from "@/hooks/useCart";
 import { createOrder, createPaymentOrder, verifyPayment } from "@/lib/api";
 import { getProductImageSrc } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { getErrorMessage } from "@/lib/errors";
 import {
   MapPin,
   ShoppingBag,
@@ -217,12 +218,12 @@ export default function CheckoutPage() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || "Invalid coupon");
+        throw new Error(getErrorMessage(err, "Invalid coupon"));
       }
       const data = await res.json();
       setCouponDetails(data);
-    } catch (e: any) {
-      setCouponError(e.message || "Invalid coupon code");
+    } catch (e) {
+      setCouponError(getErrorMessage(e, "Invalid coupon code"));
     } finally {
       setCouponLoading(false);
     }
@@ -329,9 +330,9 @@ export default function CheckoutPage() {
 
               clearCart();
               router.push(`/checkout/confirmation?orderId=${order.id}`);
-            } catch (err: any) {
+            } catch (err) {
               console.error("Payment verification failed:", err);
-              setSubmitError(err.message || "Payment verification failed. Please contact support.");
+              setSubmitError(getErrorMessage(err, "Payment verification failed. Please contact support."));
             } finally {
               setSubmitting(false);
             }
@@ -364,8 +365,8 @@ export default function CheckoutPage() {
         clearCart();
         router.push(`/checkout/confirmation?orderId=${order.id}`);
       }
-    } catch (e: any) {
-      setSubmitError(e.message || "Failed to place order. Please try again.");
+    } catch (e) {
+      setSubmitError(getErrorMessage(e, "Failed to place order. Please try again."));
     } finally {
       setSubmitting(false);
     }

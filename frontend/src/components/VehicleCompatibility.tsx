@@ -24,17 +24,19 @@ export default function VehicleCompatibility({ compatibleWith }: VehicleCompatib
   const [selectedYear, setSelectedYear] = useState("");
   const [checkResult, setCheckResult] = useState<"compatible" | "incompatible" | null>(null);
 
-  if (!compatibleWith || compatibleWith.length === 0) {
-    return null;
-  }
-
+  // Every hook must run on every render. These previously sat below the
+  // "no compatibility data" early return, so the hook count changed between a
+  // product that had fitment data and one that didn't — React's
+  // "Rendered fewer hooks than expected" crash. They now handle the empty case
+  // themselves, and the early return moved below them.
   const makes = useMemo(() => {
+    if (!compatibleWith?.length) return [];
     const uniqueMakes = new Set(compatibleWith.map(cw => cw.make));
     return Array.from(uniqueMakes).sort();
   }, [compatibleWith]);
 
   const models = useMemo(() => {
-    if (!selectedMake) return [];
+    if (!compatibleWith?.length || !selectedMake) return [];
     const uniqueModels = new Set(
       compatibleWith
         .filter(cw => cw.make === selectedMake)
@@ -42,6 +44,10 @@ export default function VehicleCompatibility({ compatibleWith }: VehicleCompatib
     );
     return Array.from(uniqueModels).sort();
   }, [compatibleWith, selectedMake]);
+
+  if (!compatibleWith || compatibleWith.length === 0) {
+    return null;
+  }
 
   // Just generic years for now from 1990 to 2026 for simplicity
   const years = Array.from({ length: 37 }, (_, i) => (2026 - i).toString());

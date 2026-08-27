@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { getAllVendors, createVendorAccount } from "@/lib/api";
 import { Store, Plus, X, Package, Mail, User } from "lucide-react";
 
+import { getErrorMessage } from "@/lib/errors";
 interface Vendor {
   id: number;
   companyName: string;
@@ -34,8 +35,8 @@ export default function AdminVendorsPage() {
       setLoading(true);
       const data = await getAllVendors();
       setVendors(data.vendors);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(getErrorMessage(err, "Something went wrong."));
     } finally {
       setLoading(false);
     }
@@ -54,8 +55,8 @@ export default function AdminVendorsPage() {
       setCompanyName(""); setEmail(""); setPassword(""); setFirstName(""); setLastName("");
       fetchVendors();
       setTimeout(() => setSuccess(""), 4000);
-    } catch (err: any) {
-      setError(err.message || "Failed to create vendor.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to create vendor."));
     } finally {
       setSubmitting(false);
     }
@@ -137,7 +138,7 @@ export default function AdminVendorsPage() {
         <div className="text-center py-20 border border-border/50 rounded-3xl bg-card/20">
           <Store className="size-12 text-muted-foreground/30 mx-auto mb-4" />
           <p className="text-base font-bold text-foreground">No vendors yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Click "Add Vendor" to create your first supplier account.</p>
+          <p className="text-sm text-muted-foreground mt-1">Click &quot;Add Vendor&quot; to create your first supplier account.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

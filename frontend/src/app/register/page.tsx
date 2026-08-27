@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft, User, CheckCircle2, ChevronRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { getErrorMessage } from "@/lib/errors";
 export default function RegisterPage() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -44,12 +45,12 @@ export default function RegisterPage() {
       if (isMember) {
         try {
           await becomeMember();
-        } catch (memErr: any) {
+        } catch (memErr) {
           console.warn("Membership payment skipped or cancelled:", memErr);
         }
       }
-    } catch (err: any) {
-      setError(err.message || "Registration failed. Try again.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Registration failed. Try again."));
       setSubmitting(false);
     }
   };

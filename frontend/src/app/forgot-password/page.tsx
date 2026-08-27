@@ -6,6 +6,7 @@ import { Mail, KeyRound, AlertCircle, ArrowLeft, MailCheck } from "lucide-react"
 import { Button } from "@/components/ui/button";
 import { requestPasswordResetAPI } from "@/lib/api";
 
+import { getErrorMessage } from "@/lib/errors";
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -22,8 +23,8 @@ export default function ForgotPasswordPage() {
       // The backend intentionally returns the same response whether or not the
       // account exists, so we show the same confirmation either way.
       setSent(true);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong. Please try again.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Something went wrong. Please try again."));
     } finally {
       setSubmitting(false);
     }

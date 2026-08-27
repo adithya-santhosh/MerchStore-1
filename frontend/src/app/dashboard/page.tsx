@@ -10,6 +10,7 @@ import ProductCard from "@/components/ProductCard";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI, cancelOrderApi, isOrderCancellable, resendVerificationApi } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 import { 
   User, 
   ShoppingBag, 
@@ -65,8 +66,8 @@ function DashboardContent() {
     try {
       const res = await resendVerificationApi();
       setResendMessage(res.message);
-    } catch (err: any) {
-      setResendMessage(err.message || "Could not send the email. Please try again.");
+    } catch (err) {
+      setResendMessage(getErrorMessage(err, "Could not send the email. Please try again."));
     } finally {
       setResending(false);
     }
@@ -97,8 +98,8 @@ function DashboardContent() {
       setSelectedOrder((prev) => (prev ? { ...prev, ...updated } : prev));
       setConfirmingCancel(false);
       setCancelReason("");
-    } catch (err: any) {
-      setCancelError(err.message || "Could not cancel this order. Please try again.");
+    } catch (err) {
+      setCancelError(getErrorMessage(err, "Could not cancel this order. Please try again."));
     } finally {
       setCancelling(false);
     }
@@ -213,8 +214,8 @@ function DashboardContent() {
       
       // Auto-clear success message after 4s
       setTimeout(() => setFormSuccess(""), 4000);
-    } catch (err: any) {
-      setFormError(err.message || "Failed to update profile details. Please try again.");
+    } catch (err) {
+      setFormError(getErrorMessage(err, "Failed to update profile details. Please try again."));
     } finally {
       setFormSubmitting(false);
     }
@@ -243,8 +244,8 @@ function DashboardContent() {
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => setPasswordSuccess(""), 4000);
-    } catch (err: any) {
-      setPasswordError(err.message || "Failed to update password. Please try again.");
+    } catch (err) {
+      setPasswordError(getErrorMessage(err, "Failed to update password. Please try again."));
     } finally {
       setPasswordSubmitting(false);
     }
@@ -553,8 +554,8 @@ function DashboardContent() {
                               try {
                                 await becomeMember();
                                 setMembershipSuccess("Welcome to the Premium Club!");
-                              } catch (err: any) {
-                                setMembershipError(err.message || "Failed to join membership.");
+                              } catch (err) {
+                                setMembershipError(getErrorMessage(err, "Failed to join membership."));
                               } finally {
                                 setMembershipLoading(false);
                               }

@@ -5,6 +5,7 @@ import { getVendorOrders } from "@/lib/api";
 import VendorOrderCard from "@/components/vendor/VendorOrderCard";
 import { Package, Loader2, InboxIcon } from "lucide-react";
 
+import { getErrorMessage } from "@/lib/errors";
 export default function VendorDashboardPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -16,8 +17,8 @@ export default function VendorDashboardPage() {
       setLoading(true);
       const data = await getVendorOrders();
       setOrders(data);
-    } catch (err: any) {
-      setError(err.message || "Failed to load orders.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to load orders."));
     } finally {
       setLoading(false);
     }

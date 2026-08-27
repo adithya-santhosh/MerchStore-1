@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getAdminOrderById, updateAdminOrderStatus, recordRefundApi, AdminOrderDetail } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { getErrorMessage } from "@/lib/errors";
 import {
   ArrowLeft,
   User,
@@ -114,8 +115,8 @@ export default function AdminOrderDetailPage() {
       const updated = await recordRefundApi(order.id, refundReference.trim() || undefined);
       setOrder((prev) => (prev ? { ...prev, ...updated } : prev));
       setRefundReference("");
-    } catch (err: any) {
-      setRefundError(err.message || "Could not record the refund. Please try again.");
+    } catch (err) {
+      setRefundError(getErrorMessage(err, "Could not record the refund. Please try again."));
     } finally {
       setRecordingRefund(false);
     }
@@ -128,7 +129,7 @@ export default function AdminOrderDetailPage() {
         setOrder(data);
         setNewStatus(data.status);
       })
-      .catch((e) => setError(e.message || "Failed to load order."))
+      .catch((e) => setError(getErrorMessage(e, "Failed to load order.")))
       .finally(() => setLoading(false));
   }, [orderId]);
 
@@ -142,8 +143,8 @@ export default function AdminOrderDetailPage() {
       setOrder({ ...order, status: newStatus });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (e: any) {
-      setSaveError(e.message || "Failed to update status.");
+    } catch (e) {
+      setSaveError(getErrorMessage(e, "Failed to update status."));
     } finally {
       setSaving(false);
     }

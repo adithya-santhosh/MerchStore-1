@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
+import { getErrorMessage } from "@/lib/errors";
 export default function CartPage() {
   const {
     cart,
@@ -49,8 +50,8 @@ export default function CartPage() {
       const result = await validateCouponOnServer(promoCode, subtotal);
       setCouponDetails(result);
       setPromoApplied(true);
-    } catch (err: any) {
-      alert(err.message || "Invalid Promo Code");
+    } catch (err) {
+      alert(getErrorMessage(err, "Invalid Promo Code"));
     }
   };
 

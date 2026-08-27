@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import Link from "next/link";
 
+import { getErrorMessage } from "@/lib/errors";
 interface ProductReviewsProps {
   productId: number;
 }
@@ -184,8 +185,8 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       setFormBody("");
       setShowForm(false);
       await fetchData();
-    } catch (err: any) {
-      setError(err.message || "Failed to submit review");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to submit review"));
     } finally {
       setSubmitting(false);
     }
@@ -198,7 +199,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
       await deleteReviewApi(myReview.id);
       setMyReview(null);
       await fetchData();
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to delete review:", err);
     } finally {
       setDeleting(false);

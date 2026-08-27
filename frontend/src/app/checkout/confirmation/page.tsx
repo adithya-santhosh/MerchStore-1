@@ -149,7 +149,7 @@ function ConfirmationPageContent() {
           </h1>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
             Your order has been placed successfully and is being prepared.
-            You'll receive updates as it ships.
+            You&apos;ll receive updates as it ships.
           </p>
 
           <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl border border-border bg-card/40">

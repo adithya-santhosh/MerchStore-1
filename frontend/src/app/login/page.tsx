@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { getErrorMessage } from "@/lib/errors";
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,8 +25,8 @@ function LoginForm() {
 
     try {
       await login(email, password, callbackUrl);
-    } catch (err: any) {
-      setError(err.message || "Invalid email or password");
+    } catch (err) {
+      setError(getErrorMessage(err, "Invalid email or password"));
       setSubmitting(false);
     }
   };
@@ -114,7 +115,7 @@ function LoginForm() {
 
         {/* Footer */}
         <div className="text-center pt-2 text-xs">
-          <span className="text-muted-foreground">Don't have an account? </span>
+          <span className="text-muted-foreground">Don&apos;t have an account? </span>
           <Link href="/register" className="text-primary font-bold hover:underline">
             Register now
           </Link>

@@ -963,7 +963,7 @@ export default function ProductForm() {
                 <option key={v.id} value={v.id}>{v.companyName}</option>
               ))}
             </select>
-            <p className="text-[11px] text-muted-foreground">The selected vendor will see this product's orders in their portal.</p>
+            <p className="text-[11px] text-muted-foreground">The selected vendor will see this product&apos;s orders in their portal.</p>
           </div>
         )}
 

@@ -30,7 +30,7 @@ export default function AboutPage() {
               to premium streetwear-style apparel, we aim to bridge the gap between quality engineering and modern aesthetic style.
             </p>
             <div className="border-l-4 border-primary pl-6 my-8 italic text-foreground">
-              "We don't just sell merch; we build accessories that tell your story."
+              &quot;We don&apos;t just sell merch; we build accessories that tell your story.&quot;
             </div>
             <p className="leading-relaxed">
               Thank you for being part of our journey. Stay tuned for our seasonal limited drops!

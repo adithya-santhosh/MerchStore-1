@@ -7,6 +7,7 @@ import { Lock, ShieldCheck, AlertCircle, ArrowLeft, CircleCheck } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { resetPasswordAPI } from "@/lib/api";
 
+import { getErrorMessage } from "@/lib/errors";
 // Mirrors resetPasswordSchema on the backend — keep these in sync.
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -40,8 +41,8 @@ function ResetPasswordForm() {
       setDone(true);
       // Give the user a moment to read the confirmation before redirecting.
       setTimeout(() => router.push("/login"), 2500);
-    } catch (err: any) {
-      setError(err.message || "Failed to reset your password. Please try again.");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to reset your password. Please try again."));
       setSubmitting(false);
     }
   };
