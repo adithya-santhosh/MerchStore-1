@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { updateProduct, deleteProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors, assignProductVendor } from "@/lib/api";
-import { Product } from "@/types/products";
+import { Product, type VehicleFitment } from "@/types/products";
 import { Save, Trash2, Image, Sparkles, AlertTriangle, Car, X, Plus } from "lucide-react";
 
 interface EditProductFormProps {
@@ -39,7 +39,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
   const [isCustomBrand, setIsCustomBrand] = useState(false);
 
   // Vehicle compatibility states
-  const [compatibleWith, setCompatibleWith] = useState<any[]>(product.compatibleWith || []);
+  const [compatibleWith, setCompatibleWith] = useState<VehicleFitment[]>(product.compatibleWith || []);
 
   const [compMake, setCompMake] = useState("");
   const [customCompMake, setCustomCompMake] = useState("");
@@ -64,7 +64,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
 
   // Vendor state
   const [vendors, setVendors] = useState<{id: number; companyName: string}[]>([]);
-  const [vendorId, setVendorId] = useState<number | null>((product as any).vendorId ?? null);
+  const [vendorId, setVendorId] = useState<number | null>(product.vendorId ?? null);
 
   // Load metadata on mount
   useEffect(() => {
@@ -262,7 +262,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         ImageURL: imageURL || null,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
-        attributes: attributes.length > 0 ? (attributes as any) : undefined
+        attributes: attributes.length > 0 ? attributes : undefined
       });
       // Also update vendor assignment via dedicated endpoint
       await assignProductVendor(product.id, vendorId);

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { createProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors } from "@/lib/api";
 import { PlusCircle, Image, Sparkles, Trash2, Car, X, Plus } from "lucide-react";
 import { uploadToCloudinary } from "@/lib/utils";
+import type { VehicleFitment } from "@/types/products";
 
 export default function ProductForm() {
   const [name, setName] = useState("");
@@ -43,7 +44,7 @@ export default function ProductForm() {
   const [isCustomBrand, setIsCustomBrand] = useState(false);
 
   // Vehicle compatibility states
-  const [compatibleWith, setCompatibleWith] = useState<any[]>([]);
+  const [compatibleWith, setCompatibleWith] = useState<VehicleFitment[]>([]);
 
   const [compMake, setCompMake] = useState("");
   const [customCompMake, setCustomCompMake] = useState("");
@@ -292,7 +293,7 @@ export default function ProductForm() {
         ImageURL: ImageURL || null,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
-        attributes: attributes.length > 0 ? (attributes as any) : undefined,
+        attributes: attributes.length > 0 ? attributes : undefined,
         vendorId: vendorId ?? undefined
       });
       setShowConfirm(false);

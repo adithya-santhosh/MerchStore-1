@@ -11,6 +11,7 @@ import { createOrder, createPaymentOrder, verifyPayment } from "@/lib/api";
 import { getProductImageSrc } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { getErrorMessage } from "@/lib/errors";
+import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 import {
   MapPin,
   ShoppingBag,
@@ -285,7 +286,7 @@ export default function CheckoutPage() {
             resolve(false);
             return;
           }
-          if ((window as any).Razorpay) {
+          if (window.Razorpay) {
             resolve(true);
             return;
           }
@@ -315,7 +316,7 @@ export default function CheckoutPage() {
           name: "MerchStore",
           description: "Purchase Payment",
           order_id: orderData.orderId,
-          handler: async function (response: any) {
+          handler: async function (response: RazorpaySuccessResponse) {
             console.log("Razorpay payment success response:", response);
             try {
               setSubmitting(true);
@@ -347,8 +348,8 @@ export default function CheckoutPage() {
           },
         };
 
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", function (response: any) {
+        const rzp = new window.Razorpay!(options);
+        rzp.on("payment.failed", function (response: RazorpayFailureResponse) {
           console.error("Razorpay payment failed:", response.error);
           setSubmitError(response.error.description || "Payment failed. Please try again.");
         });

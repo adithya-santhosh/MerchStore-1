@@ -7,9 +7,22 @@ export interface ProductImage {
 }
 
 export interface ProductAttribute {
-    id: number;
+    /** Absent until the row is persisted, so optional on create/edit forms. */
+    id?: number;
     attrKey: string;
     attrValue: string;
+}
+
+/** One vehicle-fitment row. `id` is absent until persisted. */
+export interface VehicleFitment {
+    id?: number;
+    make: string;
+    model: string;
+    yearFrom: number;
+    yearTo?: number | null;
+    bodyType?: string | null;
+    engineType?: string | null;
+    notes?: string | null;
 }
 
 export interface Product {
@@ -33,16 +46,7 @@ export interface Product {
     brand?: string | null;
     images?: ProductImage[];
     attributes?: ProductAttribute[];
-    compatibleWith?: Array<{
-        id?: number;
-        make: string;
-        model: string;
-        yearFrom: number;
-        yearTo?: number | null;
-        bodyType?: string | null;
-        engineType?: string | null;
-        notes?: string | null;
-    }>;
+    compatibleWith?: VehicleFitment[];
     createdAt: string;
     updatedAt: string;
     vendorId?: number | null;

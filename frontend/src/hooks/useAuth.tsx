@@ -2,21 +2,12 @@
 
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { purchaseMembershipRazorpay } from "@/lib/api";
+import { purchaseMembershipRazorpay, type UserAddress } from "@/lib/api";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
-interface Address {
-  id: number;
-  label?: string | null;
-  addressLine1: string;
-  addressLine2?: string | null;
-  city: string;
-  state: string;
-  postalCode: string;
-  country: string;
-  isDefault: boolean;
-}
+// Address shape is owned by lib/api.ts — reused here so the two can't drift.
+type Address = UserAddress;
 
 interface UserProfile {
   id: number;

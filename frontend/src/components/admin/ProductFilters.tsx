@@ -5,6 +5,27 @@ import { useState, useEffect, useCallback } from "react";
 import { Search, Filter, X, ArrowUpDown } from "lucide-react";
 import { NavCategory, getNavigationMetadata } from "@/lib/api";
 
+/**
+ * Hoisted out of the component: defining it inline made React treat it as a new
+ * component type on every render, remounting it each time rather than updating.
+ */
+function SortIcon({
+  field,
+  currentSortBy,
+  currentSortOrder,
+}: {
+  field: string;
+  currentSortBy: string;
+  currentSortOrder: string;
+}) {
+  if (currentSortBy !== field) return <ArrowUpDown className="size-3 text-muted-foreground/40" />;
+  return (
+    <span className="text-primary text-[10px] font-black">
+      {currentSortOrder === "asc" ? "↑" : "↓"}
+    </span>
+  );
+}
+
 export default function ProductFilters() {
   const router = useRouter();
   const pathname = usePathname();
@@ -20,14 +41,9 @@ export default function ProductFilters() {
       .catch(() => {});
   }, []);
 
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      updateParam("search", search);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-
+  // Declared before the effect that calls it — previously the effect referenced
+  // this `const` from above its own declaration, which only worked because
+  // effects run after render.
   const updateParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -42,6 +58,14 @@ export default function ProductFilters() {
     },
     [router, pathname, searchParams]
   );
+
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateParam("search", search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, updateParam]);
 
   const clearAll = () => {
     setSearch("");
@@ -65,15 +89,6 @@ export default function ProductFilters() {
     }
     params.delete("page");
     router.push(`${pathname}?${params.toString()}`);
-  };
-
-  const SortIcon = ({ field }: { field: string }) => {
-    if (currentSortBy !== field) return <ArrowUpDown className="size-3 text-muted-foreground/40" />;
-    return (
-      <span className={`text-primary text-[10px] font-black`}>
-        {currentSortOrder === "asc" ? "↑" : "↓"}
-      </span>
-    );
   };
 
   return (
@@ -156,18 +171,18 @@ export default function ProductFilters() {
         <div className="col-span-1">Image</div>
         <div className="col-span-3">
           <button onClick={() => toggleSort("name")} className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
-            Product <SortIcon field="name" />
+            Product <SortIcon field="name" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-2">Category</div>
         <div className="col-span-1">
           <button onClick={() => toggleSort("price")} className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
-            Price <SortIcon field="price" />
+            Price <SortIcon field="price" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-1">
           <button onClick={() => toggleSort("stockQty")} className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer">
-            Stock <SortIcon field="stockQty" />
+            Stock <SortIcon field="stockQty" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-1">Status</div>

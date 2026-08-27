@@ -22,7 +22,7 @@ export default function ProductSpecifications({ attributes }: ProductSpecificati
           <tbody className="divide-y divide-border/60">
             {attributes.map((attr, index) => (
               <tr 
-                key={attr.id} 
+                key={attr.id ?? attr.attrKey} 
                 className={`hover:bg-muted/30 transition-colors ${index % 2 === 0 ? "bg-card/20" : "bg-transparent"}`}
               >
                 <td className="py-3 px-4 font-semibold text-muted-foreground w-1/3 border-r border-border/60">

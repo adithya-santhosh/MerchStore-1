@@ -4,6 +4,28 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect, useCallback } from "react";
 import { Search, X, ArrowUpDown } from "lucide-react";
 
+/**
+ * Hoisted out of the component: defining it inline made React treat it as a new
+ * component type on every render, remounting it each time rather than updating.
+ */
+function SortIcon({
+  field,
+  currentSortBy,
+  currentSortOrder,
+}: {
+  field: string;
+  currentSortBy: string;
+  currentSortOrder: string;
+}) {
+  if (currentSortBy !== field)
+    return <ArrowUpDown className="size-3 text-muted-foreground/40" />;
+  return (
+    <span className="text-primary text-[10px] font-black">
+      {currentSortOrder === "asc" ? "↑" : "↓"}
+    </span>
+  );
+}
+
 export default function CustomerFilters() {
   const router = useRouter();
   const pathname = usePathname();
@@ -11,14 +33,9 @@ export default function CustomerFilters() {
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
 
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      updateParam("search", search);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
-
+  // Declared before the effect that calls it — previously the effect referenced
+  // this `const` from above its own declaration, which only worked because
+  // effects run after render.
   const updateParam = useCallback(
     (key: string, value: string) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -33,6 +50,14 @@ export default function CustomerFilters() {
     [router, pathname, searchParams]
   );
 
+  // Debounced search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      updateParam("search", search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search, updateParam]);
+
   const currentSortBy = searchParams.get("sortBy") || "createdAt";
   const currentSortOrder = searchParams.get("sortOrder") || "desc";
 
@@ -46,16 +71,6 @@ export default function CustomerFilters() {
     }
     params.delete("page");
     router.push(`${pathname}?${params.toString()}`);
-  };
-
-  const SortIcon = ({ field }: { field: string }) => {
-    if (currentSortBy !== field)
-      return <ArrowUpDown className="size-3 text-muted-foreground/40" />;
-    return (
-      <span className="text-primary text-[10px] font-black">
-        {currentSortOrder === "asc" ? "↑" : "↓"}
-      </span>
-    );
   };
 
   return (
@@ -95,7 +110,7 @@ export default function CustomerFilters() {
             onClick={() => toggleSort("firstName")}
             className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
           >
-            Name <SortIcon field="firstName" />
+            Name <SortIcon field="firstName" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-2">
@@ -103,7 +118,7 @@ export default function CustomerFilters() {
             onClick={() => toggleSort("email")}
             className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
           >
-            Email <SortIcon field="email" />
+            Email <SortIcon field="email" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-1">Phone</div>
@@ -112,7 +127,7 @@ export default function CustomerFilters() {
             onClick={() => toggleSort("createdAt")}
             className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
           >
-            Joined <SortIcon field="createdAt" />
+            Joined <SortIcon field="createdAt" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-1">
@@ -120,7 +135,7 @@ export default function CustomerFilters() {
             onClick={() => toggleSort("totalOrders")}
             className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
           >
-            Orders <SortIcon field="totalOrders" />
+            Orders <SortIcon field="totalOrders" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-2">
@@ -128,7 +143,7 @@ export default function CustomerFilters() {
             onClick={() => toggleSort("totalSpent")}
             className="flex items-center gap-1 hover:text-foreground transition-colors cursor-pointer"
           >
-            Total Spent <SortIcon field="totalSpent" />
+            Total Spent <SortIcon field="totalSpent" currentSortBy={currentSortBy} currentSortOrder={currentSortOrder} />
           </button>
         </div>
         <div className="col-span-2 text-right">View</div>

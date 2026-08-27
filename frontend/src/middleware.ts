@@ -12,7 +12,7 @@ async function verifyToken(token: string): Promise<{ role: string } | null> {
   try {
     const secret = new TextEncoder().encode(JWT_SECRET_VALUE);
     const { payload } = await jwtVerify(token, secret);
-    return { role: (payload as any).role ?? "" };
+    return { role: typeof payload.role === "string" ? payload.role : "" };
   } catch {
     return null;
   }

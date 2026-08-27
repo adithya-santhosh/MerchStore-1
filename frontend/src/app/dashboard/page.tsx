@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI, cancelOrderApi, isOrderCancellable, resendVerificationApi } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import type { Product } from "@/types/products";
 import { 
   User, 
   ShoppingBag, 
@@ -32,7 +33,8 @@ import {
   ArrowUpRight,
   Heart,
   Truck,
-  Lock,
+  Lock
+,
   MailWarning,
 } from "lucide-react";
 
@@ -46,13 +48,15 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string;
   cancelled:  { label: "Cancelled",  color: "text-rose-500",    bg: "bg-rose-500/10 border-rose-500/30",        dot: "bg-rose-500" },
 };
 
+type DashboardTab = "overview" | "orders" | "profile" | "wishlist";
+
 function DashboardContent() {
   const { user, loading: authLoading, logout, updateProfile: updateProfileContext, becomeMember } = useAuth();
   const { wishlistCount } = useWishlist();
   const searchParams = useSearchParams();
-  const initialTab = (searchParams.get("tab") as any) || "overview";
+  const initialTab = (searchParams.get("tab") as DashboardTab | null) || "overview";
   
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "profile" | "wishlist">(initialTab);
+  const [activeTab, setActiveTab] = useState<DashboardTab>(initialTab);
   const [orders, setOrders] = useState<Order[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -943,7 +947,7 @@ function DashboardContent() {
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                       {wishlistItems.map((item) => (
-                        <ProductCard key={item.id} product={item.product as any} />
+                        <ProductCard key={item.id} product={item.product as unknown as Product} />
                       ))}
                     </div>
                   )}

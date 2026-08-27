@@ -1,5 +1,6 @@
 import { Product } from "@/types/products";
 import { getCookie } from "@/utils/cookie";
+import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -257,6 +258,69 @@ export async function getNavigationMetadata(): Promise<NavMetadata> {
     console.error("Network error fetching navigation metadata:", error);
     return { categories: [], brands: [], vehicles: [] };
   }
+}
+
+// ─── Vendor Types ─────────────────────────────────────────────────────────────
+
+export interface Vendor {
+  id: number;
+  companyName: string;
+  userId: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  productCount: number;
+  products: { id: number; name: string }[];
+}
+
+export interface VendorOrder {
+  id: number;
+  orderNumber: string;
+  status: string;
+  createdAt: string;
+  customer: { firstName: string; lastName: string; email: string };
+  shippingAddress: OrderAddress & { id: number };
+  items: {
+    productId: number;
+    productName: string;
+    quantity: number;
+    unitPrice: number;
+    imageUrl: string | null;
+  }[];
+  shipment: {
+    carrier: string | null;
+    trackingNumber: string | null;
+    status: string;
+    shippedAt: string | null;
+    deliveredAt: string | null;
+  } | null;
+}
+
+/** A saved delivery address on a user account. */
+export interface UserAddress {
+  id: number;
+  label?: string | null;
+  addressLine1: string;
+  addressLine2?: string | null;
+  city: string;
+  state: string;
+  postalCode: string;
+  country: string;
+  isDefault: boolean;
+}
+
+/** The signed-in user as returned by the auth endpoints. */
+export interface AuthUserProfile {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  createdAt: string;
+  phone?: string | null;
+  isMember?: boolean;
+  emailVerified?: boolean;
+  addresses?: UserAddress[];
 }
 
 // ─── Order API Helpers ────────────────────────────────────────────────────────
@@ -783,7 +847,7 @@ export async function getMyOrders(token?: string): Promise<Order[]> {
   return response.json();
 }
 
-export async function updateProfile(payload: { firstName: string; lastName: string; phone?: string | null }): Promise<any> {
+export async function updateProfile(payload: { firstName: string; lastName: string; phone?: string | null }): Promise<AuthUserProfile> {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/auth/profile`, {
     method: "PUT",
@@ -946,7 +1010,7 @@ export async function removeFromWishlistApi(productId: number): Promise<void> {
 }
 
 // ─── Vendor API ────────────────────────────────────────────────────────────────
-export async function getVendorOrders(): Promise<any[]> {
+export async function getVendorOrders(): Promise<VendorOrder[]> {
   const token = getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors/orders`, {
     cache: "no-store",
@@ -957,7 +1021,7 @@ export async function getVendorOrders(): Promise<any[]> {
   return res.json();
 }
 
-export async function submitVendorShipment(orderId: number, data: { carrier: string; trackingNumber: string }): Promise<any> {
+export async function submitVendorShipment(orderId: number, data: { carrier: string; trackingNumber: string }): Promise<{ message: string }> {
   const token = getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors/orders/${orderId}/ship`, {
     method: "PATCH",
@@ -973,7 +1037,7 @@ export async function submitVendorShipment(orderId: number, data: { carrier: str
 }
 
 export interface AdminVendorsResponse {
-  vendors: any[];
+  vendors: Vendor[];
   total: number;
   page: number;
   limit: number;
@@ -1006,7 +1070,7 @@ export async function createVendorAccount(data: {
   firstName: string;
   lastName: string;
   companyName: string;
-}, token?: string): Promise<any> {
+}, token?: string): Promise<Vendor> {
   const authToken = token || getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors`, {
     method: "POST",
@@ -1024,7 +1088,7 @@ export async function createVendorAccount(data: {
   return res.json();
 }
 
-export async function assignProductVendor(productId: number, vendorId: number | null, token?: string): Promise<any> {
+export async function assignProductVendor(productId: number, vendorId: number | null, token?: string): Promise<{ message: string }> {
   const authToken = token || getCookie("token");
   const res = await fetch(`${API_URL}/api/vendors/products/${productId}/assign`, {
     method: "PATCH",
@@ -1039,12 +1103,12 @@ export async function assignProductVendor(productId: number, vendorId: number | 
   return res.json();
 }
 
-export async function purchaseMembershipRazorpay(userToken?: string): Promise<any> {
+export async function purchaseMembershipRazorpay(userToken?: string): Promise<AuthUserProfile> {
   // No client-readable token to pre-check (HttpOnly cookie) — the create-order
   // call below will fail with 401 if the user isn't actually logged in.
 
   // 1. Load Razorpay script if not already loaded
-  if (typeof window !== "undefined" && !(window as any).Razorpay) {
+  if (typeof window !== "undefined" && !window.Razorpay) {
     await new Promise((resolve, reject) => {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
@@ -1080,7 +1144,7 @@ export async function purchaseMembershipRazorpay(userToken?: string): Promise<an
       name: "MerchStore VIP Membership",
       description: `One-Time Membership Joining Fee (₹${orderData.membershipFee})`,
       order_id: orderData.orderId,
-      handler: async function (paymentResponse: any) {
+      handler: async function (paymentResponse: RazorpaySuccessResponse) {
         try {
           const verifyRes = await fetch(`${API_URL}/api/payment/verify-membership`, {
             method: "POST",
@@ -1117,15 +1181,15 @@ export async function purchaseMembershipRazorpay(userToken?: string): Promise<an
       },
     };
 
-    const rzp = new (window as any).Razorpay(options);
-    rzp.on("payment.failed", function (response: any) {
+    const rzp = new window.Razorpay!(options);
+    rzp.on("payment.failed", function (response: RazorpayFailureResponse) {
       reject(new Error(response.error?.description || "Membership payment failed."));
     });
     rzp.open();
   });
 }
 
-export async function changePasswordAPI(currentPassword: string, newPassword: string, token?: string): Promise<any> {
+export async function changePasswordAPI(currentPassword: string, newPassword: string, token?: string): Promise<{ message: string }> {
   const res = await fetch(`${API_URL}/api/auth/change-password`, {
     method: "PUT",
     credentials: "include",

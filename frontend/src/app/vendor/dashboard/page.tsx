@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { getVendorOrders } from "@/lib/api";
+import type { VendorOrder } from "@/lib/api";
 import VendorOrderCard from "@/components/vendor/VendorOrderCard";
 import { Package, Loader2, InboxIcon } from "lucide-react";
 
 import { getErrorMessage } from "@/lib/errors";
 export default function VendorDashboardPage() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<VendorOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filter, setFilter] = useState("ALL");
