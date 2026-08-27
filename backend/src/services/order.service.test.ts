@@ -4,6 +4,8 @@ vi.mock("../lib/prisma", () => ({
   default: {
     cart: { findFirst: vi.fn() },
     coupon: { findFirst: vi.fn(), update: vi.fn() },
+    order: { findUnique: vi.fn(), update: vi.fn(), findMany: vi.fn() },
+    payment: { update: vi.fn() },
     $transaction: vi.fn(),
   },
 }));
@@ -26,6 +28,7 @@ import {
   finalizeOrder,
   cancelOrder,
   isCancellable,
+  markPaymentRefunded,
   CreateOrderInput,
   PreparedCheckout,
 } from "./order.service";
@@ -354,5 +357,59 @@ describe("cancelOrder", () => {
 
     // Marking it REFUNDED here would record a refund that never happened.
     expect(tx.payment.update).not.toHaveBeenCalled();
+  });
+});
+
+describe("markPaymentRefunded", () => {
+  const paidCancelledOrder = (over: Record<string, any> = {}) => ({
+    id: 1,
+    orderNumber: "ORD-2026-00001",
+    status: "CANCELLED",
+    totalAmount: 1999,
+    notes: null,
+    items: [],
+    payment: { id: 5, status: "PAID", gateway: "razorpay", gatewayPaymentId: "pay_x" },
+    ...over,
+  });
+
+  it("marks a captured payment refunded and records the gateway reference", async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue(paidCancelledOrder() as any);
+    mockedPrisma.$transaction.mockImplementation(async (ops: any) => [
+      {},
+      { ...paidCancelledOrder(), payment: { id: 5, status: "REFUNDED" }, user: { email: "c@d.com" } },
+    ]);
+
+    await markPaymentRefunded(1, "rfnd_abc123");
+
+    // The reference must be persisted so gateway and store records reconcile.
+    const orderUpdateArg = mockedPrisma.order.update.mock.calls[0]?.[0];
+    expect(orderUpdateArg.data.notes).toMatch(/rfnd_abc123/);
+    expect(mockedPrisma.payment.update).toHaveBeenCalledWith({
+      where: { id: 5 },
+      data: { status: "REFUNDED" },
+    });
+  });
+
+  it("refuses to refund the same payment twice", async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue(
+      paidCancelledOrder({ payment: { id: 5, status: "REFUNDED", gateway: "razorpay" } }) as any
+    );
+
+    await expect(markPaymentRefunded(1)).rejects.toThrow(/already marked as refunded/i);
+    expect(mockedPrisma.payment.update).not.toHaveBeenCalled();
+  });
+
+  it("refuses to refund a payment that was never captured", async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue(
+      paidCancelledOrder({ payment: { id: 5, status: "PENDING", gateway: "cod" } }) as any
+    );
+
+    await expect(markPaymentRefunded(1)).rejects.toThrow(/only a captured payment/i);
+    expect(mockedPrisma.payment.update).not.toHaveBeenCalled();
+  });
+
+  it("reports a missing order rather than throwing something opaque", async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue(null as any);
+    await expect(markPaymentRefunded(999)).rejects.toThrow("Order not found");
   });
 });

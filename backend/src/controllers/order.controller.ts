@@ -8,6 +8,8 @@ import {
   getOrderByIdAdmin,
   updateOrderStatus,
   cancelOrder,
+  getRefundsOwed,
+  markPaymentRefunded,
 } from "../services/order.service";
 
 // ─── Customer Endpoints ───────────────────────────────────────────────────────
@@ -150,5 +152,40 @@ export const adminUpdateStatus = async (req: Request, res: Response) => {
   } catch (error: any) {
     logger.error({ err: error }, "Error in adminUpdateStatus controller");
     res.status(400).json({ message: error.message || "Failed to update status." });
+  }
+};
+
+// GET /api/orders/admin/refunds-owed — cancelled orders with a captured payment
+export const adminListRefundsOwed = async (_req: Request, res: Response) => {
+  try {
+    const refunds = await getRefundsOwed();
+    res.json(refunds);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error in adminListRefundsOwed controller");
+    res.status(500).json({ message: error.message || "Failed to fetch outstanding refunds." });
+  }
+};
+
+// PATCH /api/orders/admin/:id/refund — record a refund issued in the gateway
+export const adminRecordRefund = async (req: Request, res: Response) => {
+  try {
+    const orderId = Number(req.params.id);
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+      return res.status(400).json({ message: "Invalid order ID." });
+    }
+
+    const { reference } = req.body ?? {};
+    const order = await markPaymentRefunded(
+      orderId,
+      typeof reference === "string" && reference.trim()
+        ? reference.trim().slice(0, 100)
+        : undefined
+    );
+
+    res.json(order);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error in adminRecordRefund controller");
+    const status = error.message === "Order not found" ? 404 : 400;
+    res.status(status).json({ message: error.message || "Failed to record refund." });
   }
 };

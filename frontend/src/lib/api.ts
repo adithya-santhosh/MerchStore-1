@@ -451,6 +451,7 @@ export interface AdminOrderDetail {
     amount: number;
     status: string;
     paidAt: string | null;
+    gatewayPaymentId?: string | null;
   } | null;
   shipment: {
     carrier: string | null;
@@ -1245,5 +1246,49 @@ export async function resendVerificationApi(): Promise<{ message: string }> {
     throw new Error(await readApiError(res, "Could not send the verification email. Please try again."));
   }
 
+  return res.json();
+}
+
+// ─── Admin Refunds ────────────────────────────────────────────────────────────
+
+export interface RefundOwed {
+  id: number;
+  orderNumber: string;
+  totalAmount: number;
+  cancelledAt: string;
+  customer: { id: number; name: string; email: string };
+  payment: { gateway: string; amount: number; gatewayPaymentId: string | null } | null;
+}
+
+/** Cancelled orders whose payment was captured and not yet refunded. */
+export async function getRefundsOwed(token?: string): Promise<RefundOwed[]> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/orders/admin/refunds-owed`, {
+    credentials: "include",
+    headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch outstanding refunds");
+  return res.json();
+}
+
+/**
+ * Records a refund that has already been issued in the payment gateway.
+ * This does not move money — it marks the order settled so it leaves the queue.
+ */
+export async function recordRefundApi(orderId: number, reference?: string): Promise<AdminOrderDetail> {
+  const token = getCookie("token");
+  const res = await fetch(`${API_URL}/api/orders/admin/${orderId}/refund`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(reference ? { reference } : {}),
+  });
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to record refund"));
+  }
   return res.json();
 }

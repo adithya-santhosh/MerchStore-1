@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getAdminOrderById, updateAdminOrderStatus, AdminOrderDetail } from "@/lib/api";
+import { getAdminOrderById, updateAdminOrderStatus, recordRefundApi, AdminOrderDetail } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
@@ -95,6 +95,31 @@ export default function AdminOrderDetailPage() {
   const [saving,        setSaving]        = useState(false);
   const [saveError,     setSaveError]     = useState("");
   const [saveSuccess,   setSaveSuccess]   = useState(false);
+
+  // ── Refund recording ────────────────────────────────────────────────────────
+  const [refundReference,  setRefundReference]  = useState("");
+  const [recordingRefund,  setRecordingRefund]  = useState(false);
+  const [refundError,      setRefundError]      = useState("");
+
+  // Cancelled + still-captured payment == money owed back to the customer.
+  const refundOwed =
+    order?.status?.toUpperCase() === "CANCELLED" &&
+    order?.payment?.status?.toUpperCase() === "PAID";
+
+  const handleRecordRefund = async () => {
+    if (!order) return;
+    setRecordingRefund(true);
+    setRefundError("");
+    try {
+      const updated = await recordRefundApi(order.id, refundReference.trim() || undefined);
+      setOrder((prev) => (prev ? { ...prev, ...updated } : prev));
+      setRefundReference("");
+    } catch (err: any) {
+      setRefundError(err.message || "Could not record the refund. Please try again.");
+    } finally {
+      setRecordingRefund(false);
+    }
+  };
 
   useEffect(() => {
     if (!orderId) return;
@@ -331,6 +356,48 @@ export default function AdminOrderDetailPage() {
                     label="Paid At"
                     value={new Date(order.payment.paidAt).toLocaleString("en-IN")}
                   />
+                )}
+
+                {/* A cancelled order whose payment is still PAID owes the
+                    customer money. Recording it here does not move funds —
+                    the refund itself is issued in the payment gateway. */}
+                {refundOwed && (
+                  <div className="mt-4 pt-4 border-t border-border/60 space-y-3">
+                    <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/5 p-3">
+                      <AlertCircle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        This order was cancelled but the payment is still captured.
+                        Issue the refund of{" "}
+                        <span className="font-bold text-foreground">
+                          ₹{order.payment.amount.toLocaleString("en-IN")}
+                        </span>{" "}
+                        in Razorpay
+                        {order.payment.gatewayPaymentId && (
+                          <> (payment <span className="font-mono">{order.payment.gatewayPaymentId}</span>)</>
+                        )}
+                        , then record it below.
+                      </p>
+                    </div>
+
+                    {refundError && (
+                      <p className="text-[11px] text-destructive font-semibold">{refundError}</p>
+                    )}
+
+                    <input
+                      type="text"
+                      value={refundReference}
+                      onChange={(e) => setRefundReference(e.target.value)}
+                      placeholder="Razorpay refund ID (optional)"
+                      className="w-full bg-background border border-input rounded-xl px-3 py-2 text-xs outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-mono"
+                    />
+                    <Button
+                      onClick={handleRecordRefund}
+                      disabled={recordingRefund}
+                      className="w-full py-5 text-xs font-bold rounded-xl cursor-pointer"
+                    >
+                      {recordingRefund ? "Recording..." : "Mark refund as issued"}
+                    </Button>
+                  </div>
                 )}
               </div>
             ) : (

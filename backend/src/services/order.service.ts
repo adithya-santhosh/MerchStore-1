@@ -569,6 +569,107 @@ export const cancelOrder = async (
 
 // ─── Admin: Update order status ───────────────────────────────────────────────
 
+// ─── Refunds ──────────────────────────────────────────────────────────────────
+
+/**
+ * Orders that owe the customer money: cancelled, but the payment was captured
+ * and hasn't been refunded yet.
+ *
+ * cancelOrder deliberately leaves the payment row alone rather than marking it
+ * REFUNDED, so this pairing *is* the outstanding-refund queue — no extra schema
+ * state required.
+ */
+export const getRefundsOwed = async () => {
+  const orders = await prisma.order.findMany({
+    where: {
+      status: OrderStatus.CANCELLED,
+      payment: { status: PaymentStatus.PAID },
+    },
+    include: {
+      user:    { select: { id: true, firstName: true, lastName: true, email: true } },
+      payment: true,
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return orders.map((o) => ({
+    id:            o.id,
+    orderNumber:   o.orderNumber,
+    totalAmount:   Number(o.totalAmount),
+    cancelledAt:   o.updatedAt,
+    customer: {
+      id:    o.user.id,
+      name:  `${o.user.firstName} ${o.user.lastName}`.trim(),
+      email: o.user.email,
+    },
+    payment: o.payment
+      ? {
+          gateway:          o.payment.gateway,
+          amount:           Number(o.payment.amount),
+          gatewayPaymentId: o.payment.gatewayPaymentId,
+        }
+      : null,
+  }));
+};
+
+/**
+ * Records that a refund has been issued. This does NOT move money — the refund
+ * is performed in the payment gateway, and this marks it done so the order
+ * stops appearing in the outstanding queue.
+ *
+ * `reference` is the gateway's refund id, appended to the order notes so the
+ * two records can be reconciled later.
+ */
+export const markPaymentRefunded = async (orderId: number, reference?: string) => {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { payment: true },
+  });
+
+  if (!order) throw new Error("Order not found");
+  if (!order.payment) throw new Error("This order has no payment to refund.");
+
+  if (order.payment.status === PaymentStatus.REFUNDED) {
+    throw new Error("This payment is already marked as refunded.");
+  }
+  if (order.payment.status !== PaymentStatus.PAID) {
+    throw new Error(
+      `Only a captured payment can be refunded — this one is ${order.payment.status.toLowerCase()}.`
+    );
+  }
+
+  const [, updatedOrder] = await prisma.$transaction([
+    prisma.payment.update({
+      where: { id: order.payment.id },
+      data:  { status: PaymentStatus.REFUNDED },
+    }),
+    prisma.order.update({
+      where: { id: orderId },
+      data: {
+        notes: [
+          order.notes,
+          `Refund recorded on ${new Date().toISOString().slice(0, 10)}${reference ? ` (ref: ${reference})` : ""}`,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      },
+      include: {
+        user:            { select: { id: true, firstName: true, lastName: true, email: true, phone: true } },
+        items:           true,
+        payment:         true,
+        shippingAddress: true,
+      },
+    }),
+  ]);
+
+  logger.info(
+    { orderId, orderNumber: updatedOrder.orderNumber, amount: Number(updatedOrder.totalAmount), reference },
+    "Refund recorded"
+  );
+
+  return mapOrder(updatedOrder);
+};
+
 export const updateOrderStatus = async (orderId: number, status: string) => {
   const validStatuses = Object.values(OrderStatus);
   if (!validStatuses.includes(status as OrderStatus)) {
@@ -625,6 +726,9 @@ const mapOrder = (order: any) => ({
         amount:  Number(order.payment.amount),
         status:  order.payment.status,
         paidAt:  order.payment.paidAt,
+        // Admin-only view: lets the operator find this transaction in the
+        // gateway dashboard when issuing a refund.
+        gatewayPaymentId: order.payment.gatewayPaymentId,
       }
     : null,
   shipment: order.shipment
