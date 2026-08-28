@@ -15,6 +15,23 @@ export function getProductImageSrc(url: string | null | undefined): string | nul
   return url
 }
 
+/**
+ * Narrow a `callbackUrl` query param down to a path on this site before it is
+ * handed to `router.push()`, which would happily follow an off-site or
+ * `javascript:` URL. Anything that isn't a plain in-site path falls back.
+ */
+export function safeCallbackUrl(
+  raw: string | null | undefined,
+  fallback: string = "/"
+): string {
+  if (!raw) return fallback
+  // Must be "/" or "/" followed by something that is neither "/" nor "\" —
+  // that rules out "//evil.com" and "/\evil.com" (both protocol-relative once
+  // the browser normalises them), as well as "https://…" and "javascript:…".
+  if (!/^\/($|[^/\\])/.test(raw)) return fallback
+  return raw
+}
+
 // frontend/src/utils/upload.ts
 
 export const uploadToCloudinary = async (file: File): Promise<string> => {

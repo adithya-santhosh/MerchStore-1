@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cn, getProductImageSrc } from "@/lib/utils";
+import { cn, getProductImageSrc, safeCallbackUrl } from "@/lib/utils";
 import { getErrorMessage } from "@/lib/errors";
 
 describe("cn", () => {
@@ -113,5 +113,44 @@ describe("getErrorMessage", () => {
   it("keeps the message of an Error subclass", () => {
     class ApiError extends Error {}
     expect(getErrorMessage(new ApiError("not found"), "fallback")).toBe("not found");
+  });
+});
+
+describe("safeCallbackUrl", () => {
+  it("keeps an in-site path", () => {
+    expect(safeCallbackUrl("/checkout")).toBe("/checkout");
+    expect(safeCallbackUrl("/")).toBe("/");
+  });
+
+  it("keeps a query string and hash on an in-site path", () => {
+    expect(safeCallbackUrl("/checkout?step=2#pay")).toBe("/checkout?step=2#pay");
+  });
+
+  it("rejects a protocol-relative URL", () => {
+    expect(safeCallbackUrl("//evil.example")).toBe("/");
+    // Browsers normalise the backslash to "/", making this off-site too.
+    expect(safeCallbackUrl("/\\evil.example")).toBe("/");
+  });
+
+  it("rejects an absolute URL", () => {
+    expect(safeCallbackUrl("https://evil.example/checkout")).toBe("/");
+  });
+
+  it("rejects a javascript: URL", () => {
+    expect(safeCallbackUrl("javascript:alert(1)")).toBe("/");
+  });
+
+  it("rejects a bare relative path that isn't rooted", () => {
+    expect(safeCallbackUrl("checkout")).toBe("/");
+  });
+
+  it("falls back for empty, null and undefined", () => {
+    expect(safeCallbackUrl("")).toBe("/");
+    expect(safeCallbackUrl(null)).toBe("/");
+    expect(safeCallbackUrl(undefined)).toBe("/");
+  });
+
+  it("honours a custom fallback", () => {
+    expect(safeCallbackUrl("//evil.example", "/login")).toBe("/login");
   });
 });

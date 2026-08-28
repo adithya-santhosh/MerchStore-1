@@ -3,8 +3,9 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
-import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft, User, CheckCircle2, ChevronRight, Phone } from "lucide-react";
+import { Mail, Sparkles, AlertCircle, ArrowLeft, User, CheckCircle2, ChevronRight, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 
 import { getErrorMessage } from "@/lib/errors";
 export default function RegisterPage() {
@@ -154,17 +155,12 @@ export default function RegisterPage() {
           {/* Password */}
           <div className="space-y-1.5">
             <label className="text-foreground font-bold">Password</label>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                required
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-background border border-input rounded-xl px-10 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-semibold"
-              />
-            </div>
+            <PasswordInput
+              placeholder="••••••••"
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
 
           {/* Membership card selection option */}

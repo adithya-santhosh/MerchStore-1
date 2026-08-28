@@ -168,10 +168,14 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Auth guard
+  // Auth guard. The param has to be `callbackUrl` — that is the name the login
+  // page and the route middleware both read. A `redirect` param is silently
+  // ignored, which dropped the shopper on the home page after signing in
+  // instead of back here. `replace` keeps /checkout out of history, so Back
+  // returns to the cart rather than bouncing off this guard again.
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      router.push("/login?redirect=/checkout");
+      router.replace(`/login?callbackUrl=${encodeURIComponent("/checkout")}`);
     }
   }, [authLoading, isAuthenticated, router]);
 
@@ -375,22 +379,28 @@ export default function CheckoutPage() {
 
   // ── Loading / Guard ───────────────────────────────────────────────────────
 
-  if (authLoading || cartLoading) {
+  // The signed-out case is folded in here on purpose: the guard above only
+  // *starts* a navigation, so this renders for a frame or two afterwards.
+  // Returning null there painted a bare white page — no navbar, no footer —
+  // which reads as "the checkout page didn't load".
+  const redirectingToLogin = !authLoading && !isAuthenticated;
+
+  if (authLoading || cartLoading || redirectingToLogin) {
     return (
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         <Navbar />
         <main className="flex-grow flex items-center justify-center">
           <div className="space-y-4 text-center">
             <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-muted-foreground">Loading checkout...</p>
+            <p className="text-sm text-muted-foreground">
+              {redirectingToLogin ? "Taking you to sign in..." : "Loading checkout..."}
+            </p>
           </div>
         </main>
         <Footer />
       </div>
     );
   }
-
-  if (!isAuthenticated) return null;
 
   if (!cart || cart.items.length === 0) {
     return (
