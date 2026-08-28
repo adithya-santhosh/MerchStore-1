@@ -50,10 +50,32 @@ export const getDashboardStats = async (days?: number) => {
 
 // ─── Revenue chart data (daily buckets) ──────────────────────────────────────
 
+/**
+ * YYYY-MM-DD for the *server's* calendar day.
+ *
+ * Deliberately not `toISOString().slice(0, 10)`: that reports the UTC day, so
+ * calling it on a local midnight labels the bucket as the previous day in any
+ * UTC+ zone. Bucket labels and order timestamps have to be derived the same
+ * way or takings land in the wrong column.
+ *
+ * Note this follows the server's timezone (UTC on Render), not the store's. If
+ * the day boundary ever needs to be IST specifically, that becomes a store
+ * setting rather than an implicit dependency on where the process runs.
+ */
+const dayKey = (d: Date): string => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 export const getRevenueChart = async (days: number = 30) => {
+  // `days` buckets ending with today — so `since` is (days - 1) days back, not
+  // `days`. Going back a full `days` produced a window that stopped at
+  // yesterday and silently dropped everything sold today.
   const since = new Date();
-  since.setDate(since.getDate() - days);
   since.setHours(0, 0, 0, 0);
+  since.setDate(since.getDate() - (days - 1));
 
   const orders = await prisma.order.findMany({
     where: {
@@ -74,14 +96,12 @@ export const getRevenueChart = async (days: number = 30) => {
   for (let i = 0; i < days; i++) {
     const d = new Date(since);
     d.setDate(since.getDate() + i);
-    const key = d.toISOString().split("T")[0] || ""; // YYYY-MM-DD
-    buckets.set(key, { revenue: 0, orderCount: 0 });
+    buckets.set(dayKey(d), { revenue: 0, orderCount: 0 });
   }
 
   // Fill with actual data
   for (const order of orders) {
-    const key = order.createdAt.toISOString().split("T")[0] || "";
-    const bucket = buckets.get(key);
+    const bucket = buckets.get(dayKey(order.createdAt));
     if (bucket) {
       bucket.revenue += Number(order.totalAmount);
       bucket.orderCount += 1;
