@@ -8,3 +8,6 @@ node_modules
 /prisma.config.js.map
 /prisma/seed.js
 /prisma/seed.js.map
+
+# Rendered email previews (npm run preview:emails)
+/.preview

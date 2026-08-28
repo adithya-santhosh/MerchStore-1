@@ -1,360 +1,347 @@
-export const getWelcomeEmailHtml = (name: string, frontendUrl: string): string => {
-  return `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Welcome to MerchStore</title>
-  </head>
-  <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 20px;">
-      <tr>
-        <td align="center">
-          <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <!-- Header -->
-            <tr>
-              <td style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); padding: 32px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">MerchStore</h1>
-                <p style="margin: 6px 0 0 0; color: #e0f2fe; font-size: 14px; font-weight: 500;">Premium Auto Parts & Automotive Merch</p>
-              </td>
-            </tr>
-            <!-- Body -->
-            <tr>
-              <td style="padding: 36px 32px;">
-                <h2 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 22px;">Welcome aboard, ${name}! 👋</h2>
-                <p style="margin: 0 0 20px 0; color: #94a3b8; font-size: 15px; line-height: 1.6;">
-                  Thank you for registering at MerchStore. Your account has been successfully created. Explore our curated catalog of OEM & aftermarket performance parts, car accessories, and exclusive merch tailored for your vehicle.
-                </p>
-                <div style="text-align: center; margin: 32px 0;">
-                  <a href="${frontendUrl}" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);">
-                    Start Exploring Shop
-                  </a>
-                </div>
-                <p style="margin: 0; color: #64748b; font-size: 13px; text-align: center; line-height: 1.5;">
-                  If you have any questions or need assistance with vehicle compatibility, feel free to reply to this email.
-                </p>
-              </td>
-            </tr>
-            <!-- Footer -->
-            <tr>
-              <td style="background-color: #0f172a; padding: 24px 32px; text-align: center; border-top: 1px solid #334155;">
-                <p style="margin: 0; color: #64748b; font-size: 12px;">© ${new Date().getFullYear()} MerchStore Inc. All rights reserved.</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>
-  `;
+/**
+ * Transactional email templates.
+ *
+ * One shell, five bodies. Everything that has to be right in every email — the
+ * 600px width attribute Outlook needs, the preheader, the colour-scheme meta,
+ * the mobile gutters — lives in `layout()`, so it is impossible to forget when
+ * a sixth template gets added.
+ *
+ * Design notes
+ * ------------
+ * The palette is monochrome on purpose. The only saturated colour in the whole
+ * system is the order-status dot, which is exactly why it reads as information
+ * rather than decoration. The call to action is a white button on near-black:
+ * it needs no gradient, so there is nothing left for Outlook to fail to render.
+ *
+ * Restraint is doing the work. Every heading is a weight lighter and a size
+ * smaller than it wants to be, prices are set in tabular figures so the column
+ * lines up digit over digit, and rules are hairlines rather than slabs. None of
+ * that is noticeable on its own. Together it is the difference.
+ *
+ * Preview every template and every branch with `npm run preview:emails`.
+ */
+
+// ─── Tokens ──────────────────────────────────────────────────────────────────
+
+const color = {
+  pageBg: "#08080a",
+  cardBg: "#101013",
+  panelBg: "#161619",
+  hairline: "#232327",
+  textPrimary: "#f4f4f5",
+  textSecondary: "#a1a1aa",
+  // #71717a was the prettier grey and failed WCAG AA on the card (3.95:1).
+  // Quiet has to stop short of unreadable.
+  textTertiary: "#8b8b94",
+  buttonBg: "#f4f4f5",
+  buttonText: "#09090b"
 };
 
+/** -apple-system puts SF Pro in Apple Mail, which is most of the premium feel. */
+const FONT =
+  "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
+
+/**
+ * Lining tabular figures, so the price column lines up digit over digit. The
+ * font name is single-quoted because these declarations sit inside a
+ * double-quoted HTML attribute. Outlook has no such figures and ignores it.
+ */
+const TABULAR = "font-variant-numeric: tabular-nums; font-feature-settings: 'tnum';";
+
+// ─── Primitives ──────────────────────────────────────────────────────────────
+
+const money = (value: unknown): string =>
+  `₹${Number(value).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+
+const eyebrow = (text: string): string =>
+  `<p style="margin: 0 0 10px 0; font-family: ${FONT}; font-size: 11px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: ${color.textTertiary};">${text}</p>`;
+
+const display = (text: string, extra = ""): string =>
+  `<h1 class="display" style="margin: 0; font-family: ${FONT}; font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; color: ${color.textPrimary}; ${extra}">${text}</h1>`;
+
+const lead = (text: string): string =>
+  `<p style="margin: 18px 0 0 0; font-family: ${FONT}; font-size: 15px; line-height: 1.65; color: ${color.textSecondary};">${text}</p>`;
+
+const note = (text: string): string =>
+  `<p style="margin: 0; font-family: ${FONT}; font-size: 13px; line-height: 1.65; color: ${color.textTertiary};">${text}</p>`;
+
+/**
+ * Table-based button. The `bgcolor` attribute is what survives Outlook; the
+ * background on the anchor itself is what the hover rule in `layout()`
+ * transitions, on the pointer devices that have a hover state to begin with.
+ */
+const button = (href: string, label: string): string =>
+  `<table border="0" cellspacing="0" cellpadding="0" role="presentation">
+                <tr>
+                  <td bgcolor="${color.buttonBg}" style="border-radius: 6px;">
+                    <a class="cta" href="${href}" style="display: inline-block; padding: 13px 26px; background-color: ${color.buttonBg}; border-radius: 6px; font-family: ${FONT}; font-size: 14px; font-weight: 600; letter-spacing: -0.01em; color: ${color.buttonText}; text-decoration: none; transition: background-color 150ms ease;">${label}</a>
+                  </td>
+                </tr>
+              </table>`;
+
+/** "Or paste this link" fallback, for the two emails that carry a token. */
+const linkFallback = (url: string): string =>
+  `<p style="margin: 0 0 6px 0; font-family: ${FONT}; font-size: 12px; color: ${color.textTertiary};">Or paste this link into your browser</p>
+              <p style="margin: 0; font-family: ${FONT}; font-size: 12px; line-height: 1.6; word-break: break-all;"><a href="${url}" style="color: ${color.textSecondary}; text-decoration: underline;">${url}</a></p>`;
+
+/** One content band. Every band shares the gutter so the left edge never drifts. */
+const band = (inner: string, padding: string): string =>
+  `<tr>
+            <td class="gutter" style="padding: ${padding};">
+              ${inner}
+            </td>
+          </tr>`;
+
+// ─── Shell ───────────────────────────────────────────────────────────────────
+
+interface LayoutOptions {
+  /** Browser tab title, and a fallback subject in some clients. */
+  title: string;
+  /** The inbox preview line. Every email gets one written for it. */
+  preheader: string;
+  /** Content bands, already wrapped by `band()`. */
+  content: string;
+}
+
+const layout = ({ title, preheader, content }: LayoutOptions): string => `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="supported-color-schemes" content="dark">
+  <title>${title}</title>
+  <style>
+    body { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+    table { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+    @media (max-width: 620px) {
+      .gutter { padding-left: 24px !important; padding-right: 24px !important; }
+      .display { font-size: 22px !important; }
+    }
+    @media (hover: hover) and (pointer: fine) {
+      a.cta:hover { background-color: #ffffff !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: ${color.pageBg}; font-family: ${FONT}; color: ${color.textSecondary};">
+  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; mso-hide: all;">${preheader}</div>
+  <div style="display: none; max-height: 0; overflow: hidden; opacity: 0; mso-hide: all;">&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;&#847;&zwnj;&nbsp;&#8199;&#65279;</div>
+  <table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation" style="background-color: ${color.pageBg}; padding: 48px 16px;">
+    <tr>
+      <td align="center">
+        <table align="center" width="600" border="0" cellspacing="0" cellpadding="0" role="presentation" style="width: 100%; max-width: 600px; background-color: ${color.cardBg}; border: 1px solid ${color.hairline}; border-radius: 10px;">
+          <tr>
+            <td class="gutter" style="padding: 34px 40px 0 40px;">
+              <p style="margin: 0; font-family: ${FONT}; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: ${color.textTertiary};">MerchStore</p>
+            </td>
+          </tr>
+${content}
+          <tr>
+            <td class="gutter" style="padding: 28px 40px 34px 40px; border-top: 1px solid ${color.hairline};">
+              <p style="margin: 0; font-family: ${FONT}; font-size: 12px; line-height: 1.6; color: ${color.textTertiary};">© ${new Date().getFullYear()} MerchStore. Premium auto parts and automotive merch.</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+// ─── Templates ───────────────────────────────────────────────────────────────
+
+export const getWelcomeEmailHtml = (name: string, frontendUrl: string): string =>
+  layout({
+    title: "Welcome to MerchStore",
+    preheader: "Your account is ready — explore parts and merch for your vehicle.",
+    content: [
+      band(
+        `${eyebrow("Welcome")}
+              ${display(`Hello, ${name}.`)}
+              ${lead(
+                "Your account is ready. Explore our catalogue of OEM and aftermarket performance parts, accessories, and merch matched to your vehicle."
+              )}`,
+        "32px 40px 0 40px"
+      ),
+      band(button(frontendUrl, "Browse the catalogue"), "28px 40px 0 40px"),
+      band(
+        note("Questions about fitment or compatibility? Reply to this email and we will help."),
+        "28px 40px 32px 40px"
+      )
+    ].join("\n")
+  });
+
 export const getOrderConfirmationEmailHtml = (order: any, frontendUrl: string): string => {
-  const itemsHtml = (order.items || [])
+  const items: any[] = order.items || [];
+
+  const itemsHtml = items
     .map(
-      (item: any) => `
-      <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #334155; color: #f8fafc; font-size: 14px;">
-          ${item.productName}
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #334155; color: #94a3b8; font-size: 14px; text-align: center;">
-          ${item.quantity}
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #334155; color: #38bdf8; font-size: 14px; text-align: right; font-weight: 600;">
-          ₹${Number(item.totalPrice).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-        </td>
-      </tr>
-    `
+      (item: any, index: number) => `
+                  <tr>
+                    <td style="padding: 14px 20px; ${index > 0 ? `border-top: 1px solid ${color.hairline};` : ""}">
+                      <p style="margin: 0; font-family: ${FONT}; font-size: 14px; font-weight: 500; line-height: 1.45; color: ${color.textPrimary};">${item.productName}</p>${
+                        // "Qty 1" is not information. Only a real quantity earns a line.
+                        Number(item.quantity) > 1
+                          ? `
+                      <p style="margin: 4px 0 0 0; font-family: ${FONT}; font-size: 12px; color: ${color.textTertiary};">Qty ${item.quantity}</p>`
+                          : ""
+                      }
+                    </td>
+                    <td align="right" valign="top" style="padding: 14px 20px; ${index > 0 ? `border-top: 1px solid ${color.hairline};` : ""}">
+                      <p style="margin: 0; font-family: ${FONT}; font-size: 14px; font-weight: 500; color: ${color.textPrimary}; ${TABULAR}">${money(item.totalPrice)}</p>
+                    </td>
+                  </tr>`
     )
     .join("");
+
+  // An empty panel is worse than no panel. An order with no line items skips it.
+  const itemsPanel = items.length
+    ? band(
+        `<table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation" style="background-color: ${color.panelBg}; border: 1px solid ${color.hairline}; border-radius: 8px;">${itemsHtml}
+                </table>`,
+        "28px 40px 0 40px"
+      )
+    : "";
+
+  const totalRow = (label: string, value: string): string =>
+    `<tr>
+                    <td style="padding: 5px 0; font-family: ${FONT}; font-size: 14px; color: ${color.textSecondary};">${label}</td>
+                    <td align="right" style="padding: 5px 0; font-family: ${FONT}; font-size: 14px; color: ${color.textPrimary}; ${TABULAR}">${value}</td>
+                  </tr>`;
 
   const address = order.shippingAddress;
   const addressStr = address
     ? `${address.addressLine1}${address.addressLine2 ? ", " + address.addressLine2 : ""}, ${address.city}, ${address.state} - ${address.postalCode}`
     : "Address on file";
 
-  return `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Confirmation - ${order.orderNumber}</title>
-  </head>
-  <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 20px;">
-      <tr>
-        <td align="center">
-          <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155;">
-            <!-- Header -->
-            <tr>
-              <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800;">Order Confirmed! 🎉</h1>
-                <p style="margin: 6px 0 0 0; color: #ecfdf5; font-size: 14px;">Order #${order.orderNumber}</p>
-              </td>
-            </tr>
-            <!-- Body -->
-            <tr>
-              <td style="padding: 32px;">
-                <p style="margin: 0 0 20px 0; color: #94a3b8; font-size: 15px;">
-                  Thank you for your order! We have received your order details and are preparing it for shipment.
-                </p>
-
-                <!-- Order Table -->
-                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px; border-collapse: collapse; background-color: #0f172a; border-radius: 8px; overflow: hidden;">
-                  <thead>
-                    <tr style="background-color: #334155;">
-                      <th style="padding: 12px; text-align: left; color: #94a3b8; font-size: 12px; text-transform: uppercase;">Item</th>
-                      <th style="padding: 12px; text-align: center; color: #94a3b8; font-size: 12px; text-transform: uppercase;">Qty</th>
-                      <th style="padding: 12px; text-align: right; color: #94a3b8; font-size: 12px; text-transform: uppercase;">Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${itemsHtml}
-                  </tbody>
-                </table>
-
-                <!-- Summary & Totals -->
-                <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom: 24px;">
+  return layout({
+    title: `Order Confirmation - ${order.orderNumber}`,
+    preheader: `Order #${order.orderNumber} is confirmed. We are preparing it for shipment.`,
+    content: [
+      band(
+        `${eyebrow("Order confirmed")}
+              ${display(`#${order.orderNumber}`, TABULAR)}
+              ${lead("Thank you — we have your order and are preparing it for shipment.")}`,
+        "32px 40px 0 40px"
+      ),
+      itemsPanel,
+      band(
+        `<table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
+                  ${totalRow("Subtotal:", money(order.subtotal))}
+                  ${Number(order.discountAmount) > 0 ? totalRow("Discount:", `-${money(order.discountAmount)}`) : ""}
+                  ${Number(order.taxAmount) > 0 ? totalRow("Tax:", money(order.taxAmount)) : ""}
+                  ${Number(order.shippingCost) > 0 ? totalRow("Shipping:", money(order.shippingCost)) : ""}
                   <tr>
-                    <td style="padding: 4px 0; color: #94a3b8; font-size: 14px;">Subtotal:</td>
-                    <td style="padding: 4px 0; color: #f8fafc; font-size: 14px; text-align: right;">₹${Number(order.subtotal).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                    <td colspan="2" style="padding: 14px 0 0 0; border-top: 1px solid ${color.hairline};"></td>
                   </tr>
-                  ${
-                    Number(order.discountAmount) > 0
-                      ? `<tr>
-                    <td style="padding: 4px 0; color: #10b981; font-size: 14px;">Discount:</td>
-                    <td style="padding: 4px 0; color: #10b981; font-size: 14px; text-align: right;">-₹${Number(order.discountAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                  </tr>`
-                      : ""
-                  }
-                  ${
-                    Number(order.taxAmount) > 0
-                      ? `<tr>
-                    <td style="padding: 4px 0; color: #94a3b8; font-size: 14px;">Tax:</td>
-                    <td style="padding: 4px 0; color: #f8fafc; font-size: 14px; text-align: right;">₹${Number(order.taxAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                  </tr>`
-                      : ""
-                  }
-                  ${
-                    Number(order.shippingCost) > 0
-                      ? `<tr>
-                    <td style="padding: 4px 0; color: #94a3b8; font-size: 14px;">Shipping:</td>
-                    <td style="padding: 4px 0; color: #f8fafc; font-size: 14px; text-align: right;">₹${Number(order.shippingCost).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
-                  </tr>`
-                      : ""
-                  }
-                  <tr style="border-top: 1px solid #334155;">
-                    <td style="padding: 12px 0 0 0; color: #f8fafc; font-size: 16px; font-weight: 700;">Grand Total:</td>
-                    <td style="padding: 12px 0 0 0; color: #38bdf8; font-size: 18px; font-weight: 700; text-align: right;">₹${Number(order.totalAmount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                  <tr>
+                    <td style="font-family: ${FONT}; font-size: 15px; font-weight: 600; color: ${color.textPrimary};">Grand Total:</td>
+                    <td align="right" style="font-family: ${FONT}; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; color: ${color.textPrimary}; ${TABULAR}">${money(order.totalAmount)}</td>
                   </tr>
-                </table>
-
-                <!-- Shipping Address Card -->
-                <div style="background-color: #0f172a; padding: 16px; border-radius: 8px; border: 1px solid #334155; margin-bottom: 24px;">
-                  <h4 style="margin: 0 0 8px 0; color: #38bdf8; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;">Shipping Address</h4>
-                  <p style="margin: 0; color: #cbd5e1; font-size: 14px; line-height: 1.5;">${addressStr}</p>
-                </div>
-
-                <div style="text-align: center; margin-top: 28px;">
-                  <a href="${frontendUrl}/orders/${order.id}" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
-                    View Order Details
-                  </a>
-                </div>
-              </td>
-            </tr>
-            <!-- Footer -->
-            <tr>
-              <td style="background-color: #0f172a; padding: 20px 32px; text-align: center; border-top: 1px solid #334155;">
-                <p style="margin: 0; color: #64748b; font-size: 12px;">Thank you for shopping with MerchStore!</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>
-  `;
+                </table>`,
+        "28px 40px 0 40px"
+      ),
+      band(
+        `${eyebrow("Shipping to")}
+              <p style="margin: 0; font-family: ${FONT}; font-size: 14px; line-height: 1.6; color: ${color.textSecondary};">${addressStr}</p>`,
+        "32px 40px 0 40px"
+      ),
+      band(button(`${frontendUrl}/orders/${order.id}`, "View order"), "28px 40px 32px 40px")
+    ].join("\n")
+  });
 };
 
-export const getOrderStatusEmailHtml = (order: any, newStatus: string, frontendUrl: string): string => {
-  const statusColors: Record<string, { bg: string; text: string }> = {
-    CONFIRMED: { bg: "#0284c7", text: "#e0f2fe" },
-    PROCESSING: { bg: "#6366f1", text: "#e0e7ff" },
-    SHIPPED: { bg: "#8b5cf6", text: "#f3e8ff" },
-    DELIVERED: { bg: "#10b981", text: "#ecfdf5" },
-    CANCELLED: { bg: "#ef4444", text: "#fef2f2" }
+export const getOrderStatusEmailHtml = (
+  order: any,
+  newStatus: string,
+  frontendUrl: string
+): string => {
+  // The one place saturated colour is allowed, which is why it carries meaning.
+  const statusColors: Record<string, string> = {
+    CONFIRMED: "#0284c7",
+    PROCESSING: "#6366f1",
+    SHIPPED: "#8b5cf6",
+    DELIVERED: "#10b981",
+    CANCELLED: "#ef4444"
   };
+  const dot = statusColors[newStatus] || "#475569";
 
-  const badgeStyle = statusColors[newStatus] || { bg: "#475569", text: "#f8fafc" };
+  const copy =
+    newStatus === "SHIPPED"
+      ? "Your items are on the way. Track package updates from your account dashboard."
+      : newStatus === "DELIVERED"
+      ? "Your package has been delivered. We hope you enjoy it."
+      : newStatus === "CANCELLED"
+      ? "This order has been cancelled. Any payment taken will be refunded to the original method."
+      : "We will keep you posted at every step of fulfilment.";
 
-  return `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Order Status Update - ${order.orderNumber}</title>
-  </head>
-  <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 20px;">
-      <tr>
-        <td align="center">
-          <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155;">
-            <!-- Header -->
-            <tr>
-              <td style="background-color: #1e293b; padding: 28px; text-align: center; border-bottom: 1px solid #334155;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 700;">Order Status Update</h1>
-                <p style="margin: 6px 0 0 0; color: #94a3b8; font-size: 14px;">Order #${order.orderNumber}</p>
-              </td>
-            </tr>
-            <!-- Body -->
-            <tr>
-              <td style="padding: 32px; text-align: center;">
-                <p style="margin: 0 0 20px 0; color: #cbd5e1; font-size: 15px;">
-                  Your order status has been updated to:
-                </p>
-                <div style="margin-bottom: 28px;">
-                  <span style="background-color: ${badgeStyle.bg}; color: ${badgeStyle.text}; font-weight: 700; font-size: 16px; padding: 10px 24px; border-radius: 20px; display: inline-block; letter-spacing: 1px;">
-                    ${newStatus}
-                  </span>
-                </div>
-                <p style="margin: 0 0 28px 0; color: #94a3b8; font-size: 14px; line-height: 1.6;">
-                  ${
-                    newStatus === "SHIPPED"
-                      ? "Your items are on the way! You can track package updates in your account dashboard."
-                      : newStatus === "DELIVERED"
-                      ? "Your package has been delivered! We hope you enjoy your purchase."
-                      : "We are keeping your order updated at every step of the fulfillment process."
-                  }
-                </p>
-                <div>
-                  <a href="${frontendUrl}/orders/${order.id}" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: #ffffff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; font-size: 14px; display: inline-block;">
-                    Track Order
-                  </a>
-                </div>
-              </td>
-            </tr>
-            <!-- Footer -->
-            <tr>
-              <td style="background-color: #0f172a; padding: 20px 32px; text-align: center; border-top: 1px solid #334155;">
-                <p style="margin: 0; color: #64748b; font-size: 12px;">© ${new Date().getFullYear()} MerchStore</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>
-  `;
+  return layout({
+    title: `Order Status Update - ${order.orderNumber}`,
+    preheader: `Order #${order.orderNumber} is now ${newStatus.toLowerCase()}.`,
+    content: [
+      band(
+        `${eyebrow("Order update")}
+              ${display(`#${order.orderNumber}`, TABULAR)}
+              <table border="0" cellspacing="0" cellpadding="0" role="presentation" style="margin-top: 18px;">
+                <tr>
+                  <td valign="middle" style="padding-right: 9px; line-height: 0;">
+                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 8px; background-color: ${dot};"></span>
+                  </td>
+                  <td valign="middle" style="font-family: ${FONT}; font-size: 12px; font-weight: 600; letter-spacing: 0.09em; color: ${color.textPrimary};">${newStatus}</td>
+                </tr>
+              </table>
+              ${lead(copy)}`,
+        "32px 40px 0 40px"
+      ),
+      band(button(`${frontendUrl}/orders/${order.id}`, "Track order"), "28px 40px 32px 40px")
+    ].join("\n")
+  });
 };
 
-export const getPasswordResetEmailHtml = (name: string, resetUrl: string): string => {
-  return `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Your Password</title>
-  </head>
-  <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 20px;">
-      <tr>
-        <td align="center">
-          <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155;">
-            <!-- Header -->
-            <tr>
-              <td style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); padding: 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800;">Password Reset Request</h1>
-              </td>
-            </tr>
-            <!-- Body -->
-            <tr>
-              <td style="padding: 36px 32px;">
-                <h3 style="margin: 0 0 16px 0; color: #f8fafc; font-size: 18px;">Hello ${name || "Customer"},</h3>
-                <p style="margin: 0 0 20px 0; color: #94a3b8; font-size: 15px; line-height: 1.6;">
-                  We received a request to reset your password for your MerchStore account. Click the button below to choose a new password. This link is valid for <strong>60 minutes</strong>.
-                </p>
-                <div style="text-align: center; margin: 32px 0;">
-                  <a href="${resetUrl}" style="background: linear-gradient(135deg, #ef4444 0%, #f97316 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">
-                    Reset Password
-                  </a>
-                </div>
-                <p style="margin: 0 0 16px 0; color: #64748b; font-size: 13px; line-height: 1.5;">
-                  If the button above does not work, copy and paste the following link into your web browser:
-                </p>
-                <p style="margin: 0 0 24px 0; font-size: 12px; word-break: break-all;">
-                  <a href="${resetUrl}" style="color: #38bdf8;">${resetUrl}</a>
-                </p>
-                <p style="margin: 0; color: #64748b; font-size: 13px; line-height: 1.5;">
-                  If you did not request a password reset, please ignore this email. Your password will remain unchanged.
-                </p>
-              </td>
-            </tr>
-            <!-- Footer -->
-            <tr>
-              <td style="background-color: #0f172a; padding: 20px 32px; text-align: center; border-top: 1px solid #334155;">
-                <p style="margin: 0; color: #64748b; font-size: 12px;">© ${new Date().getFullYear()} MerchStore Security</p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>
-  `;
-};
+export const getPasswordResetEmailHtml = (name: string, resetUrl: string): string =>
+  layout({
+    title: "Reset Your Password",
+    preheader: "Use the link inside to choose a new password. It expires in 60 minutes.",
+    content: [
+      band(
+        `${eyebrow("Security")}
+              ${display("Reset your password")}
+              ${lead(
+                `Hello ${name || "there"} — we received a request to reset the password on your MerchStore account. Choose a new one below. This link expires in 60 minutes.`
+              )}`,
+        "32px 40px 0 40px"
+      ),
+      band(button(resetUrl, "Choose a new password"), "28px 40px 0 40px"),
+      band(linkFallback(resetUrl), "28px 40px 0 40px"),
+      band(
+        note(
+          "If you did not request this, you can ignore this email. Your password will not change."
+        ),
+        "28px 40px 32px 40px"
+      )
+    ].join("\n")
+  });
 
-export const getEmailVerificationHtml = (name: string, verifyUrl: string): string => {
-  return `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Confirm Your Email</title>
-  </head>
-  <body style="margin: 0; padding: 0; background-color: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #e2e8f0;">
-    <table width="100%" border="0" cellspacing="0" cellpadding="0" style="background-color: #0f172a; padding: 40px 20px;">
-      <tr>
-        <td align="center">
-          <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #1e293b; border-radius: 12px; overflow: hidden; border: 1px solid #334155;">
-            <tr>
-              <td style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); padding: 28px; text-align: center;">
-                <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800;">Confirm Your Email</h1>
-              </td>
-            </tr>
-            <tr>
-              <td style="padding: 32px;">
-                <p style="margin: 0 0 16px 0; color: #e2e8f0; font-size: 16px;">Hi ${name},</p>
-                <p style="margin: 0 0 24px 0; color: #cbd5e1; font-size: 14px; line-height: 1.6;">
-                  Confirm this email address so we can send you order confirmations and delivery updates. This link is valid for 24 hours.
-                </p>
-                <div style="text-align: center; margin: 28px 0;">
-                  <a href="${verifyUrl}" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 15px; display: inline-block;">
-                    Confirm Email Address
-                  </a>
-                </div>
-                <p style="margin: 24px 0 0 0; color: #94a3b8; font-size: 12px; line-height: 1.6;">
-                  If the button doesn't work, paste this into your browser:<br>
-                  <span style="color: #38bdf8; word-break: break-all;">${verifyUrl}</span>
-                </p>
-                <p style="margin: 20px 0 0 0; color: #64748b; font-size: 12px; line-height: 1.6;">
-                  Didn't create an account? You can safely ignore this email — nothing will happen without confirmation.
-                </p>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  </body>
-  </html>
-  `;
-};
+export const getEmailVerificationHtml = (name: string, verifyUrl: string): string =>
+  layout({
+    title: "Confirm Your Email",
+    preheader: "Confirm your address to get order and delivery updates. Link valid 24 hours.",
+    content: [
+      band(
+        `${eyebrow("One more step")}
+              ${display("Confirm your email address")}
+              ${lead(
+                `Hi ${name} — confirm this address so we can send you order confirmations and delivery updates. This link is valid for 24 hours.`
+              )}`,
+        "32px 40px 0 40px"
+      ),
+      band(button(verifyUrl, "Confirm email address"), "28px 40px 0 40px"),
+      band(linkFallback(verifyUrl), "28px 40px 0 40px"),
+      band(
+        note(
+          "Did not create an account? You can safely ignore this email — nothing happens without confirmation."
+        ),
+        "28px 40px 32px 40px"
+      )
+    ].join("\n")
+  });

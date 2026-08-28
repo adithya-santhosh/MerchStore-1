@@ -46,7 +46,7 @@ export const sendWelcomeEmail = async (params: SendWelcomeParams): Promise<void>
     const response = await resend.emails.send({
       from: getFromAddress(),
       to: [params.to],
-      subject: "Welcome to MerchStore! 🚗💨",
+      subject: "Welcome to MerchStore",
       html
     });
 
@@ -78,7 +78,7 @@ export const sendOrderConfirmationEmail = async (params: SendOrderConfirmationPa
     const response = await resend.emails.send({
       from: getFromAddress(),
       to: [params.to],
-      subject: `Order Confirmation #${params.order.orderNumber} - MerchStore`,
+      subject: `Order #${params.order.orderNumber} confirmed`,
       html
     });
 
@@ -111,7 +111,7 @@ export const sendOrderStatusEmail = async (params: SendOrderStatusParams): Promi
     const response = await resend.emails.send({
       from: getFromAddress(),
       to: [params.to],
-      subject: `Order #${params.order.orderNumber} Update: ${params.newStatus}`,
+      subject: `Order #${params.order.orderNumber} is now ${params.newStatus.toLowerCase()}`,
       html
     });
 
@@ -144,7 +144,7 @@ export const sendPasswordResetEmail = async (params: SendPasswordResetParams): P
     const response = await resend.emails.send({
       from: getFromAddress(),
       to: [params.to],
-      subject: "Reset Your MerchStore Password",
+      subject: "Reset your MerchStore password",
       html
     });
 
