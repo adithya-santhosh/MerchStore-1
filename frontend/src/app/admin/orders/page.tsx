@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { getAllOrders, AdminOrderRow, updateAdminOrderStatus } from "@/lib/api";
 import {
@@ -38,7 +38,6 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<AdminOrderRow[]>([]);
-  const [filtered, setFiltered] = useState<AdminOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
@@ -73,8 +72,11 @@ export default function AdminOrdersPage() {
 
   useEffect(() => { fetchOrders(); }, []);
 
-  // Filter + search
-  useEffect(() => {
+  // Derived during render, not mirrored into state via an effect. The old
+  // version stored the filtered list in useState and recomputed it in an
+  // effect, which meant every keystroke rendered twice — once with the stale
+  // list, then again once the effect caught up.
+  const filtered = useMemo(() => {
     let result = orders;
     if (statusFilter !== "all") {
       result = result.filter((o) => o.status === statusFilter);
@@ -88,7 +90,7 @@ export default function AdminOrdersPage() {
           o.customer.email.toLowerCase().includes(q)
       );
     }
-    setFiltered(result);
+    return result;
   }, [orders, search, statusFilter]);
 
   // Stats

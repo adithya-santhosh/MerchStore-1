@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
 interface QuantitySelectorProps {
@@ -19,12 +19,22 @@ export default function QuantitySelector({
   const [localQty, setLocalQty] = useState(1);
 
   const quantity = value !== undefined ? value : localQty;
-  const [tempInput, setTempInput] = useState<string>(String(quantity));
 
-  // Sync state if value changes from parent
-  useEffect(() => {
+  // `tempInput` is intentionally separate from `quantity` so the field can hold
+  // transient text while typing (an empty string, a partial number).
+  //
+  // Resyncing it when the authoritative quantity changes is done during render
+  // rather than in an effect: React re-runs the component immediately without
+  // committing the intermediate paint, whereas an effect renders the stale
+  // value first and corrects it on a second pass. This is React's documented
+  // "adjusting state when a prop changes" pattern.
+  const [tempInput, setTempInput] = useState<string>(String(quantity));
+  const [syncedQuantity, setSyncedQuantity] = useState(quantity);
+
+  if (quantity !== syncedQuantity) {
+    setSyncedQuantity(quantity);
     setTempInput(String(quantity));
-  }, [quantity]);
+  }
 
   const updateQuantity = (val: number) => {
     if (val < 1) return;

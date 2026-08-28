@@ -922,7 +922,7 @@ function DashboardContent() {
                         My Wishlist
                       </h2>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Products you've saved for later.
+                        Products you&apos;ve saved for later.
                       </p>
                     </div>
                   </div>
