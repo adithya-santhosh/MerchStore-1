@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import jwt from "jsonwebtoken";
 import type { Request, Response } from "express";
-import { requireAuth, requireAdmin, requireVendor, optionalAuth } from "./auth.middleware";
+import { requireAuth, requireAdmin, requireVendor, optionalAuth } from "../../src/middleware/auth.middleware";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 

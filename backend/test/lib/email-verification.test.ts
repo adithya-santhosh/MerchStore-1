@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import {
   createEmailVerificationToken,
   readEmailVerificationToken,
-} from "./email-verification";
+} from "../../src/lib/email-verification";
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 

@@ -28,6 +28,12 @@ MerchStore-1/
 │   │   ├── routes/           # API routes (e.g. products)
 │   │   ├── services/         # Business logic layer
 │   │   └── server.ts         # Server entry point
+│   ├── test/                 # Vitest suite, mirroring the src/ tree
+│   │   ├── controllers/      # HTTP-level tests (Supertest against the app)
+│   │   ├── lib/              # Cookie and token helper tests
+│   │   ├── middleware/       # Auth guard and Zod schema tests
+│   │   ├── services/         # Business logic tests
+│   │   └── setup.ts          # Env shared by every test file
 │   ├── tsconfig.json         # TypeScript configuration
 │   └── package.json          # Backend dependencies and scripts
 │
@@ -38,6 +44,7 @@ MerchStore-1/
 │   │   ├── hooks/            # Custom React hooks
 │   │   ├── lib/              # Client utilities and state configs
 │   │   └── utils/            # Helper functions
+│   ├── test/                 # Vitest suite, mirroring the src/ tree
 │   ├── tailwind.config.ts    # Tailwind CSS configuration
 │   ├── tsconfig.json         # TypeScript configuration
 │   └── package.json          # Frontend dependencies and scripts
@@ -127,3 +134,30 @@ The backend uses **Prisma** with a PostgreSQL driver. Core models defined in the
 - **Order / OrderItem**: Order tracking, snapshots of prices, and statuses.
 - **Payment / Shipment**: Integration tracks for transactions (gateway, status) and logistics (carrier, tracking number).
 - **Review / Wishlist / Coupon**: Engagement features for coupon codes, user ratings, and saved items.
+
+---
+
+## 🧪 Testing
+
+Both workspaces run [Vitest](https://vitest.dev). Tests live in a `test/` folder that
+mirrors the `src/` tree, so `src/services/cart.service.ts` is covered by
+`test/services/cart.service.test.ts`.
+
+```bash
+cd backend && npm test     # 837 tests — services, middleware, and HTTP routes via Supertest
+cd frontend && npm test    # 105 tests — metadata, API client, cookies, edge middleware
+```
+
+Use `npm run test:watch` in either workspace while developing.
+
+The backend suite needs no database: `test/setup.ts` supplies the env vars the app
+reads at import time, and every test that touches persistence mocks
+`src/lib/prisma` directly. Controller tests exercise the real Express app —
+routing, auth guards, Zod validation and rate limits included — with only the
+service layer stubbed.
+
+Frontend coverage is limited to framework-independent logic. Rendering React
+Server Components needs the Next runtime, so pages and components are not unit
+tested here.
+
+Both suites run on every push and pull request via [GitHub Actions](.github/workflows/ci.yml).
