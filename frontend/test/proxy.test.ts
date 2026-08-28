@@ -14,7 +14,7 @@ let middleware: (req: NextRequestType) => Promise<NextResponse>;
 let NextRequest: typeof NextRequestType;
 
 beforeAll(async () => {
-  ({ middleware } = await import("@/middleware"));
+  ({ proxy: middleware } = await import("@/proxy"));
   ({ NextRequest } = await import("next/server"));
 });
 
@@ -198,7 +198,7 @@ describe("unprotected routes", () => {
 
 describe("matcher configuration", () => {
   it("covers exactly the admin, dashboard and auth routes", async () => {
-    const { config } = await import("@/middleware");
+    const { config } = await import("@/proxy");
 
     expect(config.matcher).toEqual([
       "/admin/:path*",

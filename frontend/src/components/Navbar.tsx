@@ -31,6 +31,25 @@ interface NavItem {
   href: string;
 }
 
+/**
+ * Where a subcategory link in the mega menu should go.
+ *
+ * Car accessories have a route per subcategory; merchandise subcategories do
+ * not, so they filter the catalogue instead. Both menu copies previously sent
+ * every merchandise child to /products/merchandise, which made "Apparel",
+ * "Caps", "Keychains" and "Collectibles" four labels for one identical page.
+ * The name is passed rather than the slug because the search API matches either
+ * and the name is what the destination heading renders.
+ */
+function subCategoryHref(
+  parentSlug: string,
+  sub: { slug: string; name: string }
+): string {
+  return parentSlug === "car-accessories"
+    ? `/products/car-accessories/${sub.slug}`
+    : `/products?subCategory=${encodeURIComponent(sub.name)}`;
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -383,11 +402,7 @@ export default function Navbar() {
                           {cat.children.map((sub) => (
                             <li key={sub.id}>
                               <Link
-                                href={
-                                  cat.slug === "car-accessories"
-                                    ? `/products/car-accessories/${sub.slug}`
-                                    : "/products/merchandise"
-                                }
+                                href={subCategoryHref(cat.slug, sub)}
                                 onClick={() => setActiveDropdown(null)}
                                 className="group/sub flex flex-col gap-0.5 normal-case"
                               >
@@ -532,11 +547,7 @@ export default function Navbar() {
                               {cat.children.map((sub) => (
                                 <Link
                                   key={sub.id}
-                                  href={
-                                    cat.slug === "car-accessories"
-                                      ? `/products/car-accessories/${sub.slug}`
-                                      : "/products/merchandise"
-                                  }
+                                  href={subCategoryHref(cat.slug, sub)}
                                   onClick={() => setIsMobileMenuOpen(false)}
                                   className="block py-1 text-xs text-muted-foreground hover:text-primary"
                                 >

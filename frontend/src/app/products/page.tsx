@@ -113,6 +113,7 @@ export default async function ProductsPage({
               <ProductsExplorerWrapper
                 search={search}
                 category={category}
+                subCategory={subCategory}
                 brand={brand}
                 vehicle={vehicle}
               />

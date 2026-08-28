@@ -4,6 +4,12 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Tailwind already gates `hover:` behind @media (hover: hover), so a control
+   hidden until hover is simply unreachable on a touch screen. This variant
+   lets a component say "hide it *only* where hovering exists", making the
+   visible state the one touch devices get. */
+@custom-variant can-hover (@media (hover: hover) and (pointer: fine));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -35,6 +41,7 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
+  --color-primary-bright: var(--primary-bright);
   --color-popover-foreground: var(--popover-foreground);
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
@@ -56,6 +63,12 @@
   --popover: oklch(0.18 0.01 250);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.56 0.25 24); /* darkened from 0.63: white text on 0.63 was 3.79:1, below the 4.5:1 WCAG AA minimum. Now 4.71:1. */
+  /* Same hue and chroma as --primary, lifted for use AS TEXT on dark
+     surfaces. --primary is tuned to be a fill: white on it is 4.71:1. Used
+     the other way round — red text on a card — it is only 3.82:1, under the
+     4.5:1 minimum. This step measures 5.03:1 on a card and 5.27:1 on the
+     page background. Fills keep --primary; small coloured text uses this. */
+  --primary-bright: oklch(0.66 0.25 24);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.22 0.01 250);
   --secondary-foreground: oklch(0.985 0 0);
@@ -91,6 +104,12 @@
   --popover: oklch(0.18 0.01 250);
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.56 0.25 24); /* darkened from 0.63: white text on 0.63 was 3.79:1, below the 4.5:1 WCAG AA minimum. Now 4.71:1. */
+  /* Same hue and chroma as --primary, lifted for use AS TEXT on dark
+     surfaces. --primary is tuned to be a fill: white on it is 4.71:1. Used
+     the other way round — red text on a card — it is only 3.82:1, under the
+     4.5:1 minimum. This step measures 5.03:1 on a card and 5.27:1 on the
+     page background. Fills keep --primary; small coloured text uses this. */
+  --primary-bright: oklch(0.66 0.25 24);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.22 0.01 250);
   --secondary-foreground: oklch(0.985 0 0);
