@@ -672,9 +672,18 @@ export const markPaymentRefunded = async (orderId: number, reference?: string) =
 
 export const updateOrderStatus = async (orderId: number, status: string) => {
   const validStatuses = Object.values(OrderStatus);
-  if (!validStatuses.includes(status as OrderStatus)) {
+
+  // The Prisma enum is uppercase but the admin UI is written in lowercase, so
+  // every status change arrived as "shipped" and was rejected as invalid —
+  // admins could not move an order at all. Normalise the case here rather than
+  // at the call site so any caller is covered, and keep the stored value as the
+  // enum defines it.
+  const normalised = String(status).trim().toUpperCase() as OrderStatus;
+
+  if (!validStatuses.includes(normalised)) {
     throw new Error(`Invalid status. Must be one of: ${validStatuses.join(", ")}`);
   }
+  status = normalised;
 
   // Cancelling has side effects — restock, coupon reversal, refund flagging —
   // so route it through cancelOrder rather than a bare status write. Previously

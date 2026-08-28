@@ -69,10 +69,11 @@ function LoginForm() {
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-foreground font-bold">Email Address</label>
+            <label htmlFor="login-email" className="text-foreground font-bold">Email Address</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
+                id="login-email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -86,7 +87,7 @@ function LoginForm() {
           {/* Password */}
           <div className="space-y-1.5">
             <div className="flex justify-between items-center">
-              <label className="text-foreground font-bold">Password</label>
+              <label htmlFor="login-password" className="text-foreground font-bold">Password</label>
               <Link
                 href="/forgot-password"
                 className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
@@ -95,6 +96,7 @@ function LoginForm() {
               </Link>
             </div>
             <PasswordInput
+              id="login-password"
               placeholder="••••••••"
               value={password}
               required

@@ -104,9 +104,9 @@ function ConfirmationPageContent() {
             <Package className="size-12 text-muted-foreground/40 mx-auto mb-4" />
             <h2 className="text-lg font-bold mb-2">Order Not Found</h2>
             <p className="text-xs text-muted-foreground mb-6">{error || "We couldn't find your order."}</p>
-            <Link href="/products">
-              <Button className="text-xs font-semibold px-6 rounded-xl">Continue Shopping</Button>
-            </Link>
+            <Button asChild className="text-xs font-semibold px-6 rounded-xl">
+              <Link href="/products">Continue Shopping</Link>
+            </Button>
           </div>
         </main>
         <Footer />
@@ -317,15 +317,16 @@ function ConfirmationPageContent() {
 
             {/* CTA Buttons */}
             <div className="space-y-2">
-              <Link href="/products" className="block">
-                <Button
-                  id="continue-shopping"
-                  className="w-full py-5 text-sm font-bold rounded-xl shadow-lg shadow-primary/10 cursor-pointer"
-                >
+              <Button
+                asChild
+                id="continue-shopping"
+                className="w-full py-5 text-sm font-bold rounded-xl shadow-lg shadow-primary/10 cursor-pointer"
+              >
+                <Link href="/products">
                   Continue Shopping
                   <ChevronRight className="size-4.5 ml-1" />
-                </Button>
-              </Link>
+                </Link>
+              </Button>
               <Link href="/" className="block text-center">
                 <span className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer block py-1.5">
                   Back to Home

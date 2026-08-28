@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
@@ -852,49 +853,40 @@ function DashboardContent() {
 
                     <form onSubmit={handleChangePasswordSubmit} className="space-y-4 mt-6">
                       <div className="space-y-1.5">
-                        <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Current Password</label>
-                        <div className="relative">
-                          <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                          <input
-                            type="password"
+                        <label htmlFor="dash-current-password" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Current Password</label>
+                        <PasswordInput
+                            id="dash-current-password"
                             required
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3 text-sm font-semibold bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
+                            className="border-border placeholder:text-muted-foreground focus:ring-primary/30"
                             placeholder="Enter current password"
                           />
-                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">New Password</label>
-                          <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                            <input
-                              type="password"
-                              required
-                              value={newPassword}
-                              onChange={(e) => setNewPassword(e.target.value)}
-                              className="w-full pl-11 pr-4 py-3 text-sm font-semibold bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
-                              placeholder="At least 6 characters"
-                            />
-                          </div>
+                          <label htmlFor="dash-new-password" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">New Password</label>
+                          <PasswordInput
+                            id="dash-new-password"
+                            required
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="border-border placeholder:text-muted-foreground focus:ring-primary/30"
+                            placeholder="At least 6 characters"
+                          />
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Confirm New Password</label>
-                          <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                            <input
-                              type="password"
-                              required
-                              value={confirmPassword}
-                              onChange={(e) => setConfirmPassword(e.target.value)}
-                              className="w-full pl-11 pr-4 py-3 text-sm font-semibold bg-background border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all"
-                              placeholder="Confirm new password"
-                            />
-                          </div>
+                          <label htmlFor="dash-confirm-password" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Confirm New Password</label>
+                          <PasswordInput
+                            id="dash-confirm-password"
+                            required
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="border-border placeholder:text-muted-foreground focus:ring-primary/30"
+                            placeholder="Confirm new password"
+                          />
                         </div>
                       </div>
 
@@ -940,9 +932,9 @@ function DashboardContent() {
                       <p className="text-xs text-muted-foreground mt-1 mb-4">
                         Save items you like and they will appear here.
                       </p>
-                      <Link href="/products">
-                        <Button className="text-xs font-bold px-6">Explore Products</Button>
-                      </Link>
+                      <Button asChild className="text-xs font-bold px-6">
+                        <Link href="/products">Explore Products</Link>
+                      </Button>
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">

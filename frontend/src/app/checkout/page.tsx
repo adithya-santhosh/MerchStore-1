@@ -411,9 +411,9 @@ export default function CheckoutPage() {
             <ShoppingBag className="size-12 text-muted-foreground/40 mx-auto mb-4" />
             <h2 className="text-lg font-bold mb-2">Nothing to Checkout</h2>
             <p className="text-xs text-muted-foreground mb-6">Your cart is empty. Add some products first.</p>
-            <Link href="/products">
-              <Button className="text-xs font-semibold px-6 rounded-xl">Browse Products</Button>
-            </Link>
+            <Button asChild className="text-xs font-semibold px-6 rounded-xl">
+              <Link href="/products">Browse Products</Link>
+            </Button>
           </div>
         </main>
         <Footer />

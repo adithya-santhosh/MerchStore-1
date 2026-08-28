@@ -535,6 +535,19 @@ export interface AdminOrderDetail {
   }[];
 }
 
+/**
+ * The API returns order status as the Prisma enum spells it — uppercase. Every
+ * screen in this app compares against lowercase literals, which is why the
+ * admin list's stat tiles read 0 and its status filter matched nothing, and why
+ * `dashboard/page.tsx` had already sprinkled `.toLowerCase()` at its call
+ * sites. Normalising once here means callers can rely on one casing instead of
+ * each remembering to defend against it.
+ */
+const toClientStatus = <T extends { status: string }>(o: T): T => ({
+  ...o,
+  status: o.status?.toLowerCase() ?? o.status,
+});
+
 export interface AdminOrdersResponse {
   orders: AdminOrderRow[];
   total: number;
@@ -557,7 +570,8 @@ export async function getAllOrders(params: { page?: number; limit?: number } = {
     cache: "no-store",
   });
   if (!response.ok) throw new Error("Failed to fetch orders");
-  return response.json();
+  const data: AdminOrdersResponse = await response.json();
+  return { ...data, orders: (data.orders ?? []).map(toClientStatus) };
 }
 
 export async function getAdminOrderById(id: number): Promise<AdminOrderDetail> {
@@ -568,7 +582,7 @@ export async function getAdminOrderById(id: number): Promise<AdminOrderDetail> {
     cache: "no-store",
   });
   if (!response.ok) throw new Error("Failed to fetch order");
-  return response.json();
+  return toClientStatus(await response.json());
 }
 
 export async function updateAdminOrderStatus(id: number, status: string): Promise<void> {

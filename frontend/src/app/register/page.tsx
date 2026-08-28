@@ -91,10 +91,11 @@ export default function RegisterPage() {
           {/* First Name & Last Name */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-foreground font-bold">First Name</label>
+              <label htmlFor="reg-first-name" className="text-foreground font-bold">First Name</label>
               <div className="relative">
                 <User className="absolute left-3 size-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="reg-first-name"
                   type="text"
                   placeholder="John"
                   value={firstName}
@@ -106,10 +107,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-foreground font-bold">Last Name</label>
+              <label htmlFor="reg-last-name" className="text-foreground font-bold">Last Name</label>
               <div className="relative">
                 <User className="absolute left-3 size-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="reg-last-name"
                   type="text"
                   placeholder="Doe"
                   value={lastName}
@@ -123,10 +125,11 @@ export default function RegisterPage() {
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-foreground font-bold">Email Address</label>
+            <label htmlFor="reg-email" className="text-foreground font-bold">Email Address</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
+                id="reg-email"
                 type="email"
                 placeholder="john@example.com"
                 value={email}
@@ -139,10 +142,11 @@ export default function RegisterPage() {
 
           {/* Phone Number */}
           <div className="space-y-1.5">
-            <label className="text-foreground font-bold">Phone Number (Optional)</label>
+            <label htmlFor="reg-phone" className="text-foreground font-bold">Phone Number (Optional)</label>
             <div className="relative">
               <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
+                id="reg-phone"
                 type="tel"
                 placeholder="+91 98765 43210"
                 value={phone}
@@ -154,8 +158,9 @@ export default function RegisterPage() {
 
           {/* Password */}
           <div className="space-y-1.5">
-            <label className="text-foreground font-bold">Password</label>
+            <label htmlFor="reg-password" className="text-foreground font-bold">Password</label>
             <PasswordInput
+              id="reg-password"
               placeholder="••••••••"
               value={password}
               required

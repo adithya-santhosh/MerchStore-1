@@ -278,12 +278,16 @@ export default function CartPage() {
 
                   {/* Actions (Checkout & Continue Shopping) */}
                   <div className="space-y-3">
-                    <Link href="/checkout" className="block">
-                      <Button className="w-full py-6 text-sm font-bold shadow-lg shadow-primary/10 rounded-xl cursor-pointer">
+                    {/* asChild, so this renders a single <a> rather than a
+                        <button> nested inside one. The nesting was invalid HTML
+                        and a synthetic click on the inner button did not
+                        navigate at all. */}
+                    <Button asChild className="w-full py-6 text-sm font-bold shadow-lg shadow-primary/10 rounded-xl cursor-pointer">
+                      <Link href="/checkout">
                         Proceed to Checkout
                         <ArrowRight className="size-4.5 ml-1.5" />
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                     
                     <Link href="/products" className="block text-center mt-1">
                       <span className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer block py-1.5">
@@ -315,11 +319,9 @@ export default function CartPage() {
               <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto leading-relaxed">
                 Before you can checkout, you must add some products to your shopping cart. You will find a lot of interesting items in our store catalog.
               </p>
-              <Link href="/products" className="inline-flex mt-6">
-                <Button className="shadow-md cursor-pointer text-xs font-semibold px-6 py-4.5 rounded-xl">
-                  Start Shopping
-                </Button>
-              </Link>
+              <Button asChild className="mt-6 shadow-md cursor-pointer text-xs font-semibold px-6 py-4.5 rounded-xl">
+                <Link href="/products">Start Shopping</Link>
+              </Button>
             </div>
           )}
         </div>

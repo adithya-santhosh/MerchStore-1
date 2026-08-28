@@ -61,6 +61,26 @@ export default async function ProductPage({ params }: PageProps) {
 
   const categoryUrl = isCarAccessory ? "/products/car-accessories" : "/products";
 
+  /*
+   * Where the subcategory crumb points.
+   *
+   * It used to link to `/products/subcategories/{name}`, a route that does not
+   * exist anywhere in the app — so the crumb 404'd on every product page. It
+   * also passed the display name ("Armor & Protection") where the routes are
+   * keyed by slug.
+   *
+   * Car accessories have a page per subcategory and slugifying the name lands
+   * on all six of them exactly. Merchandise subcategories have no page of their
+   * own, so the crumb goes to the merchandise listing rather than nowhere.
+   */
+  const subCategoryUrl = isCarAccessory
+    ? `/products/car-accessories/${product.subCategory
+        ?.toLowerCase()
+        .replace(/&/g, " ")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "")}`
+    : "/products/merchandise";
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Navbar />
@@ -83,7 +103,7 @@ export default async function ProductPage({ params }: PageProps) {
           {product.subCategory && (
             <>
               <ChevronRight className="size-3.5" />
-              <Link href={`/products/subcategories/${product.subCategory}`} className="hover:text-primary transition-colors cursor-pointer">
+              <Link href={subCategoryUrl} className="hover:text-primary transition-colors cursor-pointer">
                 {product.subCategory}
               </Link>
             </>
