@@ -292,7 +292,7 @@ export default function ProductsExplorer({
                     }}
                     className={`w-full text-left px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                       sortBy === opt.value
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/10 text-primary-bright"
                         : "text-foreground hover:bg-muted"
                     }`}
                   >
@@ -309,7 +309,7 @@ export default function ProductsExplorer({
               onClick={() => setGridCols(3)}
               className={`p-2.5 transition-colors cursor-pointer ${
                 gridCols === 3
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-bright"
                   : "text-muted-foreground hover:bg-muted"
               }`}
               aria-label="3 columns"
@@ -320,7 +320,7 @@ export default function ProductsExplorer({
               onClick={() => setGridCols(4)}
               className={`p-2.5 transition-colors cursor-pointer ${
                 gridCols === 4
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary/10 text-primary-bright"
                   : "text-muted-foreground hover:bg-muted"
               }`}
               aria-label="4 columns"
@@ -362,7 +362,7 @@ export default function ProductsExplorer({
           {activeFilters.map((filter, idx) => (
             <span
               key={idx}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold text-primary"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold text-primary-bright"
             >
               {filter.label}
               <button
@@ -448,7 +448,7 @@ export default function ProductsExplorer({
                   onClick={() => { setActiveCategory(""); setPage(1); }}
                   className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                     !activeCategory
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-bright"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
@@ -472,7 +472,7 @@ export default function ProductsExplorer({
                         }}
                         className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                           activeCategory === cat.slug
-                            ? "bg-primary/10 text-primary"
+                            ? "bg-primary/10 text-primary-bright"
                             : "text-foreground/80 hover:bg-muted hover:text-foreground"
                         }`}
                       >
@@ -497,7 +497,7 @@ export default function ProductsExplorer({
                   onClick={() => { setActiveBrand(""); setPage(1); }}
                   className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                     !activeBrand
-                      ? "bg-primary/10 text-primary"
+                      ? "bg-primary/10 text-primary-bright"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   }`}
                 >
@@ -514,7 +514,7 @@ export default function ProductsExplorer({
                     }}
                     className={`w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                       activeBrand === brand.slug
-                        ? "bg-primary/10 text-primary"
+                        ? "bg-primary/10 text-primary-bright"
                         : "text-foreground/80 hover:bg-muted hover:text-foreground"
                     }`}
                   >
@@ -533,7 +533,7 @@ export default function ProductsExplorer({
                 Vehicle
               </h4>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-primary/20 bg-primary/5">
-                <span className="text-xs font-semibold text-primary flex-grow">
+                <span className="text-xs font-semibold text-primary-bright flex-grow">
                   {activeVehicle}
                 </span>
                 <button

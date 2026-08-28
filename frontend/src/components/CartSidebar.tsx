@@ -72,7 +72,7 @@ export default function CartSidebar() {
                       </span>
                     ) : (
                       <>
-                        Add <span className="text-primary font-black">₹{shippingThreshold - subtotal}</span> more for Free Shipping
+                        Add <span className="text-primary-bright font-black">₹{shippingThreshold - subtotal}</span> more for Free Shipping
                       </>
                     )}
                   </span>
@@ -185,7 +185,7 @@ export default function CartSidebar() {
                 </div>
                 <div className="flex justify-between text-sm font-black border-t border-border/30 pt-2.5">
                   <span className="text-foreground">Total</span>
-                  <span className="text-primary">
+                  <span className="text-primary-bright">
                     ₹{(subtotal >= shippingThreshold ? subtotal : subtotal + shippingCost).toLocaleString("en-IN")}
                   </span>
                 </div>
@@ -212,7 +212,7 @@ export default function CartSidebar() {
                 
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="text-center text-[11px] font-semibold text-muted-foreground hover:text-primary transition-colors py-1.5 cursor-pointer mt-1"
+                  className="text-center text-[11px] font-semibold text-muted-foreground hover:text-primary-bright transition-colors py-1.5 cursor-pointer mt-1"
                 >
                   Continue Shopping
                 </button>

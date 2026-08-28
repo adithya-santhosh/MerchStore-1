@@ -68,7 +68,7 @@ export default function RewardsPage() {
           
           {/* Hero Banner */}
           <div className="text-center max-w-3xl mx-auto space-y-4">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-primary-bright text-[10px] font-bold uppercase tracking-wider">
               <Sparkles className="size-3.5" /> MerchStore Premium Club
             </div>
             <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-none bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
@@ -126,7 +126,7 @@ export default function RewardsPage() {
             </div>
 
             <div className="text-center pt-6">
-              <Link href="/register" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:underline">
+              <Link href="/register" className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-bright hover:underline">
                 Create account & join today <ChevronRight className="size-3.5" />
               </Link>
             </div>

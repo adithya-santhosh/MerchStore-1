@@ -328,7 +328,7 @@ function ConfirmationPageContent() {
                 </Link>
               </Button>
               <Link href="/" className="block text-center">
-                <span className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer block py-1.5">
+                <span className="text-xs font-semibold text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer block py-1.5">
                   Back to Home
                 </span>
               </Link>

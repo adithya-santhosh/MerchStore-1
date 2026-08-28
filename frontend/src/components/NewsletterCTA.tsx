@@ -45,7 +45,7 @@ export default function NewsletterCTA() {
         <ScrollReveal direction="up">
           <div className="max-w-2xl mx-auto text-center space-y-6">
             {/* Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
               <Sparkles className="size-3.5" />
               EXCLUSIVE ACCESS
             </div>

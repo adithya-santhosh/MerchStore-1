@@ -222,7 +222,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       )}
                     </div>
                     <div className="truncate">
-                      <p className="font-bold text-foreground truncate hover:text-primary transition-colors">
+                      <p className="font-bold text-foreground truncate hover:text-primary-bright transition-colors">
                         <Link href={`/admin/products/${product.productId}`}>
                           {product.productName}
                         </Link>
@@ -290,7 +290,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
           </div>
           <Link
             href="/admin/orders"
-            className="flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+            className="flex items-center gap-1 text-xs font-bold text-primary-bright hover:underline"
           >
             <span>View All Orders</span>
             <ChevronRight className="size-4" />
@@ -308,7 +308,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                   <div className="col-span-3 flex items-center gap-2">
                     <Link
                       href={`/admin/orders/${order.id}`}
-                      className="font-bold text-primary hover:underline"
+                      className="font-bold text-primary-bright hover:underline"
                     >
                       {order.orderNumber}
                     </Link>

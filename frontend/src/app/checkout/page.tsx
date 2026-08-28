@@ -81,7 +81,7 @@ function StepIndicator({ current }: { current: number }) {
               <div
                 className={`size-10 rounded-full flex items-center justify-center border-2 transition-all duration-300
                   ${done ? "bg-primary border-primary text-primary-foreground" : ""}
-                  ${active ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/20" : ""}
+                  ${active ? "bg-primary/10 border-primary text-primary-bright shadow-lg shadow-primary/20" : ""}
                   ${!done && !active ? "bg-muted/30 border-border text-muted-foreground" : ""}
                 `}
               >
@@ -93,7 +93,7 @@ function StepIndicator({ current }: { current: number }) {
               </div>
               <span
                 className={`text-[10px] font-bold uppercase tracking-wider transition-colors ${
-                  active ? "text-primary" : done ? "text-foreground" : "text-muted-foreground"
+                  active ? "text-primary-bright" : done ? "text-foreground" : "text-muted-foreground"
                 }`}
               >
                 {step.label}
@@ -132,7 +132,7 @@ function Field({
     <div className="space-y-1.5">
       <label htmlFor={id} className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
         {label}
-        {required && <span className="text-primary ml-0.5">*</span>}
+        {required && <span className="text-primary-bright ml-0.5">*</span>}
       </label>
       {children}
       {error && (
@@ -434,7 +434,7 @@ export default function CheckoutPage() {
 
         {/* Page Header */}
         <div className="space-y-2 mb-10 text-center">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
             <Shield className="size-3.5" />
             Secure Checkout
           </span>
@@ -468,7 +468,7 @@ export default function CheckoutPage() {
                   <div className="space-y-2 p-5 rounded-2xl border border-primary/20 bg-primary/5 shadow-inner">
                     <div className="flex items-center gap-2">
                       <Sparkles className="size-4 text-primary animate-pulse" />
-                      <span className="text-xs font-bold text-primary uppercase tracking-wider">
+                      <span className="text-xs font-bold text-primary-bright uppercase tracking-wider">
                         Quick Fill Saved Address
                       </span>
                     </div>
@@ -654,7 +654,7 @@ export default function CheckoutPage() {
                           )}
                         </div>
                         <div className="flex-grow min-w-0">
-                          <p className="text-xs font-semibold text-primary uppercase tracking-wider">{item.product.category}</p>
+                          <p className="text-xs font-semibold text-primary-bright uppercase tracking-wider">{item.product.category}</p>
                           <p className="text-sm font-bold text-foreground truncate">{item.product.name}</p>
                           <p className="text-xs text-muted-foreground">Qty: {item.quantity} × ₹{item.unitPrice.toLocaleString("en-IN")}</p>
                         </div>
@@ -726,7 +726,7 @@ export default function CheckoutPage() {
                   </p>
                   <button
                     onClick={() => setStep(1)}
-                    className="text-[10px] text-primary font-semibold hover:underline cursor-pointer mt-0.5"
+                    className="text-[10px] text-primary-bright font-semibold hover:underline cursor-pointer mt-0.5"
                   >
                     Change address
                   </button>
@@ -942,7 +942,7 @@ export default function CheckoutPage() {
             {subtotal < shippingThreshold && (
               <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 space-y-2">
                 <p className="text-xs font-semibold text-foreground">
-                  Add <span className="text-primary font-black">₹{(shippingThreshold - subtotal).toLocaleString("en-IN")}</span> more for free shipping
+                  Add <span className="text-primary-bright font-black">₹{(shippingThreshold - subtotal).toLocaleString("en-IN")}</span> more for free shipping
                 </p>
                 <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                   <div

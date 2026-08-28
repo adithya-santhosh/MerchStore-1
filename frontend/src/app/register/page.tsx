@@ -188,7 +188,7 @@ export default function RegisterPage() {
             <div className="flex-grow space-y-1">
               <div className="flex justify-between items-center gap-2">
                 <span className="text-xs font-bold text-foreground">Join Premium Membership</span>
-                <span className="text-[10px] font-black text-primary uppercase shrink-0">₹{membershipFee} One-Time</span>
+                <span className="text-[10px] font-black text-primary-bright uppercase shrink-0">₹{membershipFee} One-Time</span>
               </div>
               <p className="text-[10px] text-muted-foreground font-semibold leading-relaxed">
                 Unlock automated 10% off storewide, VIP mechanical consultations, and priority tracking.
@@ -199,7 +199,7 @@ export default function RegisterPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()} // Prevent card toggle
-                  className="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5"
+                  className="text-[10px] font-bold text-primary-bright hover:underline flex items-center gap-0.5"
                 >
                   View Rewards & Benefits <ChevronRight className="size-3" />
                 </Link>
@@ -233,7 +233,7 @@ export default function RegisterPage() {
         {/* Footer */}
         <div className="text-center pt-2 text-xs">
           <span className="text-muted-foreground">Already have an account? </span>
-          <Link href="/login" className="text-primary font-bold hover:underline">
+          <Link href="/login" className="text-primary-bright font-bold hover:underline">
             Sign in
           </Link>
         </div>

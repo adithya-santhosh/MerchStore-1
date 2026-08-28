@@ -51,7 +51,7 @@ export function PolicySection({
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-bold text-foreground">{heading}</h2>
-      <div className="space-y-3 text-sm text-muted-foreground leading-relaxed [&_a]:text-primary [&_a]:font-semibold hover:[&_a]:underline [&_strong]:text-foreground [&_strong]:font-semibold">
+      <div className="space-y-3 text-sm text-muted-foreground leading-relaxed [&_a]:text-primary-bright [&_a]:font-semibold hover:[&_a]:underline [&_strong]:text-foreground [&_strong]:font-semibold">
         {children}
       </div>
     </section>

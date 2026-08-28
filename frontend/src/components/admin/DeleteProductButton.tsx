@@ -59,7 +59,7 @@ export default function DeleteProductButton({ product }: DeleteProductButtonProp
             {/* Product Details Preview */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{product.category}</span>
+                <span className="text-[10px] font-bold text-primary-bright uppercase tracking-wider">{product.category}</span>
                 <span className="text-xs font-bold text-muted-foreground">ID: #{product.id}</span>
               </div>
               <h3 className="text-sm font-bold text-foreground truncate">{product.name}</h3>

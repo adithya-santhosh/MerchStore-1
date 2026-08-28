@@ -45,7 +45,7 @@ export default function VendorLayout({ children }: { children: React.ReactNode }
         <nav className="flex-1 p-4 space-y-1">
           <Link
             href="/vendor/dashboard"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-primary/10 hover:text-primary transition-colors"
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold text-foreground hover:bg-primary/10 hover:text-primary-bright transition-colors"
           >
             <Package className="size-4" />
             My Orders

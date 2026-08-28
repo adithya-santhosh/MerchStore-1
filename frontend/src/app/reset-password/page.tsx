@@ -165,7 +165,7 @@ function ResetPasswordForm() {
             {/* Footer */}
             <div className="text-center pt-2 text-xs">
               <span className="text-muted-foreground">Link expired? </span>
-              <Link href="/forgot-password" className="text-primary font-bold hover:underline">
+              <Link href="/forgot-password" className="text-primary-bright font-bold hover:underline">
                 Request a new one
               </Link>
             </div>

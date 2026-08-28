@@ -90,7 +90,7 @@ function LoginForm() {
               <label htmlFor="login-password" className="text-foreground font-bold">Password</label>
               <Link
                 href="/forgot-password"
-                className="text-[10px] text-muted-foreground hover:text-primary transition-colors"
+                className="text-[10px] text-muted-foreground hover:text-primary-bright transition-colors"
               >
                 Forgot password?
               </Link>
@@ -117,7 +117,7 @@ function LoginForm() {
         {/* Footer */}
         <div className="text-center pt-2 text-xs">
           <span className="text-muted-foreground">Don&apos;t have an account? </span>
-          <Link href="/register" className="text-primary font-bold hover:underline">
+          <Link href="/register" className="text-primary-bright font-bold hover:underline">
             Register now
           </Link>
         </div>

@@ -89,21 +89,21 @@ export default async function ProductPage({ params }: PageProps) {
         
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-8 sm:mb-12">
-          <Link href="/" className="hover:text-primary transition-colors cursor-pointer">
+          <Link href="/" className="hover:text-primary-bright transition-colors cursor-pointer">
             Home
           </Link>
           <ChevronRight className="size-3.5" />
-          <Link href="/products" className="hover:text-primary transition-colors cursor-pointer">
+          <Link href="/products" className="hover:text-primary-bright transition-colors cursor-pointer">
             Products
           </Link>
           <ChevronRight className="size-3.5" />
-          <Link href={categoryUrl} className="hover:text-primary transition-colors cursor-pointer">
+          <Link href={categoryUrl} className="hover:text-primary-bright transition-colors cursor-pointer">
             {product.category}
           </Link>
           {product.subCategory && (
             <>
               <ChevronRight className="size-3.5" />
-              <Link href={subCategoryUrl} className="hover:text-primary transition-colors cursor-pointer">
+              <Link href={subCategoryUrl} className="hover:text-primary-bright transition-colors cursor-pointer">
                 {product.subCategory}
               </Link>
             </>
@@ -130,7 +130,7 @@ export default async function ProductPage({ params }: PageProps) {
             
             {/* Category Tag & Meta */}
             <div className="space-y-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
                 <Sparkles className="size-3.5" />
                 {product.category}
               </span>

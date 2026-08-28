@@ -204,7 +204,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                       <div className="flex items-center gap-2.5">
                         <Link
                           href={`/admin/orders/${order.id}`}
-                          className="font-bold text-primary hover:underline"
+                          className="font-bold text-primary-bright hover:underline"
                         >
                           {order.orderNumber}
                         </Link>
@@ -221,7 +221,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                       </span>
                       <Link
                         href={`/admin/orders/${order.id}`}
-                        className="text-[10px] font-bold text-primary hover:underline flex items-center"
+                        className="text-[10px] font-bold text-primary-bright hover:underline flex items-center"
                       >
                         Manage Order
                       </Link>
@@ -264,7 +264,7 @@ export default async function CustomerDetailPage({ params }: PageProps) {
                       {address.label || "Address"}
                     </span>
                     {address.isDefault && (
-                      <span className="text-[9px] font-black uppercase text-primary bg-primary/10 px-2 py-0.5 rounded-md">
+                      <span className="text-[9px] font-black uppercase text-primary-bright bg-primary/10 px-2 py-0.5 rounded-md">
                         Default
                       </span>
                     )}

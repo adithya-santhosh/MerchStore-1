@@ -651,7 +651,7 @@ export default function ProductForm() {
               type="button"
               variant="outline"
               onClick={handleAddAttribute}
-              className="gap-1 border-primary/20 text-primary hover:bg-primary/10 h-[34px] px-3"
+              className="gap-1 border-primary/20 text-primary-bright hover:bg-primary/10 h-[34px] px-3"
             >
               <Plus className="size-3.5" />
               Add
@@ -831,7 +831,7 @@ export default function ProductForm() {
             <button
               type="button"
               onClick={handleAddCompatibility}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-bright text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
             >
               <Plus className="size-3.5" />
               Add Compatibility tag
@@ -892,7 +892,7 @@ export default function ProductForm() {
               />
               <label
                 htmlFor="image-file"
-                className={`flex h-full min-h-[46px] flex items-center justify-center gap-2 rounded-xl border border-dashed border-input bg-background/50 px-4 py-2 text-sm font-semibold cursor-pointer hover:border-primary transition-all text-muted-foreground hover:text-primary ${
+                className={`flex h-full min-h-[46px] flex items-center justify-center gap-2 rounded-xl border border-dashed border-input bg-background/50 px-4 py-2 text-sm font-semibold cursor-pointer hover:border-primary transition-all text-muted-foreground hover:text-primary-bright ${
                   uploading ? "opacity-50 cursor-wait" : ""
                 }`}
               >
@@ -1000,7 +1000,7 @@ export default function ProductForm() {
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category || "Uncategorized"}</span>
                   {currentSub && (
                     <>
@@ -1060,7 +1060,7 @@ export default function ProductForm() {
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category}</span>
                   {currentSub && (
                     <>

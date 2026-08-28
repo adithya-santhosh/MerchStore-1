@@ -82,7 +82,7 @@ export default function CartPage() {
         <div className="space-y-10">
           {/* Header */}
           <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
               <ShoppingBag className="size-3.5" />
               Checkout Queue
             </span>
@@ -110,7 +110,7 @@ export default function CartPage() {
                         </span>
                       ) : (
                         <>
-                          Add <span className="text-primary font-black">₹{shippingThreshold - subtotal}</span> more for Free Shipping
+                          Add <span className="text-primary-bright font-black">₹{shippingThreshold - subtotal}</span> more for Free Shipping
                         </>
                       )}
                     </span>
@@ -151,10 +151,10 @@ export default function CartPage() {
                           </div>
 
                           <div className="min-w-0 space-y-1">
-                            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
+                            <span className="text-[10px] font-semibold text-primary-bright uppercase tracking-wider">
                               {item.product.category}
                             </span>
-                            <h3 className="text-sm sm:text-base font-bold text-foreground truncate group-hover:text-primary transition-colors pr-2">
+                            <h3 className="text-sm sm:text-base font-bold text-foreground truncate group-hover:text-primary-bright transition-colors pr-2">
                               {item.product.name}
                             </h3>
                             <div className="text-xs font-semibold text-muted-foreground">
@@ -290,7 +290,7 @@ export default function CartPage() {
                     </Button>
                     
                     <Link href="/products" className="block text-center mt-1">
-                      <span className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer block py-1.5">
+                      <span className="text-xs font-semibold text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer block py-1.5">
                         Continue Shopping
                       </span>
                     </Link>

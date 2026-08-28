@@ -67,7 +67,7 @@ export default function ForgotPasswordPage() {
                   setSent(false);
                   setError("");
                 }}
-                className="text-primary font-bold hover:underline cursor-pointer"
+                className="text-primary-bright font-bold hover:underline cursor-pointer"
               >
                 try a different email address
               </button>
@@ -133,7 +133,7 @@ export default function ForgotPasswordPage() {
             {/* Footer */}
             <div className="text-center pt-2 text-xs">
               <span className="text-muted-foreground">Remembered it? </span>
-              <Link href="/login" className="text-primary font-bold hover:underline">
+              <Link href="/login" className="text-primary-bright font-bold hover:underline">
                 Sign in
               </Link>
             </div>

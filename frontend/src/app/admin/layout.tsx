@@ -63,7 +63,7 @@ export default function AdminLayout({
               <Sparkles className="size-4" />
             </div>
             <span className="font-bold tracking-tight text-sm sm:text-base">
-              Merch<span className="text-primary font-black">Admin</span>
+              Merch<span className="text-primary-bright font-black">Admin</span>
             </span>
           </Link>
         </div>
@@ -80,7 +80,7 @@ export default function AdminLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${
                   active
-                    ? "bg-primary/10 text-primary border-l-2 border-primary"
+                    ? "bg-primary/10 text-primary-bright border-l-2 border-primary"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >

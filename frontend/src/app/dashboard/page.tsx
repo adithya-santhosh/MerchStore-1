@@ -404,7 +404,7 @@ function DashboardContent() {
               {!user.isMember ? (
                 <button
                   onClick={() => setActiveTab("overview")}
-                  className="mt-3 text-[10px] font-black text-primary hover:underline text-left flex items-center gap-0.5 cursor-pointer bg-transparent border-none p-0"
+                  className="mt-3 text-[10px] font-black text-primary-bright hover:underline text-left flex items-center gap-0.5 cursor-pointer bg-transparent border-none p-0"
                 >
                   Join Premium Club <ChevronRight className="size-3" />
                 </button>
@@ -425,7 +425,7 @@ function DashboardContent() {
                 onClick={() => { setActiveTab("overview"); setSelectedOrder(null); }}
                 className={`flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all w-full min-w-[130px] lg:min-w-0 text-left border ${
                   activeTab === "overview" 
-                    ? "bg-primary/5 text-primary border-primary/20 shadow-sm" 
+                    ? "bg-primary/5 text-primary-bright border-primary/20 shadow-sm" 
                     : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/15"
                 }`}
               >
@@ -437,7 +437,7 @@ function DashboardContent() {
                 onClick={() => { setActiveTab("orders"); setSelectedOrder(null); }}
                 className={`flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all w-full min-w-[130px] lg:min-w-0 text-left border ${
                   activeTab === "orders" 
-                    ? "bg-primary/5 text-primary border-primary/20 shadow-sm" 
+                    ? "bg-primary/5 text-primary-bright border-primary/20 shadow-sm" 
                     : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/15"
                 }`}
               >
@@ -449,7 +449,7 @@ function DashboardContent() {
                 onClick={() => { setActiveTab("profile"); setSelectedOrder(null); }}
                 className={`flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all w-full min-w-[130px] lg:min-w-0 text-left border ${
                   activeTab === "profile" 
-                    ? "bg-primary/5 text-primary border-primary/20 shadow-sm" 
+                    ? "bg-primary/5 text-primary-bright border-primary/20 shadow-sm" 
                     : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/15"
                 }`}
               >
@@ -461,14 +461,14 @@ function DashboardContent() {
                 onClick={() => { setActiveTab("wishlist"); setSelectedOrder(null); }}
                 className={`flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all w-full min-w-[130px] lg:min-w-0 text-left border ${
                   activeTab === "wishlist" 
-                    ? "bg-primary/5 text-primary border-primary/20 shadow-sm" 
+                    ? "bg-primary/5 text-primary-bright border-primary/20 shadow-sm" 
                     : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/15"
                 }`}
               >
                 <Heart className="size-4 shrink-0" />
                 <span>Wishlist</span>
                 {wishlistCount > 0 && (
-                  <span className="ml-auto bg-primary/10 text-primary px-1.5 py-0.5 rounded-md text-[10px]">
+                  <span className="ml-auto bg-primary/10 text-primary-bright px-1.5 py-0.5 rounded-md text-[10px]">
                     {wishlistCount}
                   </span>
                 )}
@@ -514,7 +514,7 @@ function DashboardContent() {
                       
                       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                         <div className="space-y-2 max-w-xl">
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary text-[9px] font-black uppercase tracking-wider">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary-bright text-[9px] font-black uppercase tracking-wider">
                             <Sparkles className="size-3" /> lifetime premium access
                           </span>
                           <h3 className="text-lg font-black text-foreground">Join the MerchStore Premium Club</h3>
@@ -526,7 +526,7 @@ function DashboardContent() {
                               href="/rewards" 
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-xs font-bold text-primary hover:underline inline-flex items-center gap-0.5"
+                              className="text-xs font-bold text-primary-bright hover:underline inline-flex items-center gap-0.5"
                             >
                               Explore all benefits & rewards <ChevronRight className="size-3.5" />
                             </Link>
@@ -583,7 +583,7 @@ function DashboardContent() {
                       </h3>
                       <button 
                         onClick={() => setActiveTab("orders")}
-                        className="text-xs font-bold text-primary hover:underline flex items-center gap-0.5 cursor-pointer"
+                        className="text-xs font-bold text-primary-bright hover:underline flex items-center gap-0.5 cursor-pointer"
                       >
                         All Orders <ChevronRight className="size-3" />
                       </button>
@@ -622,7 +622,7 @@ function DashboardContent() {
                               </div>
                               <button 
                                 onClick={() => setSelectedOrder(order)}
-                                className="px-3.5 py-1.5 text-[11px] font-bold text-primary bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors border border-primary/10 cursor-pointer"
+                                className="px-3.5 py-1.5 text-[11px] font-bold text-primary-bright bg-primary/5 hover:bg-primary/10 rounded-lg transition-colors border border-primary/10 cursor-pointer"
                               >
                                 View details
                               </button>
@@ -703,7 +703,7 @@ function DashboardContent() {
                             <div className="flex flex-wrap items-center gap-4">
                               {order.items.map((item, idx) => (
                                 <div key={item.id || idx} className="flex items-center gap-2 bg-muted/15 border border-border/40 rounded-xl p-2 max-w-[240px] truncate">
-                                  <div className="size-8 rounded-lg bg-background border border-border/60 shrink-0 flex items-center justify-center text-[10px] font-black text-primary">
+                                  <div className="size-8 rounded-lg bg-background border border-border/60 shrink-0 flex items-center justify-center text-[10px] font-black text-primary-bright">
                                     {item.productName[0]}
                                   </div>
                                   <div className="truncate text-[11px] font-medium text-foreground">
@@ -1107,7 +1107,7 @@ function DashboardContent() {
                   {selectedOrder.items.map((item, idx) => (
                     <div key={item.id || idx} className="flex items-center justify-between gap-3 bg-muted/15 border border-border/40 p-3 rounded-xl">
                       <div className="flex items-center gap-3">
-                        <div className="size-11 rounded-lg bg-background border border-border/60 flex items-center justify-center font-black text-xs text-primary">
+                        <div className="size-11 rounded-lg bg-background border border-border/60 flex items-center justify-center font-black text-xs text-primary-bright">
                           {item.productName[0]}
                         </div>
                         <div>
@@ -1174,7 +1174,7 @@ function DashboardContent() {
 
               <div className="flex justify-between items-center text-sm font-black text-foreground pt-2 border-t border-border/30">
                 <span className="text-sm">Grand Total (INR)</span>
-                <span className="text-base text-primary">₹{Number(selectedOrder.totalAmount).toLocaleString("en-IN")}</span>
+                <span className="text-base text-primary-bright">₹{Number(selectedOrder.totalAmount).toLocaleString("en-IN")}</span>
               </div>
             </div>
 

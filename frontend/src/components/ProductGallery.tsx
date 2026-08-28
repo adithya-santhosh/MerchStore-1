@@ -41,7 +41,7 @@ export default function ProductGallery({ images, fallbackImage, productName, cat
               <Sparkles className="size-8" />
             </div>
             <div>
-              <span className="text-xs font-semibold text-primary uppercase tracking-widest">
+              <span className="text-xs font-semibold text-primary-bright uppercase tracking-widest">
                 {category}
               </span>
               <h4 className="text-sm font-bold text-muted-foreground mt-1">

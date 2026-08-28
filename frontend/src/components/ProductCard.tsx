@@ -65,7 +65,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Product Title */}
-        <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+        <h3 className="text-base font-bold text-foreground group-hover:text-primary-bright transition-colors leading-snug line-clamp-2">
           {product.name}
         </h3>
 

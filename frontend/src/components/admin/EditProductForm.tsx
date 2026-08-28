@@ -498,7 +498,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                 type="button"
                 variant="outline"
                 onClick={handleAddAttribute}
-                className="gap-1 border-primary/20 text-primary hover:bg-primary/10 h-[34px] px-3"
+                className="gap-1 border-primary/20 text-primary-bright hover:bg-primary/10 h-[34px] px-3"
               >
                 <Plus className="size-3.5" />
                 Add
@@ -678,7 +678,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
               <button
                 type="button"
                 onClick={handleAddCompatibility}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-bright text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
               >
                 <Plus className="size-3.5" />
                 Add Compatibility tag
@@ -793,7 +793,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category || "Uncategorized"}</span>
                   {currentSub && (
                     <>
@@ -846,7 +846,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category}</span>
                   {currentSub && (
                     <>
@@ -885,7 +885,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
             {/* Product Details Preview */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{product.category}</span>
+                <span className="text-[10px] font-bold text-primary-bright uppercase tracking-wider">{product.category}</span>
                 <span className="text-xs font-bold text-muted-foreground">ID: #{product.id}</span>
               </div>
               <h3 className="text-sm font-bold text-foreground truncate">{product.name}</h3>
