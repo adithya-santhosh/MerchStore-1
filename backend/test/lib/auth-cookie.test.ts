@@ -11,7 +11,7 @@ const loadWith = async (env: Record<string, string | undefined>) => {
     if (v === undefined) delete process.env[k];
     else process.env[k] = v;
   });
-  const mod = await import("./auth-cookie");
+  const mod = await import("../../src/lib/auth-cookie");
   process.env = saved;
   return mod;
 };

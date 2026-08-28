@@ -8,7 +8,7 @@ import {
   forgotPasswordSchema,
   resetPasswordSchema,
   changePasswordSchema,
-} from "./validation.middleware";
+} from "../../src/middleware/validation.middleware";
 
 describe("registerSchema", () => {
   const valid = {

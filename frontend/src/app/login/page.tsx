@@ -4,8 +4,10 @@ import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams } from "next/navigation";
-import { Lock, Mail, Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
+import { Mail, Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
+import { safeCallbackUrl } from "@/lib/utils";
 
 import { getErrorMessage } from "@/lib/errors";
 function LoginForm() {
@@ -16,7 +18,9 @@ function LoginForm() {
 
   const { login } = useAuth();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  // Comes straight from the query string and ends up in router.push(), so it
+  // has to be narrowed to a path on this site first.
+  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,17 +94,12 @@ function LoginForm() {
                 Forgot password?
               </Link>
             </div>
-            <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              <input
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                required
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-background border border-input rounded-xl px-10 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-semibold"
-              />
-            </div>
+            <PasswordInput
+              placeholder="••••••••"
+              value={password}
+              required
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
 
           {/* Submit */}

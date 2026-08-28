@@ -3,8 +3,9 @@
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Lock, ShieldCheck, AlertCircle, ArrowLeft, CircleCheck } from "lucide-react";
+import { ShieldCheck, AlertCircle, ArrowLeft, CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { resetPasswordAPI } from "@/lib/api";
 
 import { getErrorMessage } from "@/lib/errors";
@@ -122,20 +123,15 @@ function ResetPasswordForm() {
                 <label htmlFor="new-password" className="text-foreground font-bold">
                   New Password
                 </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input
-                    id="new-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={MIN_PASSWORD_LENGTH}
-                    autoComplete="new-password"
-                    className="w-full bg-background border border-input rounded-xl px-10 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-semibold"
-                  />
-                </div>
+                <PasswordInput
+                  id="new-password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={MIN_PASSWORD_LENGTH}
+                  autoComplete="new-password"
+                />
                 <p className="text-[10px] text-muted-foreground">
                   At least {MIN_PASSWORD_LENGTH} characters.
                 </p>
@@ -146,19 +142,14 @@ function ResetPasswordForm() {
                 <label htmlFor="confirm-password" className="text-foreground font-bold">
                   Confirm New Password
                 </label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <input
-                    id="confirm-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    autoComplete="new-password"
-                    className="w-full bg-background border border-input rounded-xl px-10 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary text-foreground font-semibold"
-                  />
-                </div>
+                <PasswordInput
+                  id="confirm-password"
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
               </div>
 
               {/* Submit */}

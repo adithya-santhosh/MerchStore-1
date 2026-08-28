@@ -121,7 +121,14 @@ export const createCouponSchema = z.object({
   isActive: z.boolean().optional().default(true),
 });
 
-export const updateCouponSchema = createCouponSchema.partial();
+// `.partial()` makes every field optional but does NOT drop their defaults, so
+// isActive's `.default(true)` was still injected into every partial update —
+// and updateCoupon writes any key that isn't `undefined`. An admin editing a
+// coupon's value silently switched a deactivated coupon back on. Overriding it
+// with a plain optional boolean restores "not sent" meaning "leave unchanged".
+export const updateCouponSchema = createCouponSchema
+  .partial()
+  .extend({ isActive: z.boolean().optional() });
 
 // ─── Profile Update Schema ────────────────────────────────────────────────────
 

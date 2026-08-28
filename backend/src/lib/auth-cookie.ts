@@ -52,11 +52,39 @@ if (sameSite === "none" && !isProduction) {
 
 export const AUTH_COOKIE_NAME = "token";
 
+/**
+ * Which hosts receive the cookie.
+ *
+ * Unset means host-only: only the exact host that set it gets it back. That is
+ * fine locally, where the API (:5000) and the storefront (:3000) share the host
+ * `localhost` and cookies ignore the port.
+ *
+ * In production they are different subdomains, and a host-only cookie set by
+ * api.example.com is NEVER sent to www.example.com. The Next.js middleware that
+ * gates /admin and /dashboard reads `token` from requests to the *storefront*,
+ * so it would find nothing and bounce every admin to /login forever — while API
+ * calls kept working, because those do go to api.example.com. Set
+ * COOKIE_DOMAIN=.example.com so both hosts receive it.
+ *
+ * Only works when both sit under one registrable domain. A storefront on
+ * example.com with the API on *.onrender.com cannot share a cookie at all.
+ */
+const cookieDomain = process.env.COOKIE_DOMAIN?.trim() || undefined;
+
+if (isProduction && !cookieDomain) {
+  logger.warn(
+    "COOKIE_DOMAIN is not set. The auth cookie will be host-only, so the " +
+      "storefront's middleware cannot see it and /admin will redirect to " +
+      "/login on every attempt. Set COOKIE_DOMAIN=.yourdomain.com on the API."
+  );
+}
+
 export const AUTH_COOKIE_OPTIONS: CookieOptions = {
   httpOnly: true,
   secure: isProduction,
   sameSite,
   path: "/",
+  domain: cookieDomain,
 };
 
 /** 7 days — kept in step with the JWT's own expiry. */
