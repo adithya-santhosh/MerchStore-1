@@ -9,6 +9,11 @@ vi.mock("../../src/services/wishlist.service", () => ({
   removeFromWishlist: vi.fn(),
 }));
 
+// requireAuth checks tokenVersion against the DB on every request.
+vi.mock("../../src/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
+}));
+
 import app from "../../src/app";
 import * as wishlistService from "../../src/services/wishlist.service";
 

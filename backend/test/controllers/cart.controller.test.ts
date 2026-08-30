@@ -8,6 +8,11 @@ vi.mock("../../src/services/cart.service", () => ({
   removeItemFromCart: vi.fn(),
 }));
 
+// optionalAuth checks tokenVersion against the DB when a token is present.
+vi.mock("../../src/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
+}));
+
 import app from "../../src/app";
 import * as cartService from "../../src/services/cart.service";
 

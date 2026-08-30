@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import { getUploadSignature } from "@/lib/api"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -32,33 +33,38 @@ export function safeCallbackUrl(
   return raw
 }
 
-// frontend/src/utils/upload.ts
-
+/**
+ * Uploads straight from the browser to Cloudinary — the file bytes never pass
+ * through our own server — but the upload itself has to be signed by our
+ * backend first. There used to be no such step: any visitor could read the
+ * cloud name and unsigned preset out of this bundle and POST arbitrary files
+ * to it directly, with no login and no format restriction beyond whatever the
+ * preset happened to allow. Getting a signature now requires an authenticated
+ * admin request, and the signature itself locks in the destination folder and
+ * an image-only format whitelist — Cloudinary rejects anything that doesn't
+ * match, since altering either would invalidate the signature.
+ */
 export const uploadToCloudinary = async (file: File): Promise<string> => {
-  const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "diz4hpigr"; // Replace with your Cloud Name
-  const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "merch_store_preset";       // Replace with your Unsigned Preset Name
+  const { timestamp, signature, apiKey, cloudName, folder, allowedFormats } =
+    await getUploadSignature();
 
   const formData = new FormData();
   formData.append("file", file);
-  formData.append("upload_preset", uploadPreset);
+  formData.append("api_key", apiKey);
+  formData.append("timestamp", String(timestamp));
+  formData.append("signature", signature);
+  formData.append("folder", folder);
+  formData.append("allowed_formats", allowedFormats);
 
-  try {
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: "POST",
+    body: formData,
+  });
 
-    if (!response.ok) {
-      throw new Error("Failed to upload image to Cloudinary");
-    }
-
-    const data = await response.json();
-    return data.secure_url; // Returns the public HTTPS link (e.g., https://res.cloudinary.com/...)
-  } catch (error) {
-    console.error("Cloudinary upload error:", error);
-    throw error;
+  if (!response.ok) {
+    throw new Error("Failed to upload image to Cloudinary");
   }
+
+  const data = await response.json();
+  return data.secure_url; // Returns the public HTTPS link (e.g., https://res.cloudinary.com/...)
 };

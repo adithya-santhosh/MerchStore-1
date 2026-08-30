@@ -49,6 +49,18 @@ describe("error handling", () => {
     expect(res.headers["access-control-allow-origin"]).toBe("http://localhost:3000");
   });
 
+  it("rejects an arbitrary *.vercel.app origin rather than trusting the wildcard", async () => {
+    // credentials: true is on, so blanket-trusting *.vercel.app would let anyone
+    // who deploys their own project there make authenticated requests using a
+    // logged-in customer's cookie. Only origins listed in ALLOWED_ORIGIN may pass.
+    const res = await request(app)
+      .get("/health")
+      .set("Origin", "https://some-attacker-project.vercel.app");
+
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe("Origin not allowed");
+  });
+
   it("answers 400 for malformed JSON instead of crashing", async () => {
     const res = await request(app)
       .post("/api/auth/login")

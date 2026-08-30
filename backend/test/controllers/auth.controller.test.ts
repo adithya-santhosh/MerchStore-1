@@ -15,6 +15,12 @@ vi.mock("../../src/services/auth.service", () => ({
   resendVerificationEmail: vi.fn(),
 }));
 
+// The real requireAuth middleware runs on every protected route these tests
+// exercise, and it now checks tokenVersion against the DB on every request.
+vi.mock("../../src/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
+}));
+
 import app from "../../src/app";
 import * as authService from "../../src/services/auth.service";
 
@@ -123,6 +129,20 @@ describe("POST /api/auth/register", () => {
     await post("/api/auth/register").send({ ...validRegistration, role: "ADMIN" });
 
     expect(svc.registerUser).toHaveBeenCalledWith(expect.not.objectContaining({ role: "ADMIN" }));
+  });
+
+  it("strips HTML out of the name fields before they reach the service", async () => {
+    svc.registerUser.mockResolvedValue({ user: sessionUser, token: "jwt-token" } as any);
+
+    await post("/api/auth/register").send({
+      ...validRegistration,
+      firstName: "<img src=x onerror=alert(1)>Ada",
+      lastName: "Lovelace<script>alert(1)</script>",
+    });
+
+    expect(svc.registerUser).toHaveBeenCalledWith(
+      expect.objectContaining({ firstName: "Ada", lastName: "Lovelace" })
+    );
   });
 });
 
@@ -306,6 +326,23 @@ describe("PUT /api/auth/change-password", () => {
       .send({ currentPassword: "wrong", newPassword: "newpassword1" });
 
     expect(res.status).toBe(400);
+  });
+
+  it("re-issues the session cookie with the fresh token, so the request that changed the password doesn't itself get logged out", async () => {
+    svc.changeUserPassword.mockResolvedValue({
+      message: "Password updated successfully.",
+      token: "fresh-jwt-with-bumped-version",
+    } as any);
+
+    const res = await put("/api/auth/change-password")
+      .set("Authorization", `Bearer ${tokenFor()}`)
+      .send({ currentPassword: "oldpassword", newPassword: "newpassword1" });
+
+    expect(res.status).toBe(200);
+    const cookie = res.headers["set-cookie"]![0]!;
+    expect(cookie).toMatch(/^token=fresh-jwt-with-bumped-version/);
+    // The raw token must not leak into the JSON body now that it's cookie-only.
+    expect(res.body).not.toHaveProperty("token");
   });
 });
 

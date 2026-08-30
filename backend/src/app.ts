@@ -58,7 +58,12 @@ app.use(pinoHttp({ logger, autoLogging: { ignore: (req) => req.url === "/health"
 // ─── Security Headers (Helmet) ───────────────────────────────────────────────
 app.use(helmet());
 
-// ─── CORS (restrict to known origins and allow Vercel previews) ──────────────
+// ─── CORS (restrict to known origins only) ────────────────────────────────────
+// Previously this also auto-allowed any `*.vercel.app` origin. That's unsafe on
+// a credentialed API: anyone can deploy their own project to `*.vercel.app` and
+// its origin would pass this check, letting it make authenticated requests
+// using a logged-in customer's cookie. Preview deployments now have to be
+// listed explicitly in ALLOWED_ORIGIN (comma-separated) like any other origin.
 const allowedOrigins = process.env.ALLOWED_ORIGIN
   ? process.env.ALLOWED_ORIGIN.split(",").map((o) => o.trim())
   : [];
@@ -81,8 +86,7 @@ app.use(
       const isAllowed =
         allowedOrigins.includes(origin) ||
         origin === "http://localhost:3000" ||
-        origin === "http://127.0.0.1:3000" ||
-        origin.endsWith(".vercel.app"); // Auto-allow Vercel previews
+        origin === "http://127.0.0.1:3000";
 
       if (isAllowed) {
         return callback(null, true);

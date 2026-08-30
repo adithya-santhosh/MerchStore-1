@@ -10,6 +10,13 @@ import { createEmailVerificationToken, readEmailVerificationToken } from "../lib
 // JWT_SECRET is guaranteed to be set — server.ts exits at startup if it isn't
 const JWT_SECRET = process.env.JWT_SECRET!;
 
+// ─── Account Lockout ──────────────────────────────────────────────────────────
+// A shared IP rate limit (see app.ts) slows brute-forcing but doesn't stop it —
+// a distributed attacker still gets unlimited guesses at one account's
+// password. These bound guesses per *account* regardless of source IP.
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 minutes
+
 // ─── Input Types ──────────────────────────────────────────────────────────────
 interface RegisterInput {
   firstName: string;
@@ -72,7 +79,8 @@ export const registerUser = async (data: RegisterInput) => {
       email: user.email,
       role: user.role,
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
+      tokenVersion: user.tokenVersion
     },
     JWT_SECRET,
     { expiresIn: "7d" }
@@ -103,9 +111,36 @@ export const loginUser = async (data: LoginInput) => {
     throw new Error("Invalid email or password");
   }
 
+  if (user.lockedUntil && user.lockedUntil > new Date()) {
+    const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60_000);
+    throw new Error(
+      `Too many failed login attempts. Please try again in ${minutesLeft} minute${minutesLeft === 1 ? "" : "s"}.`
+    );
+  }
+
   const isPasswordValid = await bcrypt.compare(data.password, user.passwordHash);
   if (!isPasswordValid) {
+    const attempts = user.failedLoginAttempts + 1;
+    const locksOut = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        // Counter resets alongside the lock itself, so it starts fresh once
+        // the lockout window passes rather than re-triggering on attempt 1.
+        failedLoginAttempts: locksOut ? 0 : attempts,
+        lockedUntil: locksOut ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
+      },
+    });
     throw new Error("Invalid email or password");
+  }
+
+  // A stale lockedUntil can still be sitting here if the window simply
+  // expired rather than being cleared by a fresh failed attempt.
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
   }
 
   if (data.sessionToken) {
@@ -175,7 +210,8 @@ export const loginUser = async (data: LoginInput) => {
       email: user.email,
       role: user.role,
       firstName: user.firstName,
-      lastName: user.lastName
+      lastName: user.lastName,
+      tokenVersion: user.tokenVersion
     },
     JWT_SECRET,
     { expiresIn: "7d" }
@@ -332,10 +368,18 @@ export const resetPassword = async (rawToken: string, newPassword: string) => {
   // Hash new password
   const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
-  // Update user password and mark token as used
+  // Update user password and mark token as used. Bumping tokenVersion
+  // invalidates every JWT issued before this point, on every device.
+  // Proving ownership via emailed link also clears any lockout — no reason
+  // to keep the account locked once the legitimate owner has reset it.
   await prisma.user.update({
     where: { id: resetToken.userId },
-    data: { passwordHash: newPasswordHash }
+    data: {
+      passwordHash: newPasswordHash,
+      tokenVersion: { increment: 1 },
+      failedLoginAttempts: 0,
+      lockedUntil: null,
+    }
   });
 
   await prisma.passwordResetToken.update({
@@ -365,12 +409,29 @@ export const changeUserPassword = async (userId: number, currentPassword: string
   }
 
   const newHash = await bcrypt.hash(newPassword, 10);
-  await prisma.user.update({
+  // tokenVersion increments so every other session is invalidated. The caller
+  // is authenticated right now with a token about to become stale, so hand
+  // back a freshly signed one carrying the new version — otherwise changing
+  // your own password would log you out of the request you just made it with.
+  const updated = await prisma.user.update({
     where: { id: userId },
-    data: { passwordHash: newHash }
+    data: { passwordHash: newHash, tokenVersion: { increment: 1 } }
   });
 
-  return { message: "Password updated successfully." };
+  const token = jwt.sign(
+    {
+      id: updated.id,
+      email: updated.email,
+      role: updated.role,
+      firstName: updated.firstName,
+      lastName: updated.lastName,
+      tokenVersion: updated.tokenVersion
+    },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
+  return { message: "Password updated successfully.", token };
 };
 
 

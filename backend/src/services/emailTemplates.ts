@@ -50,6 +50,24 @@ const TABULAR = "font-variant-numeric: tabular-nums; font-feature-settings: 'tnu
 
 // ─── Primitives ──────────────────────────────────────────────────────────────
 
+const HTML_ESCAPES: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+/**
+ * Every template below builds HTML by string interpolation, so anything that
+ * ultimately traces back to a person — their name, an address line, a
+ * product name — has to be escaped at the point it's inserted. Validation
+ * upstream already strips markup before storage, but this is the layer that
+ * actually renders as HTML; it shouldn't have to trust every caller got that
+ * right.
+ */
+const esc = (value: unknown): string => String(value).replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]!);
+
 const money = (value: unknown): string =>
   `₹${Number(value).toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
@@ -157,7 +175,7 @@ export const getWelcomeEmailHtml = (name: string, frontendUrl: string): string =
     content: [
       band(
         `${eyebrow("Welcome")}
-              ${display(`Hello, ${name}.`)}
+              ${display(`Hello, ${esc(name)}.`)}
               ${lead(
                 "Your account is ready. Explore our catalogue of OEM and aftermarket performance parts, accessories, and merch matched to your vehicle."
               )}`,
@@ -179,7 +197,7 @@ export const getOrderConfirmationEmailHtml = (order: any, frontendUrl: string): 
       (item: any, index: number) => `
                   <tr>
                     <td style="padding: 14px 20px; ${index > 0 ? `border-top: 1px solid ${color.hairline};` : ""}">
-                      <p style="margin: 0; font-family: ${FONT}; font-size: 14px; font-weight: 500; line-height: 1.45; color: ${color.textPrimary};">${item.productName}</p>${
+                      <p style="margin: 0; font-family: ${FONT}; font-size: 14px; font-weight: 500; line-height: 1.45; color: ${color.textPrimary};">${esc(item.productName)}</p>${
                         // "Qty 1" is not information. Only a real quantity earns a line.
                         Number(item.quantity) > 1
                           ? `
@@ -211,7 +229,7 @@ export const getOrderConfirmationEmailHtml = (order: any, frontendUrl: string): 
 
   const address = order.shippingAddress;
   const addressStr = address
-    ? `${address.addressLine1}${address.addressLine2 ? ", " + address.addressLine2 : ""}, ${address.city}, ${address.state} - ${address.postalCode}`
+    ? `${esc(address.addressLine1)}${address.addressLine2 ? ", " + esc(address.addressLine2) : ""}, ${esc(address.city)}, ${esc(address.state)} - ${esc(address.postalCode)}`
     : "Address on file";
 
   return layout({
@@ -307,7 +325,7 @@ export const getPasswordResetEmailHtml = (name: string, resetUrl: string): strin
         `${eyebrow("Security")}
               ${display("Reset your password")}
               ${lead(
-                `Hello ${name || "there"} — we received a request to reset the password on your MerchStore account. Choose a new one below. This link expires in 60 minutes.`
+                `Hello ${esc(name || "there")} — we received a request to reset the password on your MerchStore account. Choose a new one below. This link expires in 60 minutes.`
               )}`,
         "32px 40px 0 40px"
       ),
@@ -331,7 +349,7 @@ export const getEmailVerificationHtml = (name: string, verifyUrl: string): strin
         `${eyebrow("One more step")}
               ${display("Confirm your email address")}
               ${lead(
-                `Hi ${name} — confirm this address so we can send you order confirmations and delivery updates. This link is valid for 24 hours.`
+                `Hi ${esc(name)} — confirm this address so we can send you order confirmations and delivery updates. This link is valid for 24 hours.`
               )}`,
         "32px 40px 0 40px"
       ),

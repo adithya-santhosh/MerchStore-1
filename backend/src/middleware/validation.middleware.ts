@@ -1,5 +1,18 @@
 import { Request, Response, NextFunction } from "express";
 import { z, ZodSchema } from "zod";
+import { stripHtml } from "../lib/sanitize";
+
+// Applied to every free-text field a person types into a form — names,
+// addresses, review text, product copy. None of these are meant to carry
+// markup, so this strips it before the value ever reaches Prisma rather than
+// relying on every future place that renders it to escape correctly.
+//
+// Stripping runs before the wrapped schema's own checks, so `.min()`/`.max()`
+// validate the length of what actually gets stored, not the raw input —
+// otherwise "<script></script>" would pass a `.min(1)` on the raw string and
+// still land in the database empty.
+const sanitized = <T extends z.ZodString>(schema: T) =>
+  z.string().transform(stripHtml).pipe(schema);
 
 /**
  * Factory middleware that validates req.body against a Zod schema.
@@ -23,8 +36,8 @@ export const validate =
 // ─── Auth Schemas ─────────────────────────────────────────────────────────────
 
 export const registerSchema = z.object({
-  firstName: z.string().min(1, "First name is required").max(50).trim(),
-  lastName: z.string().min(1, "Last name is required").max(50).trim(),
+  firstName: sanitized(z.string().min(1, "First name is required").max(50)),
+  lastName: sanitized(z.string().min(1, "Last name is required").max(50)),
   email: z.string().email("Invalid email address").toLowerCase().trim(),
   password: z
     .string()
@@ -86,18 +99,18 @@ const productImageSchema = z.union([
 ]);
 
 const productAttributeSchema = z.object({
-  attrKey: z.string().min(1, "Attribute name is required").max(100),
-  attrValue: z.string().min(1, "Attribute value is required").max(255),
+  attrKey: sanitized(z.string().min(1, "Attribute name is required").max(100)),
+  attrValue: sanitized(z.string().min(1, "Attribute value is required").max(255)),
 });
 
 const vehicleFitmentSchema = z.object({
-  make: z.string().min(1, "Vehicle make is required").max(100),
-  model: z.string().min(1, "Vehicle model is required").max(100),
+  make: sanitized(z.string().min(1, "Vehicle make is required").max(100)),
+  model: sanitized(z.string().min(1, "Vehicle model is required").max(100)),
   yearFrom: z.coerce.number().int().min(1900).max(2200),
   yearTo: z.coerce.number().int().min(1900).max(2200).nullish(),
-  bodyType: z.string().max(50).nullish(),
-  engineType: z.string().max(50).nullish(),
-  notes: z.string().max(500).nullish(),
+  bodyType: sanitized(z.string().max(50)).nullish(),
+  engineType: sanitized(z.string().max(50)).nullish(),
+  notes: sanitized(z.string().max(500)).nullish(),
 });
 
 // Two rules govern these fields, and breaking either one fails silently:
@@ -118,14 +131,14 @@ const vehicleFitmentSchema = z.object({
 // directly, because `.refine()` returns a ZodEffects, which has no `.partial()`
 // for the update schema below to build on.
 const productFieldsSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
-  description: z.string().min(1, "Description is required"),
-  shortDescription: z.string().max(500).nullish(),
+  name: sanitized(z.string().min(1, "Name is required").max(255)),
+  description: sanitized(z.string().min(1, "Description is required")),
+  shortDescription: sanitized(z.string().max(500)).nullish(),
   slug: z.string().min(1, "Slug is required").max(255),
   price: z.number().positive("Price must be positive"),
   compareAtPrice: z.number().positive().nullish(),
   costPrice: z.number().positive().nullish(),
-  sku: z.string().max(100).nullish(),
+  sku: sanitized(z.string().max(100)).nullish(),
   stockQty: z.number().int().min(0).default(0),
   weight: z.number().positive().nullish(),
   productType: z.enum(["part", "merch"]).default("part"),
@@ -133,11 +146,11 @@ const productFieldsSchema = z.object({
   isFeatured: z.boolean().optional().default(false),
 
   categoryId: z.number().int().positive().optional(),
-  category: z.string().max(255).nullish(),
-  subCategory: z.string().max(255).nullish(),
+  category: sanitized(z.string().max(255)).nullish(),
+  subCategory: sanitized(z.string().max(255)).nullish(),
 
   brandId: z.number().int().positive().optional(),
-  brand: z.string().max(255).nullish(),
+  brand: sanitized(z.string().max(255)).nullish(),
 
   vendorId: z.number().int().positive().nullish(),
 
@@ -181,11 +194,11 @@ export const updateProductSchema = productFieldsSchema.partial().extend({
 // ─── Order Schemas ────────────────────────────────────────────────────────────
 
 const addressSchema = z.object({
-  label: z.string().max(50).optional(),
-  addressLine1: z.string().min(1, "Address line 1 is required").max(255),
-  addressLine2: z.string().max(255).optional(),
-  city: z.string().min(1, "City is required").max(100),
-  state: z.string().min(1, "State is required").max(100),
+  label: sanitized(z.string().max(50)).optional(),
+  addressLine1: sanitized(z.string().min(1, "Address line 1 is required").max(255)),
+  addressLine2: sanitized(z.string().max(255)).optional(),
+  city: sanitized(z.string().min(1, "City is required").max(100)),
+  state: sanitized(z.string().min(1, "State is required").max(100)),
   postalCode: z
     .string()
     .regex(/^\d{6}$/, "Postal code must be 6 digits"),
@@ -228,11 +241,21 @@ export const updateCouponSchema = createCouponSchema
   .partial()
   .extend({ isActive: z.boolean().optional() });
 
+// ─── Review Schema ────────────────────────────────────────────────────────────
+// createReview previously had no schema at all — title/body came straight off
+// req.body with no type check, no length cap and no sanitization.
+
+export const createReviewSchema = z.object({
+  rating: z.number().int().min(1, "Rating must be between 1 and 5").max(5, "Rating must be between 1 and 5"),
+  title: sanitized(z.string().max(150)).nullish(),
+  body: sanitized(z.string().max(2000)).nullish(),
+});
+
 // ─── Profile Update Schema ────────────────────────────────────────────────────
 
 export const updateProfileSchema = z.object({
-  firstName: z.string().min(1, "First name is required").max(50).trim(),
-  lastName: z.string().min(1, "Last name is required").max(50).trim(),
+  firstName: sanitized(z.string().min(1, "First name is required").max(50)),
+  lastName: sanitized(z.string().min(1, "Last name is required").max(50)),
   phone: z
     .string()
     .regex(/^[+]?[\d\s\-().]{7,15}$/, "Invalid phone number format")

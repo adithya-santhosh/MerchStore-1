@@ -28,6 +28,11 @@ vi.mock("../../src/services/payment.service", () => ({
   verifyMembershipPayment: vi.fn(),
 }));
 
+// requireAuth checks tokenVersion against the DB on every request.
+vi.mock("../../src/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
+}));
+
 import app from "../../src/app";
 import * as analyticsService from "../../src/services/analytics.service";
 import * as customerService from "../../src/services/customer.service";

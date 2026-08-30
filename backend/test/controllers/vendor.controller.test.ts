@@ -11,6 +11,11 @@ vi.mock("../../src/services/vendor.service", () => ({
   assignProductToVendor: vi.fn(),
 }));
 
+// requireAuth checks tokenVersion against the DB on every request.
+vi.mock("../../src/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
+}));
+
 import app from "../../src/app";
 import * as vendorService from "../../src/services/vendor.service";
 
