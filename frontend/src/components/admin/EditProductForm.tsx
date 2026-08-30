@@ -7,6 +7,8 @@ import { updateProduct, deleteProduct, getSubCategories, getNavigationMetadata, 
 import { Product, type ProductImageDraft, type VehicleFitment } from "@/types/products";
 import { Save, Trash2, Sparkles, AlertTriangle, Car, X, Plus } from "lucide-react";
 import ProductImagesField from "@/components/admin/ProductImagesField";
+import FormErrorSummary from "@/components/admin/FormErrorSummary";
+import { getErrorMessage, getFieldErrors, type ApiFieldError } from "@/lib/errors";
 import { galleryFromProduct, primaryImageUrl as heroImageUrl } from "@/lib/product-images";
 
 interface EditProductFormProps {
@@ -24,6 +26,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
   const [images, setImages] = useState<ProductImageDraft[]>(() =>
     galleryFromProduct(product)
   );
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldError[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [isCustom, setIsCustom] = useState(false);
   const [dbSubCategories, setDbSubCategories] = useState<string[]>([]);
@@ -256,6 +260,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
 
   const handleConfirmSave = async () => {
     setLoading(true);
+    setFieldErrors([]);
+    setSaveError(null);
     try {
       await updateProduct(product.id, {
         name,
@@ -274,7 +280,11 @@ export default function EditProductForm({ product }: EditProductFormProps) {
       setShowSuccess(true);
     } catch (error) {
       console.error(error);
-      alert("Failed to update product.");
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      // The per-field list already names what is wrong, so only fall back to a
+      // standalone message when the failure carried no field detail.
+      setSaveError(errors.length > 0 ? null : getErrorMessage(error, "Failed to update product."));
       setShowConfirm(false);
     } finally {
       setLoading(false);
@@ -327,7 +337,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 bg-card border border-border rounded-3xl p-8 shadow-sm">
-          
+          <FormErrorSummary fieldErrors={fieldErrors} message={saveError} />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">

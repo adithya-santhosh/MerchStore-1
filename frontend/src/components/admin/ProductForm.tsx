@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { createProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors } from "@/lib/api";
 import { PlusCircle, Sparkles, Trash2, Car, X, Plus } from "lucide-react";
 import ProductImagesField from "@/components/admin/ProductImagesField";
+import FormErrorSummary from "@/components/admin/FormErrorSummary";
+import { getErrorMessage, getFieldErrors, type ApiFieldError } from "@/lib/errors";
 import { primaryImageUrl as heroImageUrl } from "@/lib/product-images";
 import type { ProductImageDraft, VehicleFitment } from "@/types/products";
 
@@ -25,6 +27,8 @@ export default function ProductForm() {
   const [subCategory, setSubCategory] = useState("");
   const [customSubCategory, setCustomSubCategory] = useState("");
   const [images, setImages] = useState<ProductImageDraft[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldError[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [isCustom, setIsCustom] = useState(false);
   const [dbSubCategories, setDbSubCategories] = useState<string[]>([]);
@@ -258,6 +262,8 @@ export default function ProductForm() {
 
   const handleConfirmSave = async () => {
     setLoading(true);
+    setFieldErrors([]);
+    setSaveError(null);
     try {
       await createProduct({
         name,
@@ -285,7 +291,11 @@ export default function ProductForm() {
       setShowSuccess(true);
     } catch (error) {
       console.error(error);
-      alert("Failed to create product.");
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      // The per-field list already names what is wrong, so only fall back to a
+      // standalone message when the failure carried no field detail.
+      setSaveError(errors.length > 0 ? null : getErrorMessage(error, "Failed to create product."));
       setShowConfirm(false);
     } finally {
       setLoading(false);
@@ -311,6 +321,8 @@ export default function ProductForm() {
     setCustomSubCategory("");
     setIsCustom(false);
     setImages([]);
+    setFieldErrors([]);
+    setSaveError(null);
     setBrand("");
     setCustomBrand("");
     setIsCustomBrand(false);
@@ -328,6 +340,8 @@ export default function ProductForm() {
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6 bg-card/40 border border-border/80 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <FormErrorSummary fieldErrors={fieldErrors} message={saveError} />
+
         
         {/* Name and Slug Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">

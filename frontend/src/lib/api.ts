@@ -1,8 +1,47 @@
 import { Product, type ProductWritePayload } from "@/types/products";
 import { getCookie } from "@/utils/cookie";
+import { ApiValidationError, type ApiFieldError } from "@/lib/errors";
 import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+/**
+ * Turns a failed response into the Error to throw.
+ *
+ * A 422 from the API's `validate()` middleware carries a field-level `errors`
+ * array; that becomes an `ApiValidationError` so a form can point at the
+ * offending inputs. Everything else falls back to the API's own `message`, then
+ * to the caller's wording.
+ */
+async function apiError(res: Response, fallback: string): Promise<Error> {
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    // A 500 behind a proxy often has an HTML or empty body.
+    return new Error(fallback);
+  }
+
+  const raw = (body ?? {}) as { message?: unknown; errors?: unknown };
+
+  const fieldErrors: ApiFieldError[] = Array.isArray(raw.errors)
+    ? raw.errors
+        .filter(
+          (e): e is { field?: unknown; message: string } =>
+            typeof e === "object" &&
+            e !== null &&
+            typeof (e as { message?: unknown }).message === "string" &&
+            (e as { message: string }).message !== ""
+        )
+        .map((e) => ({ field: String(e.field ?? ""), message: e.message }))
+    : [];
+
+  const message = typeof raw.message === "string" && raw.message ? raw.message : fallback;
+
+  return fieldErrors.length > 0
+    ? new ApiValidationError(fieldErrors, message)
+    : new Error(message);
+}
 
 /// This function will go to backend and fetch all the product info
 export async function getProducts(params?: { category?: string; subCategory?: string; vehicle?: string; brand?: string }) :Promise<Product []>{
@@ -94,7 +133,7 @@ export async function createProduct(product: ProductWritePayload){
     body : JSON.stringify(product),
   });
   if (!response.ok){
-    throw new Error("Failed to create the product");
+    throw await apiError(response, "Failed to create the product");
   }
   return response.json();
 }
@@ -112,7 +151,7 @@ export async function updateProduct(id: string | number, product: ProductWritePa
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update the product");
+    throw await apiError(response, "Failed to update the product");
   }
 
   return response.json();
@@ -1252,20 +1291,13 @@ export async function cancelOrderApi(orderId: number, reason?: string): Promise<
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
 /**
- * Pulls the first field-level message out of a 422 validation response, falling
- * back to the top-level message. Keeps Zod errors readable in the UI instead of
- * showing a bare "Validation failed".
+ * The message alone, for callers that only need a string. `apiError` already
+ * puts the first field-level message on a validation error, so a 422 still
+ * reads as "Password must be at least 8 characters" and not "Validation
+ * failed".
  */
 async function readApiError(res: Response, fallback: string): Promise<string> {
-  try {
-    const err = await res.json();
-    if (Array.isArray(err?.errors) && err.errors.length > 0) {
-      return err.errors[0].message || err.message || fallback;
-    }
-    return err?.message || fallback;
-  } catch {
-    return fallback;
-  }
+  return (await apiError(res, fallback)).message;
 }
 
 export async function requestPasswordResetAPI(email: string): Promise<{ message: string }> {

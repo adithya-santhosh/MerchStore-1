@@ -21,3 +21,36 @@ export function getErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+/** One field-level failure out of a 422 `validate()` response. */
+export interface ApiFieldError {
+  field: string;
+  message: string;
+}
+
+/**
+ * A 422 from the API's `validate()` middleware, carrying the per-field messages
+ * so a form can say which input is wrong rather than only that something is.
+ *
+ * `message` is set to the first field-level message, so existing callers that
+ * render `getErrorMessage(...)` keep showing something specific instead of the
+ * API's bare "Validation failed".
+ */
+export class ApiValidationError extends Error {
+  readonly fieldErrors: ApiFieldError[];
+
+  constructor(fieldErrors: ApiFieldError[], fallback: string) {
+    super(fieldErrors[0]?.message || fallback);
+    this.name = "ApiValidationError";
+    this.fieldErrors = fieldErrors;
+  }
+}
+
+/**
+ * The field-level errors carried by a caught value, or an empty list when the
+ * failure was an ordinary one. Lets a form render a validation summary without
+ * narrowing the `unknown` from `catch` itself.
+ */
+export function getFieldErrors(error: unknown): ApiFieldError[] {
+  return error instanceof ApiValidationError ? error.fieldErrors : [];
+}
