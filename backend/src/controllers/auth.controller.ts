@@ -122,7 +122,11 @@ export const changePassword = async (req: Request, res: Response) => {
     }
     const { currentPassword, newPassword } = req.body;
     const result = await changeUserPassword(req.user.id, currentPassword, newPassword);
-    res.json(result);
+    // The password change invalidated the token this request authenticated
+    // with, so re-issue the cookie with the fresh one or the user gets logged
+    // out by the very request that changed their password.
+    res.cookie(AUTH_COOKIE_NAME, result.token, { ...AUTH_COOKIE_OPTIONS, maxAge: AUTH_COOKIE_MAX_AGE });
+    res.json({ message: result.message });
   } catch (error: any) {
     logger.error({ err: error }, "Error in changePassword controller");
     res.status(400).json({ message: error.message || "Failed to change password" });

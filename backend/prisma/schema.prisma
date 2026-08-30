@@ -158,6 +158,16 @@ model User {
   role                UserRole             @default(CUSTOMER)
   emailVerified       Boolean              @default(false)
   isMember            Boolean              @default(false)
+  // Bumped whenever the password changes. Embedded in every JWT at sign time;
+  // requireAuth/optionalAuth reject a token whose tokenVersion doesn't match
+  // the current value, so a password change invalidates sessions on every
+  // other device without needing a server-side token blacklist.
+  tokenVersion        Int                  @default(0)
+  // Failed-login lockout. failedLoginAttempts resets to 0 on any successful
+  // login; lockedUntil is set once it crosses the threshold and cleared
+  // automatically once that time passes (see loginUser).
+  failedLoginAttempts Int                  @default(0)
+  lockedUntil         DateTime?
 
   addresses           Address[]
   orders              Order[]

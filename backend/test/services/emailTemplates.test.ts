@@ -257,32 +257,35 @@ describe("getEmailVerificationHtml", () => {
   });
 });
 
-// ─── Hardening note, characterised so a fix shows up as a failing test ────────
+// ─── Escaping ──────────────────────────────────────────────────────────────
 //
-// None of the templates escape interpolated values, and several of those values
-// are customer-controlled (display name, product name, address lines). The
-// blast radius is small — an order confirmation goes to the customer whose own
-// data it is — but a forwarded mail, or a name chosen by one user appearing in
-// an admin-facing mail, would render the injected markup. Worth an escape
-// helper if templates ever carry data from one user to another.
+// Every template builds HTML by string interpolation, and several of the
+// interpolated values are customer-controlled (display name, product name,
+// address lines). Validation upstream strips markup before storage, but
+// these templates escape independently rather than trusting that — the
+// blast radius was small today (an order confirmation goes to the customer
+// whose own data it is) but would not stay small the day a template starts
+// carrying data from one user to another (a vendor-facing shipment email,
+// an admin digest).
 describe("template escaping", () => {
-  it("KNOWN GAP: a name containing markup is interpolated raw", () => {
+  it("escapes markup in the welcome name instead of rendering it", () => {
     const html = getWelcomeEmailHtml('<img src=x onerror="alert(1)">', FRONTEND);
 
-    expect(html).toContain('<img src=x onerror="alert(1)">');
-    expect(html).not.toContain("&lt;img");
+    expect(html).not.toContain('<img src=x onerror="alert(1)">');
+    expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
   });
 
-  it("KNOWN GAP: a product name containing markup is interpolated raw", () => {
+  it("escapes markup in a product name instead of rendering it", () => {
     const html = getOrderConfirmationEmailHtml(
       order({ items: [{ productName: "<b>Rack</b>", quantity: 1, totalPrice: 1 }] }),
       FRONTEND
     );
 
-    expect(html).toContain("<b>Rack</b>");
+    expect(html).not.toContain("<b>Rack</b>");
+    expect(html).toContain("&lt;b&gt;Rack&lt;/b&gt;");
   });
 
-  it("KNOWN GAP: an address line containing markup is interpolated raw", () => {
+  it("escapes markup in an address line instead of rendering it", () => {
     const html = getOrderConfirmationEmailHtml(
       order({
         shippingAddress: {
@@ -296,6 +299,17 @@ describe("template escaping", () => {
       FRONTEND
     );
 
-    expect(html).toContain("<script>x</script>");
+    expect(html).not.toContain("<script>x</script>");
+    expect(html).toContain("&lt;script&gt;x&lt;/script&gt;");
+  });
+
+  it("escapes markup in the password reset and email verification names", () => {
+    const payload = '<img src=x onerror="alert(1)">';
+
+    const resetHtml = getPasswordResetEmailHtml(payload, `${FRONTEND}/reset-password?token=x`);
+    const verifyHtml = getEmailVerificationHtml(payload, `${FRONTEND}/verify-email?token=x`);
+
+    expect(resetHtml).not.toContain(payload);
+    expect(verifyHtml).not.toContain(payload);
   });
 });

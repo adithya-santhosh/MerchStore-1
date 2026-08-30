@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import request from "supertest";
 import jwt from "jsonwebtoken";
 
@@ -14,6 +14,11 @@ vi.mock("../../src/services/product.service", () => ({
   getProductStats: vi.fn(),
   bulkUpdateProducts: vi.fn(),
   searchProducts: vi.fn(),
+}));
+
+// requireAuth checks tokenVersion against the DB on every request.
+vi.mock("../../src/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
 }));
 
 import app from "../../src/app";
@@ -216,6 +221,7 @@ describe("admin product routes — access control", () => {
   it.each([
     ["get", "/api/products/admin"],
     ["get", "/api/products/admin/stats"],
+    ["get", "/api/products/admin/upload-signature"],
     ["patch", "/api/products/admin/bulk"],
   ])("rejects an anonymous %s %s with 401", async (method, path) => {
     const res = await (request(app) as any)[method](path);
@@ -226,6 +232,7 @@ describe("admin product routes — access control", () => {
   it.each([
     ["get", "/api/products/admin"],
     ["get", "/api/products/admin/stats"],
+    ["get", "/api/products/admin/upload-signature"],
     ["patch", "/api/products/admin/bulk"],
   ])("rejects a signed-in customer's %s %s with 403", async (method, path) => {
     const res = await (request(app) as any)[method](path).set("Authorization", customerAuth);
@@ -272,6 +279,43 @@ describe("admin product routes — access control", () => {
   });
 });
 
+describe("GET /api/products/admin/upload-signature", () => {
+  const ORIGINAL_ENV = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...ORIGINAL_ENV };
+  });
+
+  it("hands an admin a signed, format-restricted upload payload", async () => {
+    process.env.CLOUDINARY_NAME = "demo";
+    process.env.CLOUDINARY_API_KEY = "key123";
+    process.env.CLOUDINARY_API_SECRET = "shh-its-a-secret";
+
+    const res = await request(app)
+      .get("/api/products/admin/upload-signature")
+      .set("Authorization", adminAuth);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ cloudName: "demo", apiKey: "key123", folder: "products" });
+    expect(res.body.allowedFormats).not.toContain("svg");
+    expect(res.body.signature).toBeTruthy();
+    // The whole point: the secret used to produce it must never come back.
+    expect(JSON.stringify(res.body)).not.toContain("shh-its-a-secret");
+  });
+
+  it("answers 503 rather than a broken payload when Cloudinary isn't configured", async () => {
+    delete process.env.CLOUDINARY_NAME;
+    delete process.env.CLOUDINARY_API_KEY;
+    delete process.env.CLOUDINARY_API_SECRET;
+
+    const res = await request(app)
+      .get("/api/products/admin/upload-signature")
+      .set("Authorization", adminAuth);
+
+    expect(res.status).toBe(503);
+  });
+});
+
 describe("POST /api/products", () => {
   it("rejects a payload missing required fields with 422", async () => {
     const res = await request(app)
@@ -311,6 +355,23 @@ describe("POST /api/products", () => {
       .send(validProduct);
 
     expect(res.status).toBe(201);
+  });
+
+  it("strips HTML out of name and description before the service sees them", async () => {
+    svc.createProduct.mockResolvedValue({ id: 10 } as any);
+
+    await request(app)
+      .post("/api/products")
+      .set("Authorization", adminAuth)
+      .send({
+        ...validProduct,
+        name: "<script>alert(1)</script>Roof Rack",
+        description: "Heavy duty <b>roof rack</b>",
+      });
+
+    const data = svc.createProduct.mock.calls[0]?.[0] as any;
+    expect(data.name).toBe("Roof Rack");
+    expect(data.description).toBe("Heavy duty roof rack");
   });
 
   it("applies the schema defaults before the service sees the payload", async () => {

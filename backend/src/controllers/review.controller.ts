@@ -53,7 +53,7 @@ export const getMyReviewCtrl = async (req: Request, res: Response) => {
   }
 };
 
-// POST /api/reviews/:productId — requireAuth
+// POST /api/reviews/:productId — requireAuth, validate(createReviewSchema)
 export const createReviewCtrl = async (req: Request, res: Response) => {
   try {
     const productId = Number(req.params.productId);
@@ -61,10 +61,11 @@ export const createReviewCtrl = async (req: Request, res: Response) => {
       return res.status(400).json({ message: "Invalid product ID" });
     }
     const { rating, title, body } = req.body;
-    if (!rating || rating < 1 || rating > 5) {
-      return res.status(400).json({ message: "Rating must be between 1 and 5" });
-    }
-    const review = await createReview(req.user!.id, productId, { rating, title, body });
+    const review = await createReview(req.user!.id, productId, {
+      rating,
+      title: title ?? undefined,
+      body: body ?? undefined,
+    });
     res.status(201).json(review);
   } catch (error: any) {
     logger.error({ err: error }, "Error creating review");

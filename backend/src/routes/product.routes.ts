@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getProducts, getProduct, createNewProduct, removeProduct, editProduct, getSubCategories, getNavMetadata, getProductsAdminCtrl, getProductStatsCtrl, bulkUpdateProductsCtrl, searchProductsCtrl } from "../controllers/product.controller";
+import { getProducts, getProduct, createNewProduct, removeProduct, editProduct, getSubCategories, getNavMetadata, getProductsAdminCtrl, getProductStatsCtrl, bulkUpdateProductsCtrl, searchProductsCtrl, getUploadSignatureCtrl } from "../controllers/product.controller";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
 import { validate, createProductSchema, updateProductSchema } from "../middleware/validation.middleware";
 
@@ -8,6 +8,7 @@ const router = Router();
 // ── Admin routes FIRST (specific paths must come before generic /:id) ────────
 router.get("/admin/stats", requireAuth, requireAdmin, getProductStatsCtrl);
 router.get("/admin", requireAuth, requireAdmin, getProductsAdminCtrl);
+router.get("/admin/upload-signature", requireAuth, requireAdmin, getUploadSignatureCtrl);
 router.patch("/admin/bulk", requireAuth, requireAdmin, bulkUpdateProductsCtrl);
 
 // ── Public routes ────────────────────────────────────────────────────────────

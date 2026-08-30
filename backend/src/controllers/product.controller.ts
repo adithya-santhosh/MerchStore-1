@@ -1,6 +1,20 @@
 import logger from "../lib/logger";
 import { Response, Request } from "express";
 import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata, getProductsAdmin, getProductStats, bulkUpdateProducts, searchProducts } from "../services/product.service";
+import { createUploadSignature } from "../lib/cloudinary";
+
+// GET /api/products/admin/upload-signature — requireAuth, requireAdmin
+// Hands the admin form a short-lived, server-signed set of Cloudinary upload
+// params so the browser can upload straight to Cloudinary without our API
+// proxying the file bytes — but only an authenticated admin can obtain one,
+// and the signature locks the format whitelist and destination folder in.
+export const getUploadSignatureCtrl = async (_req: Request, res: Response) => {
+  const signature = createUploadSignature();
+  if (!signature) {
+    return res.status(503).json({ message: "Image upload is not configured" });
+  }
+  res.json(signature);
+};
 
 export const getProducts = async (req: Request, res: Response) => {
   try {

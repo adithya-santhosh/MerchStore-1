@@ -10,6 +10,11 @@ vi.mock("../../src/services/review.service", () => ({
   getUserReviewForProduct: vi.fn(),
 }));
 
+// requireAuth checks tokenVersion against the DB on every request.
+vi.mock("../../src/lib/prisma", () => ({
+  default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
+}));
+
 import app from "../../src/app";
 import * as reviewService from "../../src/services/review.service";
 
@@ -123,32 +128,34 @@ describe("POST /api/reviews/:productId", () => {
     expect(svc.createReview).not.toHaveBeenCalled();
   });
 
-  it("rejects a missing rating with 400", async () => {
+  it("rejects a missing rating with 422", async () => {
     const res = await request(app)
       .post("/api/reviews/10")
       .set("Authorization", auth())
       .send({ body: "Great" });
 
-    expect(res.status).toBe(400);
+    // Now caught by the shared Zod validator, like every other route's
+    // malformed body — a manual check in the controller used to 400 here.
+    expect(res.status).toBe(422);
     expect(svc.createReview).not.toHaveBeenCalled();
   });
 
-  it("rejects a rating above 5 with 400", async () => {
+  it("rejects a rating above 5 with 422", async () => {
     const res = await request(app)
       .post("/api/reviews/10")
       .set("Authorization", auth())
       .send({ rating: 6 });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
   });
 
-  it("rejects a rating of 0 with 400", async () => {
+  it("rejects a rating of 0 with 422", async () => {
     const res = await request(app)
       .post("/api/reviews/10")
       .set("Authorization", auth())
       .send({ rating: 0 });
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(422);
   });
 
   it("creates the review and returns 201", async () => {
@@ -164,6 +171,25 @@ describe("POST /api/reviews/:productId", () => {
       rating: 5,
       title: "Excellent",
       body: "Fits perfectly.",
+    });
+  });
+
+  it("strips HTML out of the title and body before they reach the service", async () => {
+    svc.createReview.mockResolvedValue({ id: 1 } as any);
+
+    await request(app)
+      .post("/api/reviews/10")
+      .set("Authorization", auth())
+      .send({
+        rating: 5,
+        title: "<script>alert(1)</script>Great fit",
+        body: "Works well <b>for my car</b>.",
+      });
+
+    expect(svc.createReview).toHaveBeenCalledWith(7, 10, {
+      rating: 5,
+      title: "Great fit",
+      body: "Works well for my car.",
     });
   });
 

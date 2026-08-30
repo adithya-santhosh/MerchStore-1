@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { UserRole } from "@prisma/client";
+import prisma from "../lib/prisma";
 
 // ─── JWT Payload Type ─────────────────────────────────────────────────────────
 interface JwtPayload {
@@ -9,6 +10,8 @@ interface JwtPayload {
   role: string;
   firstName: string;
   lastName: string;
+  // Absent on tokens issued before this field existed — treated as 0.
+  tokenVersion?: number;
   iat: number;
   exp: number;
 }
@@ -50,8 +53,22 @@ const extractToken = (req: Request): string | undefined => {
   return undefined;
 };
 
+// ─── Session revocation check ─────────────────────────────────────────────────
+// A JWT is normally stateless, but that means changing a password can't
+// invalidate tokens already issued — the old one keeps working for its full
+// 7-day life. tokenVersion closes that gap: it's bumped in the DB on every
+// password change, so a token signed before that change no longer matches.
+const isSessionRevoked = async (decoded: JwtPayload): Promise<boolean> => {
+  const user = await prisma.user.findUnique({
+    where: { id: decoded.id },
+    select: { tokenVersion: true },
+  });
+  if (!user) return true;
+  return (decoded.tokenVersion ?? 0) !== user.tokenVersion;
+};
+
 // ─── requireAuth — blocks unauthenticated requests ───────────────────────────
-export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = extractToken(req);
     if (!token) {
@@ -59,6 +76,10 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    if (await isSessionRevoked(decoded)) {
+      return res.status(401).json({ message: "Session expired. Please log in again." });
+    }
+
     req.user = {
       id: decoded.id,
       email: decoded.email,
@@ -85,18 +106,20 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction) =>
 };
 
 // ─── optionalAuth — attaches user if token present, continues as guest if not
-export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const token = extractToken(req);
     if (token) {
       const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
-      req.user = {
-        id: decoded.id,
-        email: decoded.email,
-        role: decoded.role,
-        firstName: decoded.firstName || "",
-        lastName: decoded.lastName || "",
-      };
+      if (!(await isSessionRevoked(decoded))) {
+        req.user = {
+          id: decoded.id,
+          email: decoded.email,
+          role: decoded.role,
+          firstName: decoded.firstName || "",
+          lastName: decoded.lastName || "",
+        };
+      }
     }
   } catch {
     // Token invalid — proceed as unauthenticated guest

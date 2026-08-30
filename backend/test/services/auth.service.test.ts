@@ -58,6 +58,9 @@ const userRow = (over: Record<string, any> = {}) => ({
   createdAt: new Date("2026-01-01"),
   isMember: false,
   emailVerified: false,
+  tokenVersion: 0,
+  failedLoginAttempts: 0,
+  lockedUntil: null,
   addresses: [],
   ...over,
 });
@@ -327,6 +330,84 @@ describe("loginUser", () => {
     expect(user.isMember).toBe(true);
     expect(user.emailVerified).toBe(true);
   });
+
+  describe("account lockout", () => {
+    it("counts a wrong password without locking the account below the threshold", async () => {
+      mockedPrisma.user.findUnique.mockResolvedValue(userRow({ failedLoginAttempts: 2 }) as any);
+
+      await expect(loginUser({ ...credentials, password: "nope" })).rejects.toThrow(
+        "Invalid email or password"
+      );
+
+      expect(mockedPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 7 },
+        data: { failedLoginAttempts: 3, lockedUntil: null },
+      });
+    });
+
+    it("locks the account on the 5th consecutive failed attempt", async () => {
+      mockedPrisma.user.findUnique.mockResolvedValue(userRow({ failedLoginAttempts: 4 }) as any);
+
+      await expect(loginUser({ ...credentials, password: "nope" })).rejects.toThrow(
+        "Invalid email or password"
+      );
+
+      const data = (mockedPrisma.user.update.mock.calls[0]?.[0] as any).data;
+      expect(data.failedLoginAttempts).toBe(0);
+      expect(data.lockedUntil).toBeInstanceOf(Date);
+      expect(data.lockedUntil.getTime()).toBeGreaterThan(Date.now());
+    });
+
+    it("rejects a login while locked out even with the correct password", async () => {
+      mockedPrisma.user.findUnique.mockResolvedValue(
+        userRow({ lockedUntil: new Date(Date.now() + 10 * 60 * 1000) }) as any
+      );
+
+      await expect(loginUser(credentials)).rejects.toThrow(/too many failed login attempts/i);
+      // Never even reaches a bcrypt compare / DB write for this attempt.
+      expect(mockedPrisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it("allows login again once the lockout window has passed", async () => {
+      mockedPrisma.user.findUnique.mockResolvedValue(
+        userRow({ failedLoginAttempts: 0, lockedUntil: new Date(Date.now() - 1000) }) as any
+      );
+
+      await expect(loginUser(credentials)).resolves.toHaveProperty("token");
+    });
+
+    it("clears a stale lockedUntil on a successful login after the window passed", async () => {
+      mockedPrisma.user.findUnique.mockResolvedValue(
+        userRow({ failedLoginAttempts: 0, lockedUntil: new Date(Date.now() - 1000) }) as any
+      );
+
+      await loginUser(credentials);
+
+      expect(mockedPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 7 },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
+    });
+
+    it("resets the failed-attempt counter on a successful login", async () => {
+      mockedPrisma.user.findUnique.mockResolvedValue(userRow({ failedLoginAttempts: 3 }) as any);
+
+      await loginUser(credentials);
+
+      expect(mockedPrisma.user.update).toHaveBeenCalledWith({
+        where: { id: 7 },
+        data: { failedLoginAttempts: 0, lockedUntil: null },
+      });
+    });
+
+    it("does not touch the DB on a clean successful login with no prior failures", async () => {
+      mockedPrisma.user.findUnique.mockResolvedValue(userRow() as any);
+
+      await loginUser(credentials);
+
+      expect(mockedPrisma.user.update).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe("getUserById", () => {
@@ -561,6 +642,27 @@ describe("resetPassword", () => {
       data: { usedAt: expect.any(Date) },
     });
   });
+
+  it("bumps tokenVersion so sessions on other devices are invalidated", async () => {
+    mockedPrisma.passwordResetToken.findUnique.mockResolvedValue(tokenRow() as any);
+
+    await resetPassword("abc123", "brand-new-password");
+
+    const data = (mockedPrisma.user.update.mock.calls[0]?.[0] as any).data;
+    expect(data.tokenVersion).toEqual({ increment: 1 });
+  });
+
+  it("clears any account lockout, since proving ownership by email supersedes it", async () => {
+    mockedPrisma.passwordResetToken.findUnique.mockResolvedValue(
+      tokenRow({ user: userRow({ failedLoginAttempts: 5, lockedUntil: new Date(Date.now() + 60_000) }) }) as any
+    );
+
+    await resetPassword("abc123", "brand-new-password");
+
+    const data = (mockedPrisma.user.update.mock.calls[0]?.[0] as any).data;
+    expect(data.failedLoginAttempts).toBe(0);
+    expect(data.lockedUntil).toBeNull();
+  });
 });
 
 describe("changeUserPassword", () => {
@@ -596,7 +698,28 @@ describe("changeUserPassword", () => {
 
     const data = (mockedPrisma.user.update.mock.calls[0]?.[0] as any).data;
     expect(await bcrypt.compare("a-longer-password", data.passwordHash)).toBe(true);
-    expect(Object.keys(data)).toEqual(["passwordHash"]);
+    expect(Object.keys(data)).toEqual(["passwordHash", "tokenVersion"]);
+  });
+
+  it("bumps tokenVersion so sessions on other devices are invalidated", async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(userRow() as any);
+    mockedPrisma.user.update.mockResolvedValue(userRow() as any);
+
+    await changeUserPassword(7, "correct-horse", "a-longer-password");
+
+    const data = (mockedPrisma.user.update.mock.calls[0]?.[0] as any).data;
+    expect(data.tokenVersion).toEqual({ increment: 1 });
+  });
+
+  it("returns a fresh token carrying the bumped tokenVersion, so the current session survives", async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(userRow() as any);
+    mockedPrisma.user.update.mockResolvedValue(userRow({ tokenVersion: 1 }) as any);
+
+    const result = await changeUserPassword(7, "correct-horse", "a-longer-password");
+
+    expect(result.token).toBeTruthy();
+    const decoded = jwt.verify(result.token!, JWT_SECRET) as any;
+    expect(decoded).toMatchObject({ id: 7, tokenVersion: 1 });
   });
 });
 
