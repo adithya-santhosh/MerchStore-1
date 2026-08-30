@@ -272,7 +272,11 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         images,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
-        attributes: attributes.length > 0 ? attributes : undefined
+        // Always sent, even when empty. `updateProduct` treats an absent
+        // `attributes` as "leave the existing rows alone", so sending
+        // `undefined` here meant removing every specification from a product
+        // silently did nothing — the old rows survived the save.
+        attributes
       });
       // Also update vendor assignment via dedicated endpoint
       await assignProductVendor(product.id, vendorId);
