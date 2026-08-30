@@ -27,7 +27,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, callbackUrl?: string) => Promise<void>;
   register: (firstName: string, lastName: string, email: string, password: string, isMember?: boolean, phone?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
   isAdmin: boolean;
   updateProfile: (firstName: string, lastName: string, phone?: string | null) => Promise<void>;
@@ -125,8 +125,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (typeof window !== "undefined") {
         localStorage.removeItem("sessionToken");
       }
-      
-      router.refresh();
+
+      // router.refresh() used to run here to pick up the fresh auth cookie in
+      // server-rendered content, but every branch below navigates to a new
+      // route regardless — which already fetches fresh server data on its
+      // own. Keeping both meant two competing navigations: refresh() was
+      // still fetching data for the *current* route ("/login") when push()
+      // fired, and a stale response landing after the push could overwrite
+      // the new route with "/login"'s own render. Redundant either way, and
+      // one less source of races on top of the callbackUrl fix below.
 
       // Redirect based on callbackUrl or role
       if (callbackUrl && callbackUrl !== "/login") {
@@ -170,9 +177,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    // Fire-and-forget: the cookie is HttpOnly, so only the backend can clear it.
-    fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+  const logout = async () => {
+    // The cookie is HttpOnly, so only the backend can clear it — and that has
+    // to be awaited before navigating anywhere. proxy.ts redirects a request
+    // to /login straight back to /admin (or /) whenever it sees a still-valid
+    // token, so pushing to /login before this response lands sent an admin
+    // right back into the console they'd just tried to leave.
+    try {
+      await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" });
+    } catch {
+      // Best-effort: still clear local state and navigate even if the
+      // network call failed. The stale cookie, if any, is no worse off than
+      // it was before logout was attempted.
+    }
     deleteCookie("role");
     setUser(null);
     router.push("/login");

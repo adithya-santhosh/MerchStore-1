@@ -18,9 +18,14 @@ function LoginForm() {
 
   const { login } = useAuth();
   const searchParams = useSearchParams();
-  // Comes straight from the query string and ends up in router.push(), so it
-  // has to be narrowed to a path on this site first.
-  const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
+  // Only pass a callbackUrl through when the query string actually names one
+  // (e.g. bounced here from /admin). useAuth's login() treats any non-empty
+  // callbackUrl as an explicit override of the role-based redirect —
+  // safeCallbackUrl's own fallback of "/" would otherwise count as one, so
+  // every plain visit to /login landed everyone on "/" after signing in,
+  // admins included, regardless of role.
+  const rawCallbackUrl = searchParams.get("callbackUrl");
+  const callbackUrl = rawCallbackUrl ? safeCallbackUrl(rawCallbackUrl) : undefined;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
