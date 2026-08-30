@@ -565,6 +565,21 @@ describe("updateProduct", () => {
     expect(mockedPrisma.productImage.deleteMany).not.toHaveBeenCalled();
   });
 
+  // The edit form used to send `undefined` when the admin removed every spec,
+  // and an absent `attributes` means "leave the existing rows alone" — so
+  // clearing the list silently did nothing. It now always sends the array.
+  it("clears every specification when an empty attributes array is supplied", async () => {
+    stubUpdate();
+
+    await updateProduct(10, { attributes: [] });
+
+    expect(mockedPrisma.productAttribute.deleteMany).toHaveBeenCalledWith({
+      where: { productId: 10 },
+    });
+    const data = (mockedPrisma.product.update.mock.calls[0]?.[0] as any).data;
+    expect(data.attributes.create).toEqual([]);
+  });
+
   it("replaces the specification list when attributes are supplied", async () => {
     stubUpdate();
 
