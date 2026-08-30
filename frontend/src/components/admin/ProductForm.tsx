@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { createProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors } from "@/lib/api";
-import { PlusCircle, Image, Sparkles, Trash2, Car, X, Plus } from "lucide-react";
-import { uploadToCloudinary } from "@/lib/utils";
-import type { VehicleFitment } from "@/types/products";
+import { PlusCircle, Sparkles, Trash2, Car, X, Plus } from "lucide-react";
+import ProductImagesField from "@/components/admin/ProductImagesField";
+import { primaryImageUrl as heroImageUrl } from "@/lib/product-images";
+import type { ProductImageDraft, VehicleFitment } from "@/types/products";
 
 export default function ProductForm() {
   const [name, setName] = useState("");
@@ -23,14 +24,13 @@ export default function ProductForm() {
   const [category, setCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [customSubCategory, setCustomSubCategory] = useState("");
-  const [ImageURL, setImageURL] = useState("");
+  const [images, setImages] = useState<ProductImageDraft[]>([]);
 
   const [isCustom, setIsCustom] = useState(false);
   const [dbSubCategories, setDbSubCategories] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [manualSlug, setManualSlug] = useState(false);
 
   // Metadata states for dynamic dropdowns
@@ -250,21 +250,6 @@ export default function ProductForm() {
     setAttributes(attributes.filter((_, idx) => idx !== index));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const url = await uploadToCloudinary(file);
-      setImageURL(url);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to upload image to Cloudinary. Please ensure your preset is set to unsigned.");
-    } finally {
-      setUploading(false);
-    }
-  };
  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -290,7 +275,7 @@ export default function ProductForm() {
         isFeatured,
         category,
         subCategory: isCustom ? customSubCategory : subCategory,
-        ImageURL: ImageURL || null,
+        images,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
         attributes: attributes.length > 0 ? attributes : undefined,
@@ -325,7 +310,7 @@ export default function ProductForm() {
     setSubCategory("");
     setCustomSubCategory("");
     setIsCustom(false);
-    setImageURL("");
+    setImages([]);
     setBrand("");
     setCustomBrand("");
     setIsCustomBrand(false);
@@ -334,6 +319,9 @@ export default function ProductForm() {
     setVendorId(null);
     setShowSuccess(false);
   };
+
+  // What the storefront will show as the hero, so the confirm previews match.
+  const primaryImageUrl = heroImageUrl(images);
 
   const currentSub = isCustom ? customSubCategory : subCategory;
 
@@ -864,43 +852,7 @@ export default function ProductForm() {
           )}
         </div>
 
-        {/* Image URL / Upload Input */}
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Image className="size-3.5 text-muted-foreground" />
-            Product Image
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <input
-                type="text"
-                id="imageURL"
-                value={ImageURL}
-                onChange={(e) => setImageURL(e.target.value)}
-                placeholder="Paste an image URL or upload a file..."
-                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                id="image-file"
-                onChange={handleImageUpload}
-                className="hidden"
-                disabled={uploading}
-              />
-              <label
-                htmlFor="image-file"
-                className={`flex h-full min-h-[46px] flex items-center justify-center gap-2 rounded-xl border border-dashed border-input bg-background/50 px-4 py-2 text-sm font-semibold cursor-pointer hover:border-primary transition-all text-muted-foreground hover:text-primary-bright ${
-                  uploading ? "opacity-50 cursor-wait" : ""
-                }`}
-              >
-                {uploading ? "Uploading..." : "Upload File"}
-              </label>
-            </div>
-          </div>
-        </div>
+        <ProductImagesField images={images} onChange={setImages} />
 
         {/* Description Textarea */}
         <div className="space-y-2">
@@ -990,12 +942,12 @@ export default function ProductForm() {
             {/* Preview Card */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-4">
               <div className="relative aspect-video w-full rounded-xl border border-border/40 overflow-hidden bg-muted flex items-center justify-center p-2">
-                {ImageURL ? (
-                  <img src={ImageURL} alt={name} className="w-full h-full object-contain" />
+                {primaryImageUrl ? (
+                  <img src={primaryImageUrl} alt={name} className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex flex-col items-center gap-2">
                     <Sparkles className="size-5 text-primary/40" />
-                    No Image URL
+                    No Image
                   </div>
                 )}
               </div>
@@ -1050,8 +1002,8 @@ export default function ProductForm() {
             {/* Preview Card */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-4">
               <div className="relative aspect-video w-full rounded-xl border border-border/40 overflow-hidden bg-muted flex items-center justify-center p-2">
-                {ImageURL ? (
-                  <img src={ImageURL} alt={name} className="w-full h-full object-contain" />
+                {primaryImageUrl ? (
+                  <img src={primaryImageUrl} alt={name} className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex flex-col items-center gap-2">
                     <Sparkles className="size-5 text-primary/40" />

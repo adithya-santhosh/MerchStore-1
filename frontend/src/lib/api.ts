@@ -1,4 +1,4 @@
-import { Product } from "@/types/products";
+import { Product, type ProductWritePayload } from "@/types/products";
 import { getCookie } from "@/utils/cookie";
 import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 
@@ -82,7 +82,7 @@ export async function deleteProduct(id: number) {
   return response.json();
 }
 
-export async function createProduct(product: Omit<Product,"id" | "createdAt" |"updatedAt">){
+export async function createProduct(product: ProductWritePayload){
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products`,{
     method :"POST",
@@ -99,7 +99,7 @@ export async function createProduct(product: Omit<Product,"id" | "createdAt" |"u
   return response.json();
 }
 
-export async function updateProduct(id: string | number, product: Omit<Product, "id" | "createdAt" | "updatedAt">) {
+export async function updateProduct(id: string | number, product: ProductWritePayload) {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: "PUT",

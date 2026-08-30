@@ -351,7 +351,9 @@ describe("createProduct", () => {
     await createProduct({ name: "Roof Rack", ImageURL: "/hero.jpg" });
 
     const data = (mockedPrisma.product.create.mock.calls[0]?.[0] as any).data;
-    expect(data.images.create).toEqual([{ imageUrl: "/hero.jpg", isPrimary: true }]);
+    expect(data.images.create).toEqual([
+      { imageUrl: "/hero.jpg", altText: null, isPrimary: true, sortOrder: 0 },
+    ]);
     expect(data).not.toHaveProperty("ImageURL");
   });
 
@@ -361,7 +363,10 @@ describe("createProduct", () => {
     await createProduct({ name: "Roof Rack", images: ["/a.jpg", "/b.jpg"] });
 
     const data = (mockedPrisma.product.create.mock.calls[0]?.[0] as any).data;
-    expect(data.images.create).toEqual([{ imageUrl: "/a.jpg" }, { imageUrl: "/b.jpg" }]);
+    expect(data.images.create).toEqual([
+      { imageUrl: "/a.jpg", altText: null, isPrimary: true, sortOrder: 0 },
+      { imageUrl: "/b.jpg", altText: null, isPrimary: false, sortOrder: 1 },
+    ]);
   });
 
   it("defaults an image object's flags rather than storing undefined", async () => {
@@ -370,7 +375,61 @@ describe("createProduct", () => {
     await createProduct({ name: "Roof Rack", images: [{ imageUrl: "/a.jpg" }] });
 
     const data = (mockedPrisma.product.create.mock.calls[0]?.[0] as any).data;
-    expect(data.images.create[0]).toMatchObject({ isPrimary: false, sortOrder: 0 });
+    expect(data.images.create[0]).toMatchObject({ altText: null, sortOrder: 0 });
+  });
+
+  // `mapProduct` and the storefront gallery both resolve the hero image as
+  // `find(isPrimary) || images[0]`, where `images[0]` is whatever order the
+  // database returned — so a gallery with no primary showed an arbitrary hero.
+  it("promotes the first image when the caller marks none as primary", async () => {
+    stubCreate();
+
+    await createProduct({
+      name: "Roof Rack",
+      images: [{ imageUrl: "/a.jpg" }, { imageUrl: "/b.jpg" }, { imageUrl: "/c.jpg" }],
+    });
+
+    const data = (mockedPrisma.product.create.mock.calls[0]?.[0] as any).data;
+    expect(data.images.create.map((i: any) => i.isPrimary)).toEqual([true, false, false]);
+  });
+
+  it("keeps exactly one primary when the caller marks several", async () => {
+    stubCreate();
+
+    await createProduct({
+      name: "Roof Rack",
+      images: [
+        { imageUrl: "/a.jpg", isPrimary: false },
+        { imageUrl: "/b.jpg", isPrimary: true },
+        { imageUrl: "/c.jpg", isPrimary: true },
+      ],
+    });
+
+    const data = (mockedPrisma.product.create.mock.calls[0]?.[0] as any).data;
+    expect(data.images.create.map((i: any) => i.isPrimary)).toEqual([false, true, false]);
+  });
+
+  it("numbers sortOrder by array position when the caller omits it", async () => {
+    stubCreate();
+
+    await createProduct({
+      name: "Roof Rack",
+      images: [{ imageUrl: "/a.jpg" }, { imageUrl: "/b.jpg" }, { imageUrl: "/c.jpg" }],
+    });
+
+    const data = (mockedPrisma.product.create.mock.calls[0]?.[0] as any).data;
+    expect(data.images.create.map((i: any) => i.sortOrder)).toEqual([0, 1, 2]);
+  });
+
+  it("keeps a blank sub-category off the product row", async () => {
+    stubCreate();
+    mockedPrisma.category.findFirst.mockResolvedValue({ id: 3, name: "Merch" } as any);
+
+    await createProduct({ name: "Tee", category: "Merch", subCategory: "" });
+
+    const data = (mockedPrisma.product.create.mock.calls[0]?.[0] as any).data;
+    expect(data).not.toHaveProperty("category");
+    expect(data).not.toHaveProperty("subCategory");
   });
 
   it("creates a missing category on the fly from its name", async () => {
@@ -493,7 +552,9 @@ describe("updateProduct", () => {
       where: { productId: 10 },
     });
     const data = (mockedPrisma.product.update.mock.calls[0]?.[0] as any).data;
-    expect(data.images.create).toEqual([{ imageUrl: "/new.jpg" }]);
+    expect(data.images.create).toEqual([
+      { imageUrl: "/new.jpg", altText: null, isPrimary: true, sortOrder: 0 },
+    ]);
   });
 
   it("leaves the existing gallery alone when no images are supplied", async () => {

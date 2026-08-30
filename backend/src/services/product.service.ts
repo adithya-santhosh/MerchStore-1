@@ -41,6 +41,37 @@ const mapProduct = (product: any) => {
   };
 };
 
+/**
+ * Normalise the two accepted image shapes (a bare URL string, or a full row)
+ * into Prisma nested-create rows.
+ *
+ * `sortOrder` falls back to the array position, so a caller can simply send the
+ * images in display order. Exactly one row is marked primary — the first one
+ * flagged, or the first row when none is — because `mapProduct` and the
+ * storefront gallery both resolve the hero image as
+ * `find(isPrimary) || images[0]`, and `images[0]` is database return order, not
+ * display order. Leaving zero primaries there silently promotes an arbitrary
+ * image; leaving several makes the hero depend on row ids.
+ */
+const toImageRows = (images: any[]) => {
+  const rows = images.map((img: any, idx: number) =>
+    typeof img === "string"
+      ? { imageUrl: img, altText: null, isPrimary: false, sortOrder: idx }
+      : {
+          imageUrl: img.imageUrl,
+          altText: img.altText ?? null,
+          isPrimary: Boolean(img.isPrimary),
+          sortOrder: typeof img.sortOrder === "number" ? img.sortOrder : idx,
+        }
+  );
+
+  const primaryIdx = rows.findIndex((r) => r.isPrimary);
+  return rows.map((r, idx) => ({
+    ...r,
+    isPrimary: idx === (primaryIdx === -1 ? 0 : primaryIdx),
+  }));
+};
+
 //
 /// Function to Get All the Products from the Database
 //
@@ -200,33 +231,14 @@ export const createProduct = async (data: any) => {
   }
   delete createData.brand;
 
-  // Backwards compatibility for ImageURL
-  if (productData.ImageURL) {
-    createData.images = {
-      create: [{
-        imageUrl: productData.ImageURL,
-        isPrimary: true
-      }]
-    };
-    delete createData.ImageURL;
-  }
-
-  // Handle images array if provided
+  // The multi-image `images` field wins over the legacy single `ImageURL` when
+  // a caller sends both.
   if (images && Array.isArray(images)) {
-    createData.images = {
-      create: images.map((img: any) => {
-        if (typeof img === 'string') {
-          return { imageUrl: img };
-        }
-        return {
-          imageUrl: img.imageUrl,
-          altText: img.altText,
-          isPrimary: img.isPrimary || false,
-          sortOrder: img.sortOrder || 0
-        };
-      })
-    };
+    createData.images = { create: toImageRows(images) };
+  } else if (productData.ImageURL) {
+    createData.images = { create: toImageRows([productData.ImageURL]) };
   }
+  delete createData.ImageURL;
 
   // Backwards compatibility for category/subCategory string lookup
   if (!productData.categoryId && productData.category) {
@@ -285,6 +297,13 @@ export const createProduct = async (data: any) => {
       }))
     };
   }
+
+  // `category`/`subCategory` are resolved into `categoryId` above and are not
+  // Prisma columns. The deletes inside those branches are skipped when the
+  // caller sends a blank sub-category, which reached Prisma as an unknown
+  // argument and crashed the request.
+  delete createData.category;
+  delete createData.subCategory;
 
   const product = await prisma.product.create({
     data: createData,
@@ -405,35 +424,17 @@ export const updateProduct = async (id: number, data: any) => {
   }
   delete updateData.brand;
 
-  // Backwards compatibility for ImageURL
-  if (productData.ImageURL) {
-    await prisma.productImage.deleteMany({ where: { productId: id } });
-    updateData.images = {
-      create: [{
-        imageUrl: productData.ImageURL,
-        isPrimary: true
-      }]
-    };
-    delete updateData.ImageURL;
-  }
-
-  // Handle images array update if provided
+  // Either image field REPLACES the whole set rather than appending, because
+  // the admin form always submits the complete list. Sending neither field
+  // leaves the existing images untouched; sending `images: []` clears them.
   if (images && Array.isArray(images)) {
     await prisma.productImage.deleteMany({ where: { productId: id } });
-    updateData.images = {
-      create: images.map((img: any) => {
-        if (typeof img === 'string') {
-          return { imageUrl: img };
-        }
-        return {
-          imageUrl: img.imageUrl,
-          altText: img.altText,
-          isPrimary: img.isPrimary || false,
-          sortOrder: img.sortOrder || 0
-        };
-      })
-    };
+    updateData.images = { create: toImageRows(images) };
+  } else if (productData.ImageURL) {
+    await prisma.productImage.deleteMany({ where: { productId: id } });
+    updateData.images = { create: toImageRows([productData.ImageURL]) };
   }
+  delete updateData.ImageURL;
 
   // Backwards compatibility for category/subCategory string lookup
   if (!productData.categoryId && productData.category) {
@@ -493,6 +494,9 @@ export const updateProduct = async (id: number, data: any) => {
       }))
     };
   }
+
+  delete updateData.category;
+  delete updateData.subCategory;
 
   const product = await prisma.product.update({
     where: { id },
