@@ -111,7 +111,7 @@ export default function NewLaunch() {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-12 sm:mb-16">
           
           <div className="space-y-4 text-left">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
               <Sparkles className="size-3.5" />
               LATEST DROPS
             </div>
@@ -127,14 +127,14 @@ export default function NewLaunch() {
           <div className="flex gap-2">
             <button
               onClick={() => handleScroll("left")}
-              className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+              className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary-bright hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
               aria-label="Scroll left"
             >
               <ChevronLeft className="size-5" />
             </button>
             <button
               onClick={() => handleScroll("right")}
-              className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+              className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary-bright hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
               aria-label="Scroll right"
             >
               <ChevronRight className="size-5" />

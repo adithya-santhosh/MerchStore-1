@@ -91,10 +91,11 @@ export default function RegisterPage() {
           {/* First Name & Last Name */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <label className="text-foreground font-bold">First Name</label>
+              <label htmlFor="reg-first-name" className="text-foreground font-bold">First Name</label>
               <div className="relative">
                 <User className="absolute left-3 size-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="reg-first-name"
                   type="text"
                   placeholder="John"
                   value={firstName}
@@ -106,10 +107,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-foreground font-bold">Last Name</label>
+              <label htmlFor="reg-last-name" className="text-foreground font-bold">Last Name</label>
               <div className="relative">
                 <User className="absolute left-3 size-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="reg-last-name"
                   type="text"
                   placeholder="Doe"
                   value={lastName}
@@ -123,10 +125,11 @@ export default function RegisterPage() {
 
           {/* Email */}
           <div className="space-y-1.5">
-            <label className="text-foreground font-bold">Email Address</label>
+            <label htmlFor="reg-email" className="text-foreground font-bold">Email Address</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
+                id="reg-email"
                 type="email"
                 placeholder="john@example.com"
                 value={email}
@@ -139,10 +142,11 @@ export default function RegisterPage() {
 
           {/* Phone Number */}
           <div className="space-y-1.5">
-            <label className="text-foreground font-bold">Phone Number (Optional)</label>
+            <label htmlFor="reg-phone" className="text-foreground font-bold">Phone Number (Optional)</label>
             <div className="relative">
               <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <input
+                id="reg-phone"
                 type="tel"
                 placeholder="+91 98765 43210"
                 value={phone}
@@ -154,8 +158,9 @@ export default function RegisterPage() {
 
           {/* Password */}
           <div className="space-y-1.5">
-            <label className="text-foreground font-bold">Password</label>
+            <label htmlFor="reg-password" className="text-foreground font-bold">Password</label>
             <PasswordInput
+              id="reg-password"
               placeholder="••••••••"
               value={password}
               required
@@ -183,7 +188,7 @@ export default function RegisterPage() {
             <div className="flex-grow space-y-1">
               <div className="flex justify-between items-center gap-2">
                 <span className="text-xs font-bold text-foreground">Join Premium Membership</span>
-                <span className="text-[10px] font-black text-primary uppercase shrink-0">₹{membershipFee} One-Time</span>
+                <span className="text-[10px] font-black text-primary-bright uppercase shrink-0">₹{membershipFee} One-Time</span>
               </div>
               <p className="text-[10px] text-muted-foreground font-semibold leading-relaxed">
                 Unlock automated 10% off storewide, VIP mechanical consultations, and priority tracking.
@@ -194,7 +199,7 @@ export default function RegisterPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()} // Prevent card toggle
-                  className="text-[10px] font-bold text-primary hover:underline flex items-center gap-0.5"
+                  className="text-[10px] font-bold text-primary-bright hover:underline flex items-center gap-0.5"
                 >
                   View Rewards & Benefits <ChevronRight className="size-3" />
                 </Link>
@@ -228,7 +233,7 @@ export default function RegisterPage() {
         {/* Footer */}
         <div className="text-center pt-2 text-xs">
           <span className="text-muted-foreground">Already have an account? </span>
-          <Link href="/login" className="text-primary font-bold hover:underline">
+          <Link href="/login" className="text-primary-bright font-bold hover:underline">
             Sign in
           </Link>
         </div>

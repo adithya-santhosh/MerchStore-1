@@ -143,7 +143,7 @@ export default function AdminOrdersPage() {
           { label: "Total Orders",   value: stats.total,                            color: "text-foreground",      bg: "bg-muted/20" },
           { label: "Pending",        value: stats.pending,                          color: "text-amber-500",       bg: "bg-amber-500/5" },
           { label: "Shipped",        value: stats.shipped,                          color: "text-cyan-500",        bg: "bg-cyan-500/5" },
-          { label: "Total Revenue",  value: `₹${totalRevenue.toLocaleString("en-IN")}`, color: "text-primary",   bg: "bg-primary/5" },
+          { label: "Total Revenue",  value: `₹${totalRevenue.toLocaleString("en-IN")}`, color: "text-primary-bright",   bg: "bg-primary/5" },
         ].map((stat) => (
           <div
             key={stat.label}
@@ -268,7 +268,7 @@ export default function AdminOrdersPage() {
                 {/* View Link */}
                 <div className="col-span-1 flex justify-end">
                   <Link href={`/admin/orders/${order.id}`}>
-                    <button className="p-2 rounded-xl border border-border hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-primary transition-all cursor-pointer">
+                    <button className="p-2 rounded-xl border border-border hover:bg-muted hover:border-primary/40 text-muted-foreground hover:text-primary-bright transition-all cursor-pointer">
                       <ChevronRight className="size-4" />
                     </button>
                   </Link>

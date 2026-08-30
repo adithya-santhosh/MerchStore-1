@@ -78,7 +78,7 @@ export default function CarAccessoriesPage() {
         
         {/* Header Content */}
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24 space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
             <Sparkles className="size-3.5" />
             Performance Equipped
           </div>
@@ -141,7 +141,7 @@ export default function CarAccessoriesPage() {
                 </div>
 
                 {/* Action Footer Indicator */}
-                <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-muted-foreground pt-4 border-t border-border/40 group-hover:text-primary transition-colors">
+                <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-muted-foreground pt-4 border-t border-border/40 group-hover:text-primary-bright transition-colors">
                   <span>Explore Gear</span>
                   <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 group-hover:translate-x-1">
                     <ArrowRight className="size-4" />

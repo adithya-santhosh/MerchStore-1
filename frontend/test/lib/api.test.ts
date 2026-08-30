@@ -10,7 +10,12 @@ import {
   createPaymentOrder,
   verifyPayment,
   deleteProduct,
+  createProduct,
+  updateProduct,
+  requestPasswordResetAPI,
 } from "@/lib/api";
+import { ApiValidationError } from "@/lib/errors";
+import type { ProductWritePayload } from "@/types/products";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -312,5 +317,127 @@ describe("authenticated requests", () => {
     fetchMock.mockResolvedValue(fail(403));
 
     await expect(deleteProduct(10)).rejects.toThrow(/failed to delete product/i);
+  });
+});
+
+describe("createProduct / updateProduct validation errors", () => {
+  const payload = {
+    name: "Roof Rack",
+    description: "Heavy duty",
+    price: 1499,
+    category: "Car Accessories",
+  } as unknown as ProductWritePayload;
+
+  /** The 422 body the API's `validate()` middleware returns. */
+  const validationBody = {
+    message: "Validation failed",
+    errors: [
+      { field: "price", message: "Price must be positive" },
+      { field: "categoryId", message: "Category is required" },
+    ],
+  };
+
+  it("surfaces every field error from a 422 on create", async () => {
+    fetchMock.mockResolvedValue(fail(422, validationBody));
+
+    await expect(createProduct(payload)).rejects.toBeInstanceOf(ApiValidationError);
+  });
+
+  it("carries the field list rather than discarding the response body", async () => {
+    fetchMock.mockResolvedValue(fail(422, validationBody));
+
+    // The whole point: the form needs the fields, not just "it failed".
+    await expect(createProduct(payload)).rejects.toMatchObject({
+      fieldErrors: validationBody.errors,
+    });
+  });
+
+  it("reads as the first field message instead of a bare 'Validation failed'", async () => {
+    fetchMock.mockResolvedValue(fail(422, validationBody));
+
+    await expect(createProduct(payload)).rejects.toThrow("Price must be positive");
+  });
+
+  it("does the same for an update", async () => {
+    fetchMock.mockResolvedValue(fail(422, validationBody));
+
+    await expect(updateProduct(10, payload)).rejects.toMatchObject({
+      fieldErrors: validationBody.errors,
+    });
+  });
+
+  it("throws a plain Error when the failure carries no field list", async () => {
+    fetchMock.mockResolvedValue(fail(500, { message: "Database unavailable" }));
+
+    const err = await createProduct(payload).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(ApiValidationError);
+    expect((err as Error).message).toBe("Database unavailable");
+  });
+
+  it("falls back to the caller's wording when the body is not JSON", async () => {
+    // A 502 from a proxy typically has an HTML body.
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => {
+        throw new SyntaxError("Unexpected token <");
+      },
+    });
+
+    await expect(createProduct(payload)).rejects.toThrow("Failed to create the product");
+  });
+
+  it("ignores malformed entries in the errors array", async () => {
+    fetchMock.mockResolvedValue(
+      fail(422, {
+        message: "Validation failed",
+        errors: [null, { field: "sku" }, { field: "name", message: "Name is required" }],
+      })
+    );
+
+    await expect(createProduct(payload)).rejects.toMatchObject({
+      fieldErrors: [{ field: "name", message: "Name is required" }],
+    });
+  });
+
+  it("treats an empty errors array as an ordinary failure", async () => {
+    fetchMock.mockResolvedValue(fail(422, { message: "Validation failed", errors: [] }));
+
+    const err = await createProduct(payload).catch((e: unknown) => e);
+
+    expect(err).not.toBeInstanceOf(ApiValidationError);
+    expect((err as Error).message).toBe("Validation failed");
+  });
+});
+
+// `readApiError` is shared by the password-reset, email-verification and refund
+// calls. It now delegates to the same parser the product forms use, so these
+// pin the string-only behaviour those callers still depend on.
+describe("readApiError (via requestPasswordResetAPI)", () => {
+  it("surfaces the first field message from a 422, not 'Validation failed'", async () => {
+    fetchMock.mockResolvedValue(
+      fail(422, {
+        message: "Validation failed",
+        errors: [{ field: "email", message: "Invalid email address" }],
+      })
+    );
+
+    await expect(requestPasswordResetAPI("nope")).rejects.toThrow("Invalid email address");
+  });
+
+  it("uses the top-level message when there is no field list", async () => {
+    fetchMock.mockResolvedValue(fail(429, { message: "Too many requests" }));
+
+    await expect(requestPasswordResetAPI("a@b.com")).rejects.toThrow("Too many requests");
+  });
+
+  it("falls back to the caller's wording for an empty body", async () => {
+    fetchMock.mockResolvedValue(fail(500));
+
+    await expect(requestPasswordResetAPI("a@b.com")).rejects.toThrow(
+      "Failed to send the reset link. Please try again."
+    );
   });
 });

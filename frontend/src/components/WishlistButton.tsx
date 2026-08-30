@@ -62,7 +62,7 @@ export default function WishlistButton({
   return (
     <button
       onClick={handleClick}
-      className={`size-8 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${
+      className={`size-11 rounded-full flex items-center justify-center transition-all duration-300 cursor-pointer ${
         wishlisted
           ? "text-red-500 bg-red-500/10 hover:bg-red-500/20"
           : "text-muted-foreground bg-transparent hover:bg-muted hover:text-foreground"

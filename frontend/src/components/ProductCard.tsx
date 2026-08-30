@@ -35,7 +35,11 @@ export default function ProductCard({ product }: ProductCardProps) {
           <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
             {product.category}
           </span>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          {/* Visible by default, hidden-until-hover only where hover exists.
+              Tailwind gates `hover:` behind @media (hover: hover), so the old
+              `opacity-0 group-hover:opacity-100` left this permanently invisible
+              on a touch screen rather than merely hidden until hover. */}
+          <div className="can-hover:opacity-0 can-hover:group-hover:opacity-100 can-hover:group-focus-within:opacity-100 transition-opacity duration-300">
             <WishlistButton productId={product.id} variant="icon" />
           </div>
         </div>
@@ -61,7 +65,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Product Title */}
-        <h3 className="text-base font-bold text-foreground group-hover:text-primary transition-colors leading-snug line-clamp-2">
+        <h3 className="text-base font-bold text-foreground group-hover:text-primary-bright transition-colors leading-snug line-clamp-2">
           {product.name}
         </h3>
 
@@ -79,7 +83,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           {/* Price displayed in bold red (primary color) */}
           <div className="flex flex-col">
             <span className="text-xs text-muted-foreground font-semibold">Price</span>
-            <span className="text-lg font-black text-primary transition-colors">
+            <span className="text-lg font-black text-primary-bright transition-colors">
               ₹{product.price.toLocaleString("en-IN")}
             </span>
           </div>

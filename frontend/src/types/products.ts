@@ -6,6 +6,15 @@ export interface ProductImage {
     sortOrder: number;
 }
 
+/** A gallery row being edited in the admin. `id` is absent until persisted. */
+export interface ProductImageDraft {
+    id?: number;
+    imageUrl: string;
+    altText?: string | null;
+    isPrimary: boolean;
+    sortOrder: number;
+}
+
 export interface ProductAttribute {
     /** Absent until the row is persisted, so optional on create/edit forms. */
     id?: number;
@@ -51,3 +60,14 @@ export interface Product {
     updatedAt: string;
     vendorId?: number | null;
 }
+
+/**
+ * What the admin forms POST/PUT. It differs from `Product` in that gallery rows
+ * may not be persisted yet, so they carry no `id`.
+ */
+export type ProductWritePayload = Omit<
+    Product,
+    "id" | "createdAt" | "updatedAt" | "images"
+> & {
+    images?: ProductImageDraft[];
+};

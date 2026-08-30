@@ -57,7 +57,7 @@ export default function ContactPage() {
                   <p className="text-xs font-bold text-foreground">Email</p>
                   <a
                     href={`mailto:${siteConfig.supportEmail}`}
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors break-all"
+                    className="text-xs text-muted-foreground hover:text-primary-bright transition-colors break-all"
                   >
                     {siteConfig.supportEmail}
                   </a>
@@ -70,7 +70,7 @@ export default function ContactPage() {
                   <p className="text-xs font-bold text-foreground">Phone</p>
                   <a
                     href={`tel:${siteConfig.supportPhone.replace(/\s/g, "")}`}
-                    className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                    className="text-xs text-muted-foreground hover:text-primary-bright transition-colors"
                   >
                     {siteConfig.supportPhone}
                   </a>

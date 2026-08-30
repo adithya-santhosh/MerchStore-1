@@ -17,7 +17,7 @@ export default function Footer() {
                 <Sparkles className="size-4" />
               </div>
               <span className="text-lg font-bold tracking-tight">
-                Merch<span className="text-primary font-black">Store</span>
+                Merch<span className="text-primary-bright font-black">Store</span>
               </span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
@@ -67,17 +67,17 @@ export default function Footer() {
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">Shop</h3>
             <ul className="space-y-2.5">
               <li>
-                <Link href="/products/car-accessories" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/products/car-accessories" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Car Accessories
                 </Link>
               </li>
               <li>
-                <Link href="/products/merchandise" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/products/merchandise" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Merchandise
                 </Link>
               </li>
               <li>
-                <Link href="/products" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/products" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   All Products
                 </Link>
               </li>
@@ -89,22 +89,22 @@ export default function Footer() {
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">Support</h3>
             <ul className="space-y-2.5">
               <li>
-                <Link href="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/about" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/contact" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Contact
                 </Link>
               </li>
               <li>
-                <Link href="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Shipping & Delivery
                 </Link>
               </li>
               <li>
-                <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Returns & Refunds
                 </Link>
               </li>
@@ -116,22 +116,22 @@ export default function Footer() {
             <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider mb-4">Legal</h3>
             <ul className="space-y-2.5">
               <li>
-                <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Terms & Conditions
                 </Link>
               </li>
               <li>
-                <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/privacy-policy" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Privacy Policy
                 </Link>
               </li>
               <li>
-                <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/refund-policy" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Cancellation & Refund
                 </Link>
               </li>
               <li>
-                <Link href="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary transition-colors cursor-pointer">
+                <Link href="/shipping-policy" className="text-sm text-muted-foreground hover:text-primary-bright transition-colors cursor-pointer">
                   Shipping Policy
                 </Link>
               </li>

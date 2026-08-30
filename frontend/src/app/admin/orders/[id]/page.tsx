@@ -321,7 +321,7 @@ export default function AdminOrderDetailPage() {
           <SectionCard icon={MapPin} title="Shipping Address">
             <div className="text-xs text-muted-foreground space-y-1 leading-relaxed">
               {addr.label && (
-                <p className="text-[10px] font-bold text-primary uppercase tracking-wider">{addr.label}</p>
+                <p className="text-[10px] font-bold text-primary-bright uppercase tracking-wider">{addr.label}</p>
               )}
               <p className="text-sm font-bold text-foreground">{order.customer.name}</p>
               <p>{addr.addressLine1}</p>

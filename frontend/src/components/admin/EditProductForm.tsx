@@ -4,8 +4,12 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { updateProduct, deleteProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors, assignProductVendor } from "@/lib/api";
-import { Product, type VehicleFitment } from "@/types/products";
-import { Save, Trash2, Image, Sparkles, AlertTriangle, Car, X, Plus } from "lucide-react";
+import { Product, type ProductImageDraft, type VehicleFitment } from "@/types/products";
+import { Save, Trash2, Sparkles, AlertTriangle, Car, X, Plus } from "lucide-react";
+import ProductImagesField from "@/components/admin/ProductImagesField";
+import FormErrorSummary from "@/components/admin/FormErrorSummary";
+import { getErrorMessage, getFieldErrors, type ApiFieldError } from "@/lib/errors";
+import { galleryFromProduct, primaryImageUrl as heroImageUrl } from "@/lib/product-images";
 
 interface EditProductFormProps {
   product: Product;
@@ -19,7 +23,11 @@ export default function EditProductForm({ product }: EditProductFormProps) {
   const [category, setCategory] = useState(product.category);
   const [subCategory, setSubCategory] = useState(product.subCategory || "");
   const [customSubCategory, setCustomSubCategory] = useState("");
-  const [imageURL, setImageURL] = useState(product.ImageURL || "");
+  const [images, setImages] = useState<ProductImageDraft[]>(() =>
+    galleryFromProduct(product)
+  );
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldError[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [isCustom, setIsCustom] = useState(false);
   const [dbSubCategories, setDbSubCategories] = useState<string[]>([]);
@@ -252,6 +260,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
 
   const handleConfirmSave = async () => {
     setLoading(true);
+    setFieldErrors([]);
+    setSaveError(null);
     try {
       await updateProduct(product.id, {
         name,
@@ -259,7 +269,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         price: Number(price),
         category,
         subCategory: isCustom ? customSubCategory : subCategory,
-        ImageURL: imageURL || null,
+        images,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
         attributes: attributes.length > 0 ? attributes : undefined
@@ -270,7 +280,11 @@ export default function EditProductForm({ product }: EditProductFormProps) {
       setShowSuccess(true);
     } catch (error) {
       console.error(error);
-      alert("Failed to update product.");
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      // The per-field list already names what is wrong, so only fall back to a
+      // standalone message when the failure carried no field detail.
+      setSaveError(errors.length > 0 ? null : getErrorMessage(error, "Failed to update product."));
       setShowConfirm(false);
     } finally {
       setLoading(false);
@@ -300,6 +314,9 @@ export default function EditProductForm({ product }: EditProductFormProps) {
     }
   };
 
+  // What the storefront will show as the hero, so the confirm preview matches.
+  const primaryImageUrl = heroImageUrl(images);
+
   const currentSub = isCustom ? customSubCategory : subCategory;
 
   return (
@@ -320,6 +337,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6 bg-card border border-border rounded-3xl p-8 shadow-sm">
+          <FormErrorSummary fieldErrors={fieldErrors} message={saveError} />
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label htmlFor="name" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -498,7 +517,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                 type="button"
                 variant="outline"
                 onClick={handleAddAttribute}
-                className="gap-1 border-primary/20 text-primary hover:bg-primary/10 h-[34px] px-3"
+                className="gap-1 border-primary/20 text-primary-bright hover:bg-primary/10 h-[34px] px-3"
               >
                 <Plus className="size-3.5" />
                 Add
@@ -678,7 +697,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
               <button
                 type="button"
                 onClick={handleAddCompatibility}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-bright text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
               >
                 <Plus className="size-3.5" />
                 Add Compatibility tag
@@ -711,20 +730,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
             )}
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="imageURL" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Image className="size-3.5 text-muted-foreground" />
-              Image URL
-            </label>
-            <input
-              type="text"
-              id="imageURL"
-              value={imageURL}
-              onChange={(e) => setImageURL(e.target.value)}
-              placeholder="e.g. https://cloudinary.com/your-product-image.png"
-              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
-            />
-          </div>
+          <ProductImagesField images={images} onChange={setImages} />
 
           <div className="space-y-2">
             <label htmlFor="description" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -783,8 +789,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
             {/* Preview Card */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-4">
               <div className="relative aspect-video w-full rounded-xl border border-border/40 overflow-hidden bg-muted flex items-center justify-center p-2">
-                {imageURL ? (
-                  <img src={imageURL} alt={name} className="w-full h-full object-contain" />
+                {primaryImageUrl ? (
+                  <img src={primaryImageUrl} alt={name} className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex flex-col items-center gap-2">
                     <Sparkles className="size-5 text-primary/40" />
@@ -793,7 +799,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category || "Uncategorized"}</span>
                   {currentSub && (
                     <>
@@ -836,8 +842,8 @@ export default function EditProductForm({ product }: EditProductFormProps) {
             {/* Preview Card */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-4">
               <div className="relative aspect-video w-full rounded-xl border border-border/40 overflow-hidden bg-muted flex items-center justify-center p-2">
-                {imageURL ? (
-                  <img src={imageURL} alt={name} className="w-full h-full object-contain" />
+                {primaryImageUrl ? (
+                  <img src={primaryImageUrl} alt={name} className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex flex-col items-center gap-2">
                     <Sparkles className="size-5 text-primary/40" />
@@ -846,7 +852,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category}</span>
                   {currentSub && (
                     <>
@@ -885,7 +891,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
             {/* Product Details Preview */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-3">
               <div className="flex justify-between items-start">
-                <span className="text-[10px] font-bold text-primary uppercase tracking-wider">{product.category}</span>
+                <span className="text-[10px] font-bold text-primary-bright uppercase tracking-wider">{product.category}</span>
                 <span className="text-xs font-bold text-muted-foreground">ID: #{product.id}</span>
               </div>
               <h3 className="text-sm font-bold text-foreground truncate">{product.name}</h3>

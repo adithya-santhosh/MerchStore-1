@@ -48,7 +48,7 @@ export default async function ProductsPage({
             {/* Back to Categories Link */}
             <Link
               href="/products"
-              className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-primary group cursor-pointer"
+              className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-primary-bright group cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -70,7 +70,7 @@ export default async function ProductsPage({
 
             {/* Heading Section */}
             <div className="max-w-3xl space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
                 <Filter className="size-3.5" />
                 {search ? "Search Results" : "Filtered Catalog"}
               </div>
@@ -113,6 +113,7 @@ export default async function ProductsPage({
               <ProductsExplorerWrapper
                 search={search}
                 category={category}
+                subCategory={subCategory}
                 brand={brand}
                 vehicle={vehicle}
               />
@@ -122,7 +123,7 @@ export default async function ProductsPage({
           <div className="space-y-16">
             {/* Heading Section */}
             <div className="text-center max-w-2xl mx-auto space-y-4">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
                 <Sparkles className="size-3.5" />
                 Product Catalog
               </div>
@@ -156,7 +157,7 @@ export default async function ProductsPage({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground pt-6 border-t border-border/40 group-hover:text-primary transition-colors">
+                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground pt-6 border-t border-border/40 group-hover:text-primary-bright transition-colors">
                   <span>View Accessories</span>
                   <div className="size-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 group-hover:translate-x-1">
                     <ArrowRight className="size-4.5" />
@@ -183,7 +184,7 @@ export default async function ProductsPage({
                   </p>
                 </div>
 
-                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground pt-6 border-t border-border/40 group-hover:text-primary transition-colors">
+                <div className="flex items-center justify-between text-sm font-semibold text-muted-foreground pt-6 border-t border-border/40 group-hover:text-primary-bright transition-colors">
                   <span>View Merchandise</span>
                   <div className="size-9 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 group-hover:translate-x-1">
                     <ArrowRight className="size-4.5" />

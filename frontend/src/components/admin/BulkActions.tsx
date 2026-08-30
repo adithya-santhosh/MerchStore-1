@@ -67,7 +67,7 @@ export default function BulkActions({ products }: BulkActionsProps) {
           </button>
 
           {selected.size > 0 && (
-            <span className="text-xs font-bold text-primary">
+            <span className="text-xs font-bold text-primary-bright">
               {selected.size} selected
             </span>
           )}

@@ -45,7 +45,7 @@ export default function CategoryShowcase() {
         <ScrollReveal direction="up">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-6 mb-10 sm:mb-14">
             <div className="space-y-4 text-left">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
                 <Layers className="size-3.5" />
                 EXPLORE
               </div>
@@ -58,7 +58,7 @@ export default function CategoryShowcase() {
             </div>
             <Link
               href="/products"
-              className="group inline-flex items-center gap-1.5 text-sm font-semibold text-primary hover:text-primary/80 transition-colors shrink-0"
+              className="group inline-flex items-center gap-1.5 text-sm font-semibold text-primary-bright hover:text-primary-bright/80 transition-colors shrink-0"
             >
               View All Categories
               <ArrowRight className="size-4 transition-transform group-hover:translate-x-1" />
@@ -76,7 +76,7 @@ export default function CategoryShowcase() {
               >
                 
                 {/* 1. Badge (Top Left) */}
-                <div className="absolute top-6 left-6 z-20 bg-[#fa1320] text-white font-black text-xs sm:text-sm px-4.5 py-2 rounded-lg tracking-wider shadow-md select-none">
+                <div className="absolute top-6 left-6 z-20 bg-primary text-primary-foreground font-black text-xs sm:text-sm px-4.5 py-2 rounded-lg tracking-wider shadow-md select-none">
                   {cat.label}
                 </div>
 
@@ -98,7 +98,7 @@ export default function CategoryShowcase() {
                   <p className="text-sm text-white/70 font-medium leading-snug">
                     {cat.description}
                   </p>
-                  <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 group-hover:text-primary transition-colors">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 group-hover:text-primary-bright transition-colors">
                     Explore
                     <ArrowRight className="size-3 transition-transform group-hover:translate-x-1" />
                   </span>

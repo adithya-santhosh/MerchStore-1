@@ -2,9 +2,12 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-// ─── JWT Verification in Edge Runtime ────────────────────────────────────────
-// NOTE: JWT_SECRET (no NEXT_PUBLIC_ prefix) is only available in middleware/
-// server-side code. Never expose it to the client bundle.
+// ─── JWT verification at the network boundary ────────────────────────────────
+// Renamed from `middleware` in Next 16, where that convention is deprecated.
+// `proxy` always runs on the nodejs runtime and that is not configurable — the
+// edge runtime is not supported here, which is fine as jose runs on both.
+// NOTE: JWT_SECRET (no NEXT_PUBLIC_ prefix) is only available server-side.
+// Never expose it to the client bundle.
 const JWT_SECRET_VALUE = process.env.JWT_SECRET || "";
 
 async function verifyToken(token: string): Promise<{ role: string } | null> {
@@ -18,7 +21,7 @@ async function verifyToken(token: string): Promise<{ role: string } | null> {
   }
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
 
   const isAccessingAdmin     = request.nextUrl.pathname.startsWith("/admin");

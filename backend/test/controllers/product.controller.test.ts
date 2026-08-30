@@ -322,6 +322,276 @@ describe("POST /api/products", () => {
       expect.objectContaining({ stockQty: 0, productType: "part", isActive: true })
     );
   });
+
+  // The shape ProductForm actually posts: category by NAME rather than by id,
+  // and an explicit `null` for every field the admin left blank. The fixture
+  // above is a hand-written five-field object that matches no real caller, so
+  // this suite stayed green while every create from the admin UI failed with a
+  // 422 on six fields at once.
+  const adminFormPayload = {
+    name: "Formula V1 Hoodie",
+    slug: "formula-v1-hoodie",
+    description: "Heavyweight cotton hoodie",
+    shortDescription: null,
+    price: 2499,
+    compareAtPrice: null,
+    costPrice: null,
+    sku: null,
+    stockQty: 5,
+    weight: null,
+    productType: "merch",
+    isActive: true,
+    isFeatured: false,
+    category: "Merchandise",
+    subCategory: "Hoodies",
+    ImageURL: "https://res.cloudinary.com/diz4hpigr/image/upload/v1/hoodie.jpg",
+    brand: "Acme",
+    compatibleWith: [],
+    attributes: [{ attrKey: "Colour", attrValue: "Black" }],
+  };
+
+  it("accepts the payload the admin form posts, nulls and all", async () => {
+    svc.createProduct.mockResolvedValue({ id: 10 } as any);
+
+    const res = await request(app)
+      .post("/api/products")
+      .set("Authorization", adminAuth)
+      .send(adminFormPayload);
+
+    expect(res.status).toBe(201);
+  });
+
+  it("forwards the image, category, brand and attributes instead of stripping them", async () => {
+    svc.createProduct.mockResolvedValue({ id: 10 } as any);
+
+    await request(app)
+      .post("/api/products")
+      .set("Authorization", adminAuth)
+      .send(adminFormPayload);
+
+    expect(svc.createProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ImageURL: adminFormPayload.ImageURL,
+        category: "Merchandise",
+        subCategory: "Hoodies",
+        brand: "Acme",
+        attributes: [{ attrKey: "Colour", attrValue: "Black" }],
+      })
+    );
+  });
+
+  it("forwards a multi-image array to the service", async () => {
+    svc.createProduct.mockResolvedValue({ id: 10 } as any);
+
+    const images = [
+      { imageUrl: "https://res.cloudinary.com/x/a.jpg", isPrimary: true, sortOrder: 0 },
+      { imageUrl: "https://res.cloudinary.com/x/b.jpg", isPrimary: false, sortOrder: 1 },
+      { imageUrl: "https://res.cloudinary.com/x/c.jpg", isPrimary: false, sortOrder: 2 },
+    ];
+
+    await request(app)
+      .post("/api/products")
+      .set("Authorization", adminAuth)
+      .send({ ...adminFormPayload, images });
+
+    expect(svc.createProduct).toHaveBeenCalledWith(expect.objectContaining({ images }));
+  });
+
+  it("rejects a product with neither a categoryId nor a category name", async () => {
+    const res = await request(app)
+      .post("/api/products")
+      .set("Authorization", adminAuth)
+      .send({ ...adminFormPayload, category: undefined, subCategory: undefined });
+
+    expect(res.status).toBe(422);
+    expect(svc.createProduct).not.toHaveBeenCalled();
+  });
+
+  it("rejects an image URL that is neither http(s) nor root-relative", async () => {
+    const res = await request(app)
+      .post("/api/products")
+      .set("Authorization", adminAuth)
+      .send({ ...adminFormPayload, ImageURL: "javascript:alert(1)" });
+
+    expect(res.status).toBe(422);
+    expect(svc.createProduct).not.toHaveBeenCalled();
+  });
+
+  it("rejects more images than the per-product cap", async () => {
+    const images = Array.from(
+      { length: 13 },
+      (_, i) => `https://res.cloudinary.com/x/${i}.jpg`
+    );
+
+    const res = await request(app)
+      .post("/api/products")
+      .set("Authorization", adminAuth)
+      .send({ ...adminFormPayload, images });
+
+    expect(res.status).toBe(422);
+    expect(svc.createProduct).not.toHaveBeenCalled();
+  });
+});
+
+describe("PUT /api/products/:id", () => {
+  // What EditProductForm actually posts: the subset of fields it manages. There
+  // is no slug, no stock and no flags, so a create-shaped schema would reject
+  // an ordinary edit outright.
+  const editFormPayload = {
+    name: "Formula V1 Hoodie",
+    description: "Heavyweight cotton hoodie",
+    price: 2499,
+    category: "Merchandise",
+    subCategory: "Hoodies",
+    brand: "Acme",
+    compatibleWith: [],
+    attributes: [{ attrKey: "Colour", attrValue: "Black" }],
+    images: [
+      { imageUrl: "https://res.cloudinary.com/x/a.jpg", isPrimary: true, sortOrder: 0 },
+      { imageUrl: "https://res.cloudinary.com/x/b.jpg", isPrimary: false, sortOrder: 1 },
+    ],
+  };
+
+  it("accepts the partial payload the edit form posts", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send(editFormPayload);
+
+    expect(res.status).toBe(200);
+  });
+
+  it("forwards the gallery to the service", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send(editFormPayload);
+
+    expect(svc.updateProduct).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({ images: editFormPayload.images })
+    );
+  });
+
+  // The trap `updateCouponSchema` already documents, four fields over at once.
+  // `.partial()` keeps every `.default()`, and updateProduct hands Prisma any
+  // key that isn't undefined — so a field the admin never touched has to arrive
+  // ABSENT rather than as its schema default. Otherwise editing just the price
+  // would also zero the stock, flip "merch" to "part", reactivate a
+  // deactivated product and clear its featured flag.
+  it("omits fields the caller never sent rather than defaulting them", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send(editFormPayload);
+
+    const sent = svc.updateProduct.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(sent).not.toHaveProperty("stockQty");
+    expect(sent).not.toHaveProperty("productType");
+    expect(sent).not.toHaveProperty("isActive");
+    expect(sent).not.toHaveProperty("isFeatured");
+    expect(sent).not.toHaveProperty("slug");
+  });
+
+  it("still applies those fields when they are sent explicitly", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({
+        ...editFormPayload,
+        stockQty: 0,
+        productType: "merch",
+        isActive: false,
+        isFeatured: true,
+      });
+
+    expect(svc.updateProduct).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({
+        stockQty: 0,
+        productType: "merch",
+        isActive: false,
+        isFeatured: true,
+      })
+    );
+  });
+
+  it("accepts a rename on its own", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ name: "Renamed" });
+
+    expect(res.status).toBe(200);
+  });
+
+  it("accepts an empty images array so a gallery can be cleared", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ images: [] });
+
+    expect(res.status).toBe(200);
+    expect(svc.updateProduct).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({ images: [] })
+    );
+  });
+
+  it("rejects a negative price with 422", async () => {
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ price: -1 });
+
+    expect(res.status).toBe(422);
+    expect(svc.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unknown product type with 422", async () => {
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ productType: "spaceship" });
+
+    expect(res.status).toBe(422);
+    expect(svc.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it("rejects an image URL that is neither http(s) nor root-relative", async () => {
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ images: ["javascript:alert(1)"] });
+
+    expect(res.status).toBe(422);
+    expect(svc.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it("strips unknown keys instead of forwarding them to Prisma", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ ...editFormPayload, id: 999, createdAt: "1999-01-01" });
+
+    const sent = svc.updateProduct.mock.calls[0]?.[1] as Record<string, unknown>;
+    expect(sent).not.toHaveProperty("id");
+    expect(sent).not.toHaveProperty("createdAt");
+  });
 });
 
 describe("PATCH /api/products/admin/bulk", () => {

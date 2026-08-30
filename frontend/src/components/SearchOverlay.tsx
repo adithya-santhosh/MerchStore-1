@@ -263,7 +263,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       </div>
 
                       {/* Price */}
-                      <span className="text-sm font-black text-primary shrink-0">
+                      <span className="text-sm font-black text-primary-bright shrink-0">
                         ₹{product.price.toLocaleString("en-IN")}
                       </span>
                     </Link>
@@ -279,7 +279,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                       : "hover:bg-muted/50 border-l-2 border-transparent"
                   }`}
                 >
-                  <span className="text-sm font-semibold text-primary flex items-center gap-2">
+                  <span className="text-sm font-semibold text-primary-bright flex items-center gap-2">
                     <Search className="size-4" />
                     View all results for &ldquo;{query}&rdquo;
                   </span>

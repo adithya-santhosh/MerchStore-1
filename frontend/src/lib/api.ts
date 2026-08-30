@@ -1,8 +1,47 @@
-import { Product } from "@/types/products";
+import { Product, type ProductWritePayload } from "@/types/products";
 import { getCookie } from "@/utils/cookie";
+import { ApiValidationError, type ApiFieldError } from "@/lib/errors";
 import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+/**
+ * Turns a failed response into the Error to throw.
+ *
+ * A 422 from the API's `validate()` middleware carries a field-level `errors`
+ * array; that becomes an `ApiValidationError` so a form can point at the
+ * offending inputs. Everything else falls back to the API's own `message`, then
+ * to the caller's wording.
+ */
+async function apiError(res: Response, fallback: string): Promise<Error> {
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    // A 500 behind a proxy often has an HTML or empty body.
+    return new Error(fallback);
+  }
+
+  const raw = (body ?? {}) as { message?: unknown; errors?: unknown };
+
+  const fieldErrors: ApiFieldError[] = Array.isArray(raw.errors)
+    ? raw.errors
+        .filter(
+          (e): e is { field?: unknown; message: string } =>
+            typeof e === "object" &&
+            e !== null &&
+            typeof (e as { message?: unknown }).message === "string" &&
+            (e as { message: string }).message !== ""
+        )
+        .map((e) => ({ field: String(e.field ?? ""), message: e.message }))
+    : [];
+
+  const message = typeof raw.message === "string" && raw.message ? raw.message : fallback;
+
+  return fieldErrors.length > 0
+    ? new ApiValidationError(fieldErrors, message)
+    : new Error(message);
+}
 
 /// This function will go to backend and fetch all the product info
 export async function getProducts(params?: { category?: string; subCategory?: string; vehicle?: string; brand?: string }) :Promise<Product []>{
@@ -82,7 +121,7 @@ export async function deleteProduct(id: number) {
   return response.json();
 }
 
-export async function createProduct(product: Omit<Product,"id" | "createdAt" |"updatedAt">){
+export async function createProduct(product: ProductWritePayload){
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products`,{
     method :"POST",
@@ -94,12 +133,12 @@ export async function createProduct(product: Omit<Product,"id" | "createdAt" |"u
     body : JSON.stringify(product),
   });
   if (!response.ok){
-    throw new Error("Failed to create the product");
+    throw await apiError(response, "Failed to create the product");
   }
   return response.json();
 }
 
-export async function updateProduct(id: string | number, product: Omit<Product, "id" | "createdAt" | "updatedAt">) {
+export async function updateProduct(id: string | number, product: ProductWritePayload) {
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products/${id}`, {
     method: "PUT",
@@ -112,7 +151,7 @@ export async function updateProduct(id: string | number, product: Omit<Product, 
   });
 
   if (!response.ok) {
-    throw new Error("Failed to update the product");
+    throw await apiError(response, "Failed to update the product");
   }
 
   return response.json();
@@ -535,6 +574,19 @@ export interface AdminOrderDetail {
   }[];
 }
 
+/**
+ * The API returns order status as the Prisma enum spells it — uppercase. Every
+ * screen in this app compares against lowercase literals, which is why the
+ * admin list's stat tiles read 0 and its status filter matched nothing, and why
+ * `dashboard/page.tsx` had already sprinkled `.toLowerCase()` at its call
+ * sites. Normalising once here means callers can rely on one casing instead of
+ * each remembering to defend against it.
+ */
+const toClientStatus = <T extends { status: string }>(o: T): T => ({
+  ...o,
+  status: o.status?.toLowerCase() ?? o.status,
+});
+
 export interface AdminOrdersResponse {
   orders: AdminOrderRow[];
   total: number;
@@ -557,7 +609,8 @@ export async function getAllOrders(params: { page?: number; limit?: number } = {
     cache: "no-store",
   });
   if (!response.ok) throw new Error("Failed to fetch orders");
-  return response.json();
+  const data: AdminOrdersResponse = await response.json();
+  return { ...data, orders: (data.orders ?? []).map(toClientStatus) };
 }
 
 export async function getAdminOrderById(id: number): Promise<AdminOrderDetail> {
@@ -568,7 +621,7 @@ export async function getAdminOrderById(id: number): Promise<AdminOrderDetail> {
     cache: "no-store",
   });
   if (!response.ok) throw new Error("Failed to fetch order");
-  return response.json();
+  return toClientStatus(await response.json());
 }
 
 export async function updateAdminOrderStatus(id: number, status: string): Promise<void> {
@@ -1238,20 +1291,13 @@ export async function cancelOrderApi(orderId: number, reason?: string): Promise<
 // ─── Password Reset ───────────────────────────────────────────────────────────
 
 /**
- * Pulls the first field-level message out of a 422 validation response, falling
- * back to the top-level message. Keeps Zod errors readable in the UI instead of
- * showing a bare "Validation failed".
+ * The message alone, for callers that only need a string. `apiError` already
+ * puts the first field-level message on a validation error, so a 422 still
+ * reads as "Password must be at least 8 characters" and not "Validation
+ * failed".
  */
 async function readApiError(res: Response, fallback: string): Promise<string> {
-  try {
-    const err = await res.json();
-    if (Array.isArray(err?.errors) && err.errors.length > 0) {
-      return err.errors[0].message || err.message || fallback;
-    }
-    return err?.message || fallback;
-  } catch {
-    return fallback;
-  }
+  return (await apiError(res, fallback)).message;
 }
 
 export async function requestPasswordResetAPI(email: string): Promise<{ message: string }> {

@@ -28,7 +28,7 @@ export default async function LightingElectricalPage() {
         {/* Back Link */}
         <Link
           href="/products/car-accessories"
-          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-primary mb-8 group cursor-pointer"
+          className="inline-flex items-center gap-2 text-xs sm:text-sm font-semibold text-muted-foreground hover:text-primary-bright mb-8 group cursor-pointer"
         >
           <ArrowLeft className="size-4 transition-transform group-hover:-translate-x-1" />
           Back to Categories
@@ -36,7 +36,7 @@ export default async function LightingElectricalPage() {
 
         {/* Category Header */}
         <div className="max-w-3xl mb-12 sm:mb-16 space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase">
             <Sparkles className="size-3.5" />
             Illumination & Energy
           </div>

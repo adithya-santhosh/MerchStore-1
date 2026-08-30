@@ -3,9 +3,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { createProduct, getSubCategories, getNavigationMetadata, NavMetadata, getAllVendors } from "@/lib/api";
-import { PlusCircle, Image, Sparkles, Trash2, Car, X, Plus } from "lucide-react";
-import { uploadToCloudinary } from "@/lib/utils";
-import type { VehicleFitment } from "@/types/products";
+import { PlusCircle, Sparkles, Trash2, Car, X, Plus } from "lucide-react";
+import ProductImagesField from "@/components/admin/ProductImagesField";
+import FormErrorSummary from "@/components/admin/FormErrorSummary";
+import { getErrorMessage, getFieldErrors, type ApiFieldError } from "@/lib/errors";
+import { primaryImageUrl as heroImageUrl } from "@/lib/product-images";
+import type { ProductImageDraft, VehicleFitment } from "@/types/products";
 
 export default function ProductForm() {
   const [name, setName] = useState("");
@@ -23,14 +26,15 @@ export default function ProductForm() {
   const [category, setCategory] = useState("");
   const [subCategory, setSubCategory] = useState("");
   const [customSubCategory, setCustomSubCategory] = useState("");
-  const [ImageURL, setImageURL] = useState("");
+  const [images, setImages] = useState<ProductImageDraft[]>([]);
+  const [fieldErrors, setFieldErrors] = useState<ApiFieldError[]>([]);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [isCustom, setIsCustom] = useState(false);
   const [dbSubCategories, setDbSubCategories] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [manualSlug, setManualSlug] = useState(false);
 
   // Metadata states for dynamic dropdowns
@@ -250,21 +254,6 @@ export default function ProductForm() {
     setAttributes(attributes.filter((_, idx) => idx !== index));
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploading(true);
-    try {
-      const url = await uploadToCloudinary(file);
-      setImageURL(url);
-    } catch (err) {
-      console.error(err);
-      alert("Failed to upload image to Cloudinary. Please ensure your preset is set to unsigned.");
-    } finally {
-      setUploading(false);
-    }
-  };
  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -273,6 +262,8 @@ export default function ProductForm() {
 
   const handleConfirmSave = async () => {
     setLoading(true);
+    setFieldErrors([]);
+    setSaveError(null);
     try {
       await createProduct({
         name,
@@ -290,7 +281,7 @@ export default function ProductForm() {
         isFeatured,
         category,
         subCategory: isCustom ? customSubCategory : subCategory,
-        ImageURL: ImageURL || null,
+        images,
         brand: isCustomBrand ? customBrand : brand,
         compatibleWith: compatibleWith,
         attributes: attributes.length > 0 ? attributes : undefined,
@@ -300,7 +291,11 @@ export default function ProductForm() {
       setShowSuccess(true);
     } catch (error) {
       console.error(error);
-      alert("Failed to create product.");
+      const errors = getFieldErrors(error);
+      setFieldErrors(errors);
+      // The per-field list already names what is wrong, so only fall back to a
+      // standalone message when the failure carried no field detail.
+      setSaveError(errors.length > 0 ? null : getErrorMessage(error, "Failed to create product."));
       setShowConfirm(false);
     } finally {
       setLoading(false);
@@ -325,7 +320,9 @@ export default function ProductForm() {
     setSubCategory("");
     setCustomSubCategory("");
     setIsCustom(false);
-    setImageURL("");
+    setImages([]);
+    setFieldErrors([]);
+    setSaveError(null);
     setBrand("");
     setCustomBrand("");
     setIsCustomBrand(false);
@@ -335,11 +332,16 @@ export default function ProductForm() {
     setShowSuccess(false);
   };
 
+  // What the storefront will show as the hero, so the confirm previews match.
+  const primaryImageUrl = heroImageUrl(images);
+
   const currentSub = isCustom ? customSubCategory : subCategory;
 
   return (
     <>
       <form onSubmit={handleSubmit} className="space-y-6 bg-card/40 border border-border/80 rounded-3xl p-6 sm:p-8 shadow-sm">
+        <FormErrorSummary fieldErrors={fieldErrors} message={saveError} />
+
         
         {/* Name and Slug Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -651,7 +653,7 @@ export default function ProductForm() {
               type="button"
               variant="outline"
               onClick={handleAddAttribute}
-              className="gap-1 border-primary/20 text-primary hover:bg-primary/10 h-[34px] px-3"
+              className="gap-1 border-primary/20 text-primary-bright hover:bg-primary/10 h-[34px] px-3"
             >
               <Plus className="size-3.5" />
               Add
@@ -831,7 +833,7 @@ export default function ProductForm() {
             <button
               type="button"
               onClick={handleAddCompatibility}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary-bright text-xs font-bold rounded-lg border border-primary/20 transition-all cursor-pointer"
             >
               <Plus className="size-3.5" />
               Add Compatibility tag
@@ -864,43 +866,7 @@ export default function ProductForm() {
           )}
         </div>
 
-        {/* Image URL / Upload Input */}
-        <div className="space-y-2">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-            <Image className="size-3.5 text-muted-foreground" />
-            Product Image
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <input
-                type="text"
-                id="imageURL"
-                value={ImageURL}
-                onChange={(e) => setImageURL(e.target.value)}
-                placeholder="Paste an image URL or upload a file..."
-                className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="file"
-                accept="image/*"
-                id="image-file"
-                onChange={handleImageUpload}
-                className="hidden"
-                disabled={uploading}
-              />
-              <label
-                htmlFor="image-file"
-                className={`flex h-full min-h-[46px] flex items-center justify-center gap-2 rounded-xl border border-dashed border-input bg-background/50 px-4 py-2 text-sm font-semibold cursor-pointer hover:border-primary transition-all text-muted-foreground hover:text-primary ${
-                  uploading ? "opacity-50 cursor-wait" : ""
-                }`}
-              >
-                {uploading ? "Uploading..." : "Upload File"}
-              </label>
-            </div>
-          </div>
-        </div>
+        <ProductImagesField images={images} onChange={setImages} />
 
         {/* Description Textarea */}
         <div className="space-y-2">
@@ -990,17 +956,17 @@ export default function ProductForm() {
             {/* Preview Card */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-4">
               <div className="relative aspect-video w-full rounded-xl border border-border/40 overflow-hidden bg-muted flex items-center justify-center p-2">
-                {ImageURL ? (
-                  <img src={ImageURL} alt={name} className="w-full h-full object-contain" />
+                {primaryImageUrl ? (
+                  <img src={primaryImageUrl} alt={name} className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex flex-col items-center gap-2">
                     <Sparkles className="size-5 text-primary/40" />
-                    No Image URL
+                    No Image
                   </div>
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category || "Uncategorized"}</span>
                   {currentSub && (
                     <>
@@ -1050,8 +1016,8 @@ export default function ProductForm() {
             {/* Preview Card */}
             <div className="rounded-2xl border border-border bg-muted/20 p-4 space-y-4">
               <div className="relative aspect-video w-full rounded-xl border border-border/40 overflow-hidden bg-muted flex items-center justify-center p-2">
-                {ImageURL ? (
-                  <img src={ImageURL} alt={name} className="w-full h-full object-contain" />
+                {primaryImageUrl ? (
+                  <img src={primaryImageUrl} alt={name} className="w-full h-full object-contain" />
                 ) : (
                   <div className="text-xs text-muted-foreground uppercase tracking-widest font-semibold flex flex-col items-center gap-2">
                     <Sparkles className="size-5 text-primary/40" />
@@ -1060,7 +1026,7 @@ export default function ProductForm() {
                 )}
               </div>
               <div className="space-y-1 text-left">
-                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-bold text-primary-bright uppercase tracking-wider">
                   <span>{category}</span>
                   {currentSub && (
                     <>

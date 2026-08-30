@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { getProducts, getProduct, createNewProduct, removeProduct, editProduct, getSubCategories, getNavMetadata, getProductsAdminCtrl, getProductStatsCtrl, bulkUpdateProductsCtrl, searchProductsCtrl } from "../controllers/product.controller";
 import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
-import { validate, createProductSchema } from "../middleware/validation.middleware";
+import { validate, createProductSchema, updateProductSchema } from "../middleware/validation.middleware";
 
 const router = Router();
 
@@ -17,7 +17,7 @@ router.get("/navigation/metadata", getNavMetadata);
 router.get("/:id", getProduct);
 router.post('/', requireAuth, requireAdmin, validate(createProductSchema), createNewProduct);
 router.delete('/:id', requireAuth, requireAdmin, removeProduct);
-router.put('/:id', requireAuth, requireAdmin, editProduct);
+router.put('/:id', requireAuth, requireAdmin, validate(updateProductSchema), editProduct);
 
 router.get("/subcategories/:category", getSubCategories);
 

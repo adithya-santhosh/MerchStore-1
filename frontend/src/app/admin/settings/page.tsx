@@ -272,7 +272,7 @@ export default function AdminSettingsPage() {
       {/* Title */}
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 pb-5 border-b border-border/50">
         <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase mb-2">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase mb-2">
             <Settings className="size-3.5" />
             System Control
           </span>

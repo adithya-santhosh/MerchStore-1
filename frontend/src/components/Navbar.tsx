@@ -31,6 +31,25 @@ interface NavItem {
   href: string;
 }
 
+/**
+ * Where a subcategory link in the mega menu should go.
+ *
+ * Car accessories have a route per subcategory; merchandise subcategories do
+ * not, so they filter the catalogue instead. Both menu copies previously sent
+ * every merchandise child to /products/merchandise, which made "Apparel",
+ * "Caps", "Keychains" and "Collectibles" four labels for one identical page.
+ * The name is passed rather than the slug because the search API matches either
+ * and the name is what the destination heading renders.
+ */
+function subCategoryHref(
+  parentSlug: string,
+  sub: { slug: string; name: string }
+): string {
+  return parentSlug === "car-accessories"
+    ? `/products/car-accessories/${sub.slug}`
+    : `/products?subCategory=${encodeURIComponent(sub.name)}`;
+}
+
 export default function Navbar() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -150,7 +169,7 @@ export default function Navbar() {
                     href={item.href}
                     className={`relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:bg-muted hover:text-foreground ${
                       active
-                        ? "bg-primary/5 text-primary"
+                        ? "bg-primary/5 text-primary-bright"
                         : "text-muted-foreground"
                     }`}
                   >
@@ -242,7 +261,7 @@ export default function Navbar() {
                       <Link
                         href="/dashboard"
                         onClick={() => setIsUserMenuOpen(false)}
-                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary-bright hover:bg-muted transition-colors"
                       >
                         <User className="size-4" />
                         My Dashboard
@@ -253,7 +272,7 @@ export default function Navbar() {
                         <Link
                           href="/admin/products"
                           onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary-bright hover:bg-muted transition-colors"
                         >
                           <Shield className="size-4" />
                           Admin Console
@@ -265,7 +284,7 @@ export default function Navbar() {
                         <Link
                           href="/vendor/dashboard"
                           onClick={() => setIsUserMenuOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium text-muted-foreground hover:text-primary-bright hover:bg-muted transition-colors"
                         >
                           <Package className="size-4" />
                           Vendor Portal
@@ -337,7 +356,7 @@ export default function Navbar() {
                 onMouseEnter={() => setActiveDropdown("category")}
                 className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
                   activeDropdown === "category"
-                    ? "text-primary"
+                    ? "text-primary-bright"
                     : "hover:text-foreground"
                 }`}
               >
@@ -347,7 +366,7 @@ export default function Navbar() {
                 onMouseEnter={() => setActiveDropdown("brand")}
                 className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
                   activeDropdown === "brand"
-                    ? "text-primary"
+                    ? "text-primary-bright"
                     : "hover:text-foreground"
                 }`}
               >
@@ -357,7 +376,7 @@ export default function Navbar() {
                 onMouseEnter={() => setActiveDropdown("vehicle")}
                 className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
                   activeDropdown === "vehicle"
-                    ? "text-primary"
+                    ? "text-primary-bright"
                     : "hover:text-foreground"
                 }`}
               >
@@ -383,15 +402,11 @@ export default function Navbar() {
                           {cat.children.map((sub) => (
                             <li key={sub.id}>
                               <Link
-                                href={
-                                  cat.slug === "car-accessories"
-                                    ? `/products/car-accessories/${sub.slug}`
-                                    : "/products/merchandise"
-                                }
+                                href={subCategoryHref(cat.slug, sub)}
                                 onClick={() => setActiveDropdown(null)}
                                 className="group/sub flex flex-col gap-0.5 normal-case"
                               >
-                                <span className="text-sm font-semibold text-foreground/90 hover:text-primary transition-colors">
+                                <span className="text-sm font-semibold text-foreground/90 hover:text-primary-bright transition-colors">
                                   {sub.name}
                                 </span>
                                 {sub.description && (
@@ -424,7 +439,7 @@ export default function Navbar() {
                             .map((w) => w[0])
                             .join("")}
                         </div>
-                        <span className="text-sm font-bold text-foreground group-hover:text-primary transition-colors normal-case">
+                        <span className="text-sm font-bold text-foreground group-hover:text-primary-bright transition-colors normal-case">
                           {brand.name}
                         </span>
                       </Link>
@@ -461,7 +476,7 @@ export default function Navbar() {
                                 model.model
                               )}`}
                               onClick={() => setActiveDropdown(null)}
-                              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-border bg-muted/30 hover:border-primary hover:bg-primary/5 hover:text-primary transition-all normal-case cursor-pointer"
+                              className="text-xs font-semibold px-3 py-1.5 rounded-full border border-border bg-muted/30 hover:border-primary hover:bg-primary/5 hover:text-primary-bright transition-all normal-case cursor-pointer"
                             >
                               {model.model}
                             </Link>
@@ -490,7 +505,7 @@ export default function Navbar() {
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={`block px-3 py-2.5 rounded-xl text-base font-medium transition-all ${
                       active
-                        ? "bg-primary/5 text-primary pl-4 border-l-2 border-primary"
+                        ? "bg-primary/5 text-primary-bright pl-4 border-l-2 border-primary"
                         : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     }`}
                   >
@@ -532,13 +547,9 @@ export default function Navbar() {
                               {cat.children.map((sub) => (
                                 <Link
                                   key={sub.id}
-                                  href={
-                                    cat.slug === "car-accessories"
-                                      ? `/products/car-accessories/${sub.slug}`
-                                      : "/products/merchandise"
-                                  }
+                                  href={subCategoryHref(cat.slug, sub)}
                                   onClick={() => setIsMobileMenuOpen(false)}
-                                  className="block py-1 text-xs text-muted-foreground hover:text-primary"
+                                  className="block py-1 text-xs text-muted-foreground hover:text-primary-bright"
                                 >
                                   {sub.name}
                                 </Link>
@@ -576,7 +587,7 @@ export default function Navbar() {
                             key={brand.id}
                             href={`/products?brand=${brand.slug}`}
                             onClick={() => setIsMobileMenuOpen(false)}
-                            className="px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-primary hover:border-primary bg-card/45"
+                            className="px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-muted-foreground hover:text-primary-bright hover:border-primary bg-card/45"
                           >
                             {brand.name}
                           </Link>
@@ -631,7 +642,7 @@ export default function Navbar() {
                                     model.model
                                   )}`}
                                   onClick={() => setIsMobileMenuOpen(false)}
-                                  className="px-2 py-1 rounded border border-border text-[10px] font-semibold text-muted-foreground hover:text-primary hover:border-primary"
+                                  className="px-2 py-1 rounded border border-border text-[10px] font-semibold text-muted-foreground hover:text-primary-bright hover:border-primary"
                                 >
                                   {model.model}
                                 </Link>
@@ -660,7 +671,7 @@ export default function Navbar() {
                     <Link
                       href="/dashboard"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
+                      className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary-bright rounded-xl hover:bg-muted transition-colors"
                     >
                       <User className="size-5" />
                       <span className="text-sm font-medium text-foreground">
@@ -671,7 +682,7 @@ export default function Navbar() {
                       <Link
                         href="/admin/products"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary-bright rounded-xl hover:bg-muted transition-colors"
                       >
                         <Shield className="size-5" />
                         <span className="text-sm font-medium">
@@ -683,7 +694,7 @@ export default function Navbar() {
                       <Link
                         href="/vendor/dashboard"
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary rounded-xl hover:bg-muted transition-colors"
+                        className="flex items-center gap-3 px-3 py-2 text-muted-foreground hover:text-primary-bright rounded-xl hover:bg-muted transition-colors"
                       >
                         <Package className="size-5" />
                         <span className="text-sm font-medium">

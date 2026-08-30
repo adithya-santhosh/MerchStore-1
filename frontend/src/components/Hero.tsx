@@ -100,7 +100,7 @@ export default function Hero() {
           <div className="max-w-2xl space-y-6">
             {/* Eyebrow tag */}
             <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm text-xs font-bold tracking-widest text-primary uppercase animate-in fade-in slide-in-from-bottom-2 duration-700"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm text-xs font-bold tracking-widest text-primary-bright uppercase animate-in fade-in slide-in-from-bottom-2 duration-700"
             >
               <span className="size-1.5 rounded-full bg-primary animate-pulse" />
               Premium Off-Road Gear

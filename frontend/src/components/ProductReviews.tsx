@@ -285,7 +285,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
             <div className="p-4 rounded-xl border border-primary/20 bg-primary/5 space-y-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-primary">
+                  <span className="text-xs font-bold text-primary-bright">
                     Your Review
                   </span>
                   <StarRating rating={myReview.rating} />
@@ -390,7 +390,7 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
           {!user && !showForm && (
             <div className="p-4 rounded-xl border border-border/60 bg-muted/10 flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                <Link href="/login" className="text-primary font-bold hover:underline">
+                <Link href="/login" className="text-primary-bright font-bold hover:underline">
                   Sign in
                 </Link>{" "}
                 to leave a review

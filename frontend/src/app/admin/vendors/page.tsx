@@ -5,6 +5,7 @@ import { getAllVendors, createVendorAccount } from "@/lib/api";
 import { Store, Plus, X, Package, Mail, User } from "lucide-react";
 
 import { getErrorMessage } from "@/lib/errors";
+import { PasswordInput } from "@/components/ui/password-input";
 interface Vendor {
   id: number;
   companyName: string;
@@ -119,8 +120,8 @@ export default function AdminVendorsPage() {
               <input required type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="vendor@bluemarket.com" className="w-full rounded-xl border border-input bg-background/50 px-4 py-2.5 text-sm outline-none focus:border-primary" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Temporary Password *</label>
-              <input required type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" minLength={8} className="w-full rounded-xl border border-input bg-background/50 px-4 py-2.5 text-sm outline-none focus:border-primary" />
+              <label htmlFor="vendor-temp-password" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Temporary Password *</label>
+              <PasswordInput id="vendor-temp-password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 8 characters" minLength={8} className="rounded-xl border-input bg-background/50 pl-10 pr-11 py-2.5 text-sm font-normal focus:ring-0" />
             </div>
           </div>
           <button type="submit" disabled={submitting} className="w-full bg-primary text-primary-foreground font-bold py-2.5 rounded-xl text-sm hover:bg-primary/90 transition-colors disabled:opacity-50">

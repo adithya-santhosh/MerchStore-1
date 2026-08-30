@@ -20,7 +20,7 @@ function SortIcon({
 }) {
   if (currentSortBy !== field) return <ArrowUpDown className="size-3 text-muted-foreground/40" />;
   return (
-    <span className="text-primary text-[10px] font-black">
+    <span className="text-primary-bright text-[10px] font-black">
       {currentSortOrder === "asc" ? "↑" : "↓"}
     </span>
   );

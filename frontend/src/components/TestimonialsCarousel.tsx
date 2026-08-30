@@ -116,7 +116,7 @@ export default function TestimonialsCarousel() {
         {/* Section Header */}
         <ScrollReveal direction="up">
           <div className="text-center space-y-4 mb-12 sm:mb-16">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary uppercase mx-auto">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-primary/20 bg-primary/5 text-xs font-semibold tracking-wide text-primary-bright uppercase mx-auto">
               <Star className="size-3.5" />
               CUSTOMER REVIEWS
             </div>
@@ -171,7 +171,7 @@ export default function TestimonialsCarousel() {
                     </p>
 
                     {/* Product purchased */}
-                    <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider mb-4">
+                    <p className="text-[10px] font-bold text-primary-bright/70 uppercase tracking-wider mb-4">
                       Purchased: {testimonial.product}
                     </p>
 
@@ -217,7 +217,7 @@ export default function TestimonialsCarousel() {
                     <p className="text-sm text-foreground/90 leading-relaxed mb-6">
                       &ldquo;{testimonial.quote}&rdquo;
                     </p>
-                    <p className="text-[10px] font-bold text-primary/70 uppercase tracking-wider mb-4">
+                    <p className="text-[10px] font-bold text-primary-bright/70 uppercase tracking-wider mb-4">
                       Purchased: {testimonial.product}
                     </p>
                     <div className="flex items-center gap-3 pt-4 border-t border-border/40">
@@ -242,7 +242,7 @@ export default function TestimonialsCarousel() {
             <div className="flex items-center justify-center gap-4 mt-8">
               <button
                 onClick={goPrev}
-                className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+                className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary-bright hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
                 aria-label="Previous testimonial"
               >
                 <ChevronLeft className="size-5" />
@@ -267,7 +267,7 @@ export default function TestimonialsCarousel() {
 
               <button
                 onClick={goNext}
-                className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
+                className="size-10 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:text-primary-bright hover:border-primary transition-all duration-200 cursor-pointer shadow-sm"
                 aria-label="Next testimonial"
               >
                 <ChevronRight className="size-5" />
