@@ -62,22 +62,120 @@ export const changePasswordSchema = z.object({
 
 // ─── Product Schemas ──────────────────────────────────────────────────────────
 
-export const createProductSchema = z.object({
+// Cloudinary hands back an absolute https URL, but legacy rows (and the seed)
+// still carry root-relative paths like `/products/foo.jpg`, which
+// `getProductImageSrc` rewrites on the storefront. Accept both; reject anything
+// else so a `javascript:` or `data:` URL can never reach an <img src>.
+const imageUrlSchema = z
+  .string()
+  .min(1, "Image URL is required")
+  .max(2048)
+  .refine((v) => /^https?:\/\//.test(v) || v.startsWith("/"), {
+    message: "Image URL must be an absolute http(s) URL or a root-relative path",
+  });
+
+// An image arrives either as a bare URL (bulk/legacy callers) or as a full row.
+const productImageSchema = z.union([
+  imageUrlSchema,
+  z.object({
+    imageUrl: imageUrlSchema,
+    altText: z.string().max(255).nullish(),
+    isPrimary: z.boolean().optional(),
+    sortOrder: z.number().int().min(0).optional(),
+  }),
+]);
+
+const productAttributeSchema = z.object({
+  attrKey: z.string().min(1, "Attribute name is required").max(100),
+  attrValue: z.string().min(1, "Attribute value is required").max(255),
+});
+
+const vehicleFitmentSchema = z.object({
+  make: z.string().min(1, "Vehicle make is required").max(100),
+  model: z.string().min(1, "Vehicle model is required").max(100),
+  yearFrom: z.coerce.number().int().min(1900).max(2200),
+  yearTo: z.coerce.number().int().min(1900).max(2200).nullish(),
+  bodyType: z.string().max(50).nullish(),
+  engineType: z.string().max(50).nullish(),
+  notes: z.string().max(500).nullish(),
+});
+
+// Two rules govern these fields, and breaking either one fails silently:
+//
+//  1. Zod strips unknown keys, so ANY field the service consumes must be listed
+//     here or it never reaches the service. `images`, `category`, `brand`,
+//     `attributes` and `compatibleWith` were all absent, which meant the admin
+//     form's Cloudinary URL was discarded on every create.
+//
+//  2. The admin form sends `null` (not `undefined`) for optional fields the
+//     user left blank, so optional scalars are `.nullish()`. Plain `.optional()`
+//     rejected a blank SKU or weight and failed the whole request with a 422.
+//
+// Category and brand may arrive as a NAME — what the admin form posts, resolved
+// or created by the service — or as an id, which API clients post.
+//
+// This stays a plain object rather than folding the create-only `.refine()` in
+// directly, because `.refine()` returns a ZodEffects, which has no `.partial()`
+// for the update schema below to build on.
+const productFieldsSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   description: z.string().min(1, "Description is required"),
-  shortDescription: z.string().max(500).optional(),
+  shortDescription: z.string().max(500).nullish(),
   slug: z.string().min(1, "Slug is required").max(255),
   price: z.number().positive("Price must be positive"),
-  compareAtPrice: z.number().positive().optional(),
-  costPrice: z.number().positive().optional(),
-  sku: z.string().max(100).optional(),
+  compareAtPrice: z.number().positive().nullish(),
+  costPrice: z.number().positive().nullish(),
+  sku: z.string().max(100).nullish(),
   stockQty: z.number().int().min(0).default(0),
-  weight: z.number().positive().optional(),
+  weight: z.number().positive().nullish(),
   productType: z.enum(["part", "merch"]).default("part"),
   isActive: z.boolean().optional().default(true),
   isFeatured: z.boolean().optional().default(false),
-  categoryId: z.number().int().positive("Category is required"),
+
+  categoryId: z.number().int().positive().optional(),
+  category: z.string().max(255).nullish(),
+  subCategory: z.string().max(255).nullish(),
+
   brandId: z.number().int().positive().optional(),
+  brand: z.string().max(255).nullish(),
+
+  vendorId: z.number().int().positive().nullish(),
+
+  /** Legacy single-image field. `images` wins when both are sent. */
+  ImageURL: imageUrlSchema.nullish(),
+  images: z
+    .array(productImageSchema)
+    .max(12, "A product can have at most 12 images")
+    .optional(),
+
+  attributes: z.array(productAttributeSchema).optional(),
+  compatibleWith: z.array(vehicleFitmentSchema).optional(),
+});
+
+export const createProductSchema = productFieldsSchema.refine(
+  (d) =>
+    d.categoryId !== undefined ||
+    (typeof d.category === "string" && d.category.trim() !== ""),
+  { message: "Category is required", path: ["categoryId"] }
+);
+
+// Every field is optional on update: the edit form posts only the subset it
+// manages — it never sends a slug, for one — so a create-shaped schema would
+// reject an ordinary edit outright.
+//
+// The four overrides below are load-bearing, and repeat the lesson already
+// recorded on `updateCouponSchema`: `.partial()` makes a key optional but does
+// NOT drop its `.default()`, and `updateProduct` passes every key that isn't
+// `undefined` to Prisma. Without these, editing nothing but a product's price
+// would ALSO reset its stock to 0, flip a "merch" item to "part", reactivate a
+// deactivated product and clear its featured flag — silently, on every save.
+//
+// No category refinement here: leaving the category alone is a normal edit.
+export const updateProductSchema = productFieldsSchema.partial().extend({
+  stockQty: z.number().int().min(0).optional(),
+  productType: z.enum(["part", "merch"]).optional(),
+  isActive: z.boolean().optional(),
+  isFeatured: z.boolean().optional(),
 });
 
 // ─── Order Schemas ────────────────────────────────────────────────────────────
