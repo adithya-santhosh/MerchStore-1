@@ -218,12 +218,52 @@ describe("uploadToCloudinary", () => {
     expect(url).toBe("https://res.cloudinary.com/demo/x.jpg");
   });
 
-  it("throws when Cloudinary rejects the upload (e.g. a disallowed format)", async () => {
-    fetchMock.mockResolvedValue({ ok: false, json: async () => ({}) });
+  // Cloudinary names the real cause; the admin form can only report what it is
+  // told. Flattening every failure into one guess is what made a server with no
+  // CLOUDINARY_API_KEY look like an unsupported-file-type problem.
+  it("surfaces the reason Cloudinary gives for rejecting an upload", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 400,
+      json: async () => ({ error: { message: "Format exe not allowed" } }),
+    });
 
     await expect(
       uploadToCloudinary(new File(["data"], "malware.exe", { type: "application/octet-stream" }))
-    ).rejects.toThrow(/failed to upload/i);
+    ).rejects.toThrow("Format exe not allowed");
+  });
+
+  it("falls back to the status when the rejection carries no message", async () => {
+    fetchMock.mockResolvedValue({ ok: false, status: 401, json: async () => ({}) });
+
+    await expect(
+      uploadToCloudinary(new File(["data"], "photo.jpg", { type: "image/jpeg" }))
+    ).rejects.toThrow("Cloudinary rejected the upload (HTTP 401)");
+  });
+
+  it("falls back to the status when the error body is not JSON", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => {
+        throw new SyntaxError("Unexpected token <");
+      },
+    });
+
+    await expect(
+      uploadToCloudinary(new File(["data"], "photo.jpg", { type: "image/jpeg" }))
+    ).rejects.toThrow("Cloudinary rejected the upload (HTTP 502)");
+  });
+
+  // The exact failure the admin hit: the API refuses to sign because the
+  // Cloudinary credentials are missing, and that reason must reach the form.
+  it("propagates an unconfigured-server message from the signature step", async () => {
+    signatureMock.mockReset().mockRejectedValue(new Error("Image upload is not configured"));
+
+    await expect(
+      uploadToCloudinary(new File(["data"], "photo.png", { type: "image/png" }))
+    ).rejects.toThrow("Image upload is not configured");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("propagates a failure to obtain a signature (e.g. not an admin)", async () => {

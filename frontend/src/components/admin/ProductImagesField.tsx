@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { getProductImageSrc, uploadToCloudinary } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/errors";
 import { MAX_PRODUCT_IMAGES, normaliseProductImages } from "@/lib/product-images";
 import type { ProductImageDraft } from "@/types/products";
 
@@ -64,15 +65,14 @@ export default function ProductImagesField({
     setProgress({ done: 0, total: files.length });
 
     // Uploaded one at a time rather than in parallel: it keeps the progress
-    // count truthful, and a burst of parallel uploads against an unsigned
-    // preset is what Cloudinary rate-limits first.
+    // count truthful, and each upload fetches its own short-lived signature.
     const uploaded: string[] = [];
-    let failed = 0;
+    const failures: string[] = [];
     for (const file of files) {
       try {
         uploaded.push(await uploadToCloudinary(file));
-      } catch {
-        failed += 1;
+      } catch (err) {
+        failures.push(getErrorMessage(err, "the upload failed"));
       }
       setProgress((p) => (p ? { ...p, done: p.done + 1 } : p));
     }
@@ -81,9 +81,14 @@ export default function ProductImagesField({
     // Keep whatever succeeded rather than discarding a nine-image upload
     // because the tenth failed.
     if (uploaded.length > 0) append(uploaded);
-    if (failed > 0) {
+    if (failures.length > 0) {
+      // Report what actually went wrong. This used to blame an unsupported file
+      // type for every failure, which sent us looking at a PNG that was fine —
+      // the real error was the API answering "Image upload is not configured"
+      // because the Cloudinary key and secret were unset on the server.
+      const reasons = Array.from(new Set(failures));
       setError(
-        `${failed} of ${files.length} upload${files.length === 1 ? "" : "s"} failed. Only JPG, PNG, WEBP and GIF images are accepted — retry with a supported file.`
+        `${failures.length} of ${files.length} upload${files.length === 1 ? "" : "s"} failed — ${reasons.join("; ")}`
       );
     }
   };

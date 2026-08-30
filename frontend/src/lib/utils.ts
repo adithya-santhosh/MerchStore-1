@@ -62,7 +62,20 @@ export const uploadToCloudinary = async (file: File): Promise<string> => {
   });
 
   if (!response.ok) {
-    throw new Error("Failed to upload image to Cloudinary");
+    // Cloudinary states the real reason in `error.message` — a disallowed
+    // format, an expired or mismatched signature, a rejected key. The admin
+    // form can only report what it is told, so pass it through rather than
+    // flattening every cause into one guess.
+    const detail = await response
+      .json()
+      .then((body) =>
+        typeof body?.error?.message === "string" && body.error.message
+          ? (body.error.message as string)
+          : null
+      )
+      .catch(() => null);
+
+    throw new Error(detail || `Cloudinary rejected the upload (HTTP ${response.status})`);
   }
 
   const data = await response.json();
