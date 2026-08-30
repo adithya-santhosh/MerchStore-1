@@ -13,6 +13,7 @@ import {
   createProduct,
   updateProduct,
   requestPasswordResetAPI,
+  getUploadSignature,
 } from "@/lib/api";
 import { ApiValidationError } from "@/lib/errors";
 import type { ProductWritePayload } from "@/types/products";
@@ -317,6 +318,39 @@ describe("authenticated requests", () => {
     fetchMock.mockResolvedValue(fail(403));
 
     await expect(deleteProduct(10)).rejects.toThrow(/failed to delete product/i);
+  });
+});
+
+describe("getUploadSignature", () => {
+  const signature = {
+    timestamp: 1234567890,
+    signature: "abc123",
+    apiKey: "key123",
+    cloudName: "demo",
+    folder: "products",
+    allowedFormats: "jpg,jpeg,png,webp,gif",
+  };
+
+  it("hits the admin signature endpoint with the auth token", async () => {
+    setCookie("jwt-admin");
+    fetchMock.mockResolvedValue(ok(signature));
+
+    await getUploadSignature();
+
+    expect(calledUrl()).toBe(`${API_URL}/api/products/admin/upload-signature`);
+    expect((calledInit().headers as Record<string, string>).Authorization).toBe("Bearer jwt-admin");
+  });
+
+  it("returns the signed payload", async () => {
+    fetchMock.mockResolvedValue(ok(signature));
+
+    await expect(getUploadSignature()).resolves.toEqual(signature);
+  });
+
+  it("surfaces a 503 as an error rather than silently returning nothing", async () => {
+    fetchMock.mockResolvedValue(fail(503, { message: "Image upload is not configured" }));
+
+    await expect(getUploadSignature()).rejects.toThrow(/image upload is not configured/i);
   });
 });
 

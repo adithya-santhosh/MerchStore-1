@@ -1,6 +1,10 @@
-import { describe, it, expect } from "vitest";
-import { cn, getProductImageSrc, safeCallbackUrl } from "@/lib/utils";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { getErrorMessage } from "@/lib/errors";
+
+const { signatureMock } = vi.hoisted(() => ({ signatureMock: vi.fn() }));
+vi.mock("@/lib/api", () => ({ getUploadSignature: signatureMock }));
+
+import { cn, getProductImageSrc, safeCallbackUrl, uploadToCloudinary } from "@/lib/utils";
 
 describe("cn", () => {
   it("joins several class names", () => {
@@ -152,5 +156,82 @@ describe("safeCallbackUrl", () => {
 
   it("honours a custom fallback", () => {
     expect(safeCallbackUrl("//evil.example", "/login")).toBe("/login");
+  });
+});
+
+describe("uploadToCloudinary", () => {
+  const signature = {
+    timestamp: 1234567890,
+    signature: "abc123",
+    apiKey: "key123",
+    cloudName: "demo",
+    folder: "products",
+    allowedFormats: "jpg,jpeg,png,webp,gif",
+  };
+
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    signatureMock.mockReset().mockResolvedValue(signature);
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("gets a fresh signature for every upload rather than reusing one", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ secure_url: "https://res.cloudinary.com/demo/x.jpg" }) });
+    const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+
+    await uploadToCloudinary(file);
+
+    expect(signatureMock).toHaveBeenCalledOnce();
+  });
+
+  it("uploads to the signed cloud name, carrying exactly the signed parameters", async () => {
+    fetchMock.mockResolvedValue({ ok: true, json: async () => ({ secure_url: "https://res.cloudinary.com/demo/x.jpg" }) });
+    const file = new File(["data"], "photo.jpg", { type: "image/jpeg" });
+
+    await uploadToCloudinary(file);
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.cloudinary.com/v1_1/demo/image/upload");
+    const body = init.body as FormData;
+    expect(body.get("file")).toBe(file);
+    expect(body.get("api_key")).toBe("key123");
+    expect(body.get("timestamp")).toBe("1234567890");
+    expect(body.get("signature")).toBe("abc123");
+    expect(body.get("folder")).toBe("products");
+    expect(body.get("allowed_formats")).toBe("jpg,jpeg,png,webp,gif");
+  });
+
+  it("returns the secure URL Cloudinary hands back", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ secure_url: "https://res.cloudinary.com/demo/x.jpg" }),
+    });
+
+    const url = await uploadToCloudinary(new File(["data"], "photo.jpg", { type: "image/jpeg" }));
+
+    expect(url).toBe("https://res.cloudinary.com/demo/x.jpg");
+  });
+
+  it("throws when Cloudinary rejects the upload (e.g. a disallowed format)", async () => {
+    fetchMock.mockResolvedValue({ ok: false, json: async () => ({}) });
+
+    await expect(
+      uploadToCloudinary(new File(["data"], "malware.exe", { type: "application/octet-stream" }))
+    ).rejects.toThrow(/failed to upload/i);
+  });
+
+  it("propagates a failure to obtain a signature (e.g. not an admin)", async () => {
+    signatureMock.mockReset().mockRejectedValue(new Error("Not authenticated"));
+
+    await expect(
+      uploadToCloudinary(new File(["data"], "photo.jpg", { type: "image/jpeg" }))
+    ).rejects.toThrow("Not authenticated");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

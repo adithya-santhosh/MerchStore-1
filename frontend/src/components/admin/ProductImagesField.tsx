@@ -83,7 +83,7 @@ export default function ProductImagesField({
     if (uploaded.length > 0) append(uploaded);
     if (failed > 0) {
       setError(
-        `${failed} of ${files.length} upload${files.length === 1 ? "" : "s"} failed. Check that the Cloudinary preset is unsigned, then retry.`
+        `${failed} of ${files.length} upload${files.length === 1 ? "" : "s"} failed. Only JPG, PNG, WEBP and GIF images are accepted — retry with a supported file.`
       );
     }
   };
@@ -164,7 +164,7 @@ export default function ProductImagesField({
         <div className="relative">
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             id="product-image-files"
             onChange={handleFiles}

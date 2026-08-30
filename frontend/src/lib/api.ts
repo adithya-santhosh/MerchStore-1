@@ -121,6 +121,30 @@ export async function deleteProduct(id: number) {
   return response.json();
 }
 
+export interface UploadSignature {
+  timestamp: number;
+  signature: string;
+  apiKey: string;
+  cloudName: string;
+  folder: string;
+  allowedFormats: string;
+}
+
+/** Admin-only, short-lived Cloudinary upload credentials — see uploadToCloudinary in lib/utils.ts. */
+export async function getUploadSignature(): Promise<UploadSignature> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/products/admin/upload-signature`, {
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+  if (!response.ok) {
+    throw await apiError(response, "Failed to prepare image upload");
+  }
+  return response.json();
+}
+
 export async function createProduct(product: ProductWritePayload){
   const token = getCookie("token");
   const response = await fetch(`${API_URL}/api/products`,{
