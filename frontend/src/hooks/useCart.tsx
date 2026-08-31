@@ -247,6 +247,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const validateCouponOnServer = async (code: string, orderAmount: number) => {
     const response = await fetch(`${API_URL}/api/coupons/validate`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json"
       },
