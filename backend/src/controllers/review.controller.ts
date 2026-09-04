@@ -6,6 +6,9 @@ import {
   createReview,
   deleteReview,
   getUserReviewForProduct,
+  getPendingReviews,
+  approveReview,
+  adminDeleteReview,
 } from "../services/review.service";
 
 // GET /api/reviews/:productId — public
@@ -87,5 +90,48 @@ export const deleteReviewCtrl = async (req: Request, res: Response) => {
     logger.error({ err: error }, "Error deleting review");
     const statusCode = error.message.includes("not found") ? 404 : error.message.includes("own review") ? 403 : 500;
     res.status(statusCode).json({ message: error.message || "Failed to delete review" });
+  }
+};
+
+// GET /api/reviews/admin/pending — requireAuth, requireAdmin
+export const getPendingReviewsCtrl = async (_req: Request, res: Response) => {
+  try {
+    const reviews = await getPendingReviews();
+    res.json(reviews);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error fetching pending reviews");
+    res.status(500).json({ message: error.message || "Failed to fetch pending reviews" });
+  }
+};
+
+// PATCH /api/reviews/admin/:reviewId/approve — requireAuth, requireAdmin
+export const approveReviewCtrl = async (req: Request, res: Response) => {
+  try {
+    const reviewId = Number(req.params.reviewId);
+    if (!reviewId || reviewId <= 0) {
+      return res.status(400).json({ message: "Invalid review ID" });
+    }
+    const result = await approveReview(reviewId);
+    res.json(result);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error approving review");
+    const statusCode = error.message.includes("not found") ? 404 : 500;
+    res.status(statusCode).json({ message: error.message || "Failed to approve review" });
+  }
+};
+
+// DELETE /api/reviews/admin/:reviewId — requireAuth, requireAdmin
+export const adminDeleteReviewCtrl = async (req: Request, res: Response) => {
+  try {
+    const reviewId = Number(req.params.reviewId);
+    if (!reviewId || reviewId <= 0) {
+      return res.status(400).json({ message: "Invalid review ID" });
+    }
+    const result = await adminDeleteReview(reviewId);
+    res.json(result);
+  } catch (error: any) {
+    logger.error({ err: error }, "Error removing review");
+    const statusCode = error.message.includes("not found") ? 404 : 500;
+    res.status(statusCode).json({ message: error.message || "Failed to remove review" });
   }
 };

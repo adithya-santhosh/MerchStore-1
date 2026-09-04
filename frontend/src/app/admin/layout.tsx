@@ -16,6 +16,7 @@ import {
   Store,
   User,
   Mail,
+  MessageSquareText,
 } from "lucide-react";
 
 interface SidebarItem {
@@ -38,6 +39,7 @@ export default function AdminLayout({
     { label: "Orders Manager", href: "/admin/orders", icon: ShoppingBag },
     { label: "Customers List", href: "/admin/customers", icon: Users },
     { label: "Vendor Accounts", href: "/admin/vendors", icon: Store },
+    { label: "Review Moderation", href: "/admin/reviews", icon: MessageSquareText },
     { label: "Contact Messages", href: "/admin/messages", icon: Mail },
     { label: "Settings Panel", href: "/admin/settings", icon: Settings },
   ];

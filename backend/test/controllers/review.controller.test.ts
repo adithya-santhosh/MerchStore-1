@@ -8,6 +8,9 @@ vi.mock("../../src/services/review.service", () => ({
   createReview: vi.fn(),
   deleteReview: vi.fn(),
   getUserReviewForProduct: vi.fn(),
+  getPendingReviews: vi.fn(),
+  approveReview: vi.fn(),
+  adminDeleteReview: vi.fn(),
 }));
 
 // requireAuth checks tokenVersion against the DB on every request.
@@ -27,6 +30,12 @@ const auth = (id = 7) =>
     JWT_SECRET,
     { expiresIn: "1h" }
   )}`;
+
+const adminAuth = `Bearer ${jwt.sign(
+  { id: 1, email: "admin@example.com", role: "ADMIN", firstName: "Ad", lastName: "Min" },
+  JWT_SECRET,
+  { expiresIn: "1h" }
+)}`;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -277,5 +286,89 @@ describe("DELETE /api/reviews/:reviewId", () => {
 
     expect(res.status).toBe(400);
     expect(svc.deleteReview).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/reviews/admin/pending", () => {
+  it("rejects an anonymous request with 401", async () => {
+    const res = await request(app).get("/api/reviews/admin/pending");
+
+    expect(res.status).toBe(401);
+    expect(svc.getPendingReviews).not.toHaveBeenCalled();
+  });
+
+  it("rejects a signed-in customer with 403", async () => {
+    const res = await request(app).get("/api/reviews/admin/pending").set("Authorization", auth());
+
+    expect(res.status).toBe(403);
+    expect(svc.getPendingReviews).not.toHaveBeenCalled();
+  });
+
+  it("returns the pending queue for an admin", async () => {
+    svc.getPendingReviews.mockResolvedValue([{ id: 1, rating: 3 }] as any);
+
+    const res = await request(app).get("/api/reviews/admin/pending").set("Authorization", adminAuth);
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveLength(1);
+  });
+});
+
+describe("PATCH /api/reviews/admin/:reviewId/approve", () => {
+  it("rejects a signed-in customer with 403", async () => {
+    const res = await request(app).patch("/api/reviews/admin/1/approve").set("Authorization", auth());
+
+    expect(res.status).toBe(403);
+    expect(svc.approveReview).not.toHaveBeenCalled();
+  });
+
+  it("approves the review for an admin", async () => {
+    svc.approveReview.mockResolvedValue({ message: "Review approved" });
+
+    const res = await request(app).patch("/api/reviews/admin/1/approve").set("Authorization", adminAuth);
+
+    expect(res.status).toBe(200);
+    expect(svc.approveReview).toHaveBeenCalledWith(1);
+  });
+
+  it("maps a missing review to 404", async () => {
+    svc.approveReview.mockRejectedValue(new Error("Review not found"));
+
+    const res = await request(app).patch("/api/reviews/admin/999/approve").set("Authorization", adminAuth);
+
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects an invalid review id with 400", async () => {
+    const res = await request(app).patch("/api/reviews/admin/abc/approve").set("Authorization", adminAuth);
+
+    expect(res.status).toBe(400);
+    expect(svc.approveReview).not.toHaveBeenCalled();
+  });
+});
+
+describe("DELETE /api/reviews/admin/:reviewId", () => {
+  it("rejects a signed-in customer with 403", async () => {
+    const res = await request(app).delete("/api/reviews/admin/1").set("Authorization", auth());
+
+    expect(res.status).toBe(403);
+    expect(svc.adminDeleteReview).not.toHaveBeenCalled();
+  });
+
+  it("removes the review for an admin, regardless of who wrote it", async () => {
+    svc.adminDeleteReview.mockResolvedValue({ message: "Review removed" });
+
+    const res = await request(app).delete("/api/reviews/admin/1").set("Authorization", adminAuth);
+
+    expect(res.status).toBe(200);
+    expect(svc.adminDeleteReview).toHaveBeenCalledWith(1);
+  });
+
+  it("maps a missing review to 404", async () => {
+    svc.adminDeleteReview.mockRejectedValue(new Error("Review not found"));
+
+    const res = await request(app).delete("/api/reviews/admin/999").set("Authorization", adminAuth);
+
+    expect(res.status).toBe(404);
   });
 });

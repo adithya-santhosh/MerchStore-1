@@ -967,6 +967,10 @@ export interface Review {
   title: string | null;
   body: string | null;
   isVerifiedPurchase: boolean;
+  // Only present on the create response and GET /:productId/mine — the public
+  // list (getProductReviews) already only ever contains approved reviews, so
+  // it doesn't bother sending the flag.
+  isApproved?: boolean;
   createdAt: string;
   user: ReviewUser;
 }
@@ -1040,6 +1044,62 @@ export async function deleteReviewApi(reviewId: number): Promise<void> {
     const err = await response.json();
     throw new Error(err.message || "Failed to delete review");
   }
+}
+
+// ─── Review Moderation (Admin) ────────────────────────────────────────────────
+
+export interface PendingReview {
+  id: number;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
+  user: { id: number; name: string; email: string };
+  product: { id: number; name: string; slug: string };
+}
+
+export async function getPendingReviewsApi(token?: string): Promise<PendingReview[]> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/reviews/admin/pending`, {
+    credentials: "include",
+    headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch pending reviews");
+  return res.json();
+}
+
+export async function approveReviewApi(reviewId: number): Promise<{ message: string }> {
+  const token = getCookie("token");
+  const res = await fetch(`${API_URL}/api/reviews/admin/${reviewId}/approve`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to approve review"));
+  }
+  return res.json();
+}
+
+export async function adminDeleteReviewApi(reviewId: number): Promise<{ message: string }> {
+  const token = getCookie("token");
+  const res = await fetch(`${API_URL}/api/reviews/admin/${reviewId}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to remove review"));
+  }
+  return res.json();
 }
 
 // ─── Wishlist API Helpers ─────────────────────────────────────────────────────

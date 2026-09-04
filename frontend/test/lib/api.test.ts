@@ -16,6 +16,9 @@ import {
   getUploadSignature,
   submitContactMessageApi,
   getContactMessagesApi,
+  getPendingReviewsApi,
+  approveReviewApi,
+  adminDeleteReviewApi,
 } from "@/lib/api";
 import { ApiValidationError } from "@/lib/errors";
 import type { ProductWritePayload } from "@/types/products";
@@ -541,3 +544,36 @@ describe("getContactMessagesApi", () => {
     fetchMock.mockResolvedValue(fail(403));
 
     await expect(getContactMessagesApi("token")).rejects.toThrow("Failed to fetch messages");
+  });
+});
+
+describe("review moderation (admin)", () => {
+  it("getPendingReviewsApi hits the pending-queue endpoint with the admin's token", async () => {
+    setCookie("jwt-admin");
+    fetchMock.mockResolvedValue(ok([]));
+
+    await getPendingReviewsApi();
+
+    expect(calledUrl()).toBe(`${API_URL}/api/reviews/admin/pending`);
+    expect((calledInit().headers as Record<string, string>).Authorization).toBe("Bearer jwt-admin");
+  });
+
+  it("approveReviewApi sends a PATCH to the review's approve endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Review approved" }));
+
+    await approveReviewApi(42);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/reviews/admin/42/approve`);
+    expect(calledInit().method).toBe("PATCH");
+  });
+
+  it("approveReviewApi surfaces the API's error message on failure", async () => {
+    fetchMock.mockResolvedValue(fail(404, { message: "Review not found" }));
+
+    await expect(approveReviewApi(42)).rejects.toThrow("Review not found");
+  });
+
+  it("adminDeleteReviewApi sends a DELETE to the admin review endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Review removed" }));
+
+    await adminDeleteReviewApi(42);
