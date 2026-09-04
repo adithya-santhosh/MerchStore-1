@@ -135,9 +135,19 @@ export default function Navbar() {
     return (first + last).toUpperCase() || "U";
   };
 
+  // "Shop" folds Category/Brand/Vehicle browsing into one dropdown instead
+  // of three, so it sits inline with Home/About/Contact as a single nav
+  // row rather than a second bar underneath.
+  const shopTabs: { key: "category" | "brand" | "vehicle"; label: string; icon: typeof Layers }[] = [
+    { key: "category", label: "Category", icon: Layers },
+    { key: "brand", label: "Brand", icon: Tag },
+    { key: "vehicle", label: "Vehicle", icon: Car },
+  ];
+
   return (
     <>
       <header
+        onMouseLeave={() => setActiveDropdown(null)}
         className={`sticky top-0 z-50 w-full transition-all duration-300 border-b ${
           scrolled
             ? "bg-background/80 backdrop-blur-lg border-border/80 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.1)]"
@@ -152,16 +162,46 @@ export default function Navbar() {
                 <div className="size-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-transform duration-300 group-hover:rotate-12">
                   <Sparkles className="size-5" />
                 </div>
-                <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+                <span className="font-heading text-xl font-semibold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                   Merch
-                  <span className="text-primary font-black">Store</span>
+                  <span className="text-primary font-bold">Store</span>
                 </span>
               </Link>
             </div>
 
             {/* Desktop Navigation Links */}
             <nav className="hidden md:flex items-center gap-1 lg:gap-2">
-              {navItems.map((item) => {
+              <Link
+                href="/"
+                className={`relative px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:bg-muted hover:text-foreground ${
+                  isActive(navItems[0])
+                    ? "bg-primary/5 text-primary-bright"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Home
+              </Link>
+
+              <Link
+                href="/products"
+                onMouseEnter={() =>
+                  setActiveDropdown((d) => d ?? "category")
+                }
+                className={`flex items-center gap-1 px-4 py-2 text-sm font-medium rounded-full transition-all duration-200 hover:bg-muted hover:text-foreground ${
+                  isActive(navItems[1]) || activeDropdown
+                    ? "bg-primary/5 text-primary-bright"
+                    : "text-muted-foreground"
+                }`}
+              >
+                Shop
+                <ChevronDown
+                  className={`size-3.5 transition-transform duration-200 ${
+                    activeDropdown ? "rotate-180" : ""
+                  }`}
+                />
+              </Link>
+
+              {navItems.slice(2).map((item) => {
                 const active = isActive(item);
                 return (
                   <Link
@@ -174,9 +214,6 @@ export default function Navbar() {
                     }`}
                   >
                     {item.label}
-                    {active && (
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-                    )}
                   </Link>
                 );
               })}
@@ -345,50 +382,32 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Secondary Sub-Navbar (Desktop Only) */}
-        <div
-          className="hidden md:block border-t border-border/40 bg-background/25 relative"
-          onMouseLeave={() => setActiveDropdown(null)}
-        >
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="flex items-center gap-8 h-10 text-xs font-bold uppercase tracking-wider text-foreground/80">
-              <button
-                onMouseEnter={() => setActiveDropdown("category")}
-                className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
-                  activeDropdown === "category"
-                    ? "text-primary-bright"
-                    : "hover:text-foreground"
-                }`}
-              >
-                <Layers className="size-4" /> Shop by Category
-              </button>
-              <button
-                onMouseEnter={() => setActiveDropdown("brand")}
-                className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
-                  activeDropdown === "brand"
-                    ? "text-primary-bright"
-                    : "hover:text-foreground"
-                }`}
-              >
-                <Tag className="size-4" /> Shop by Brand
-              </button>
-              <button
-                onMouseEnter={() => setActiveDropdown("vehicle")}
-                className={`flex items-center gap-1.5 py-2 transition-colors cursor-pointer ${
-                  activeDropdown === "vehicle"
-                    ? "text-primary-bright"
-                    : "hover:text-foreground"
-                }`}
-              >
-                <Car className="size-4" /> Shop by Vehicle
-              </button>
-            </div>
-          </div>
+        {/* Shop mega-menu (Desktop Only) — opens from the "Shop" nav link
+            above; a tab row inside switches between Category/Brand/Vehicle
+            instead of three separate always-visible trigger buttons. */}
+        {activeDropdown && navMetadata && (
+          <div className="hidden md:block absolute left-0 right-0 top-full bg-popover/98 backdrop-blur-xl border-b border-border shadow-2xl z-40 animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="max-w-7xl mx-auto px-8 py-6">
+              {/* Tab switcher */}
+              <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border/50">
+                {shopTabs.map((tab) => (
+                  <button
+                    key={tab.key}
+                    onMouseEnter={() => setActiveDropdown(tab.key)}
+                    onClick={() => setActiveDropdown(tab.key)}
+                    className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                      activeDropdown === tab.key
+                        ? "bg-primary/10 text-primary-bright"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <tab.icon className="size-3.5" />
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-          {/* Desktop Absolute Dropdown Panels */}
-          {activeDropdown && navMetadata && (
-            <div className="absolute left-0 right-0 top-full bg-popover/98 backdrop-blur-xl border-b border-border shadow-2xl z-40 animate-in fade-in slide-in-from-top-1 duration-200">
-              <div className="max-w-7xl mx-auto px-8 py-8">
+              <div>
                 {/* Category Panel */}
                 {activeDropdown === "category" && (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
@@ -488,8 +507,8 @@ export default function Navbar() {
                 )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Mobile Drawer (Slide down) */}
         {isMobileMenuOpen && (

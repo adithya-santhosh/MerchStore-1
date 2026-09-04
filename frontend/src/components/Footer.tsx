@@ -16,8 +16,8 @@ export default function Footer() {
               <div className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
                 <Sparkles className="size-4" />
               </div>
-              <span className="text-lg font-bold tracking-tight">
-                Merch<span className="text-primary-bright font-black">Store</span>
+              <span className="font-heading text-lg font-semibold tracking-tight">
+                Merch<span className="text-primary-bright font-bold">Store</span>
               </span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">

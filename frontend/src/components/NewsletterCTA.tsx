@@ -25,11 +25,11 @@ export default function NewsletterCTA() {
   return (
     <section className="w-full relative overflow-hidden">
       {/* Gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/15 via-background to-primary/5" />
+      <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-primary/15 via-background to-primary/5" />
 
       {/* Decorative grid overlay */}
       <div
-        className="absolute inset-0 opacity-[0.03]"
+        className="absolute inset-0 pointer-events-none opacity-[0.03]"
         style={{
           backgroundImage:
             "radial-gradient(circle at 1px 1px, rgba(255,255,255,0.3) 1px, transparent 0)",
@@ -37,9 +37,12 @@ export default function NewsletterCTA() {
         }}
       />
 
-      {/* Decorative glow orbs */}
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-primary/5 rounded-full blur-3xl" />
+      {/* Decorative glow orbs. blur-3xl on w-96/h-96 elements is one of the
+          more GPU-expensive things to keep repainting during continuous
+          scroll — kept smaller and less blurred so this section doesn't
+          introduce jank right where people land after a long scroll. */}
+      <div className="absolute top-0 left-1/4 size-64 pointer-events-none rounded-full bg-primary/10 blur-2xl" />
+      <div className="absolute bottom-0 right-1/4 size-48 pointer-events-none rounded-full bg-primary/5 blur-2xl" />
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 sm:py-28">
         <ScrollReveal direction="up">

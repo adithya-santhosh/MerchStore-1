@@ -89,10 +89,12 @@ export default function Hero() {
         <source src={HERO_VIDEO} type="video/mp4" />
       </video>
 
-      {/* Gradient overlays */}
-      <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/40 to-transparent z-10" />
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent z-10" />
-      <div className="absolute inset-0 bg-background/10 z-10" />
+      {/* Gradient overlays. Hardcoded black rather than tokens: the video
+          is a deliberately dark cinematic "window" regardless of whether
+          the surrounding page theme is light or dark — blending it toward
+          a light --background would just fog it out. */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/35 to-transparent z-10" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent z-10" />
 
       {/* Content overlay */}
       <div className="absolute inset-0 z-20 flex items-center">
@@ -100,26 +102,24 @@ export default function Hero() {
           <div className="max-w-2xl space-y-6">
             {/* Eyebrow tag */}
             <div
-              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/10 backdrop-blur-sm text-xs font-bold tracking-widest text-primary-bright uppercase animate-in fade-in slide-in-from-bottom-2 duration-700"
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary-bright/40 bg-black/30 backdrop-blur-sm text-xs font-bold tracking-widest text-primary-bright uppercase animate-in fade-in slide-in-from-bottom-2 duration-700"
             >
-              <span className="size-1.5 rounded-full bg-primary animate-pulse" />
+              <span className="size-1.5 rounded-full bg-primary-bright animate-pulse" />
               Premium Off-Road Gear
             </div>
 
             {/* Headline */}
             <h1
-              className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight text-foreground leading-[1.1] animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
+              className="text-4xl sm:text-5xl lg:text-7xl font-black tracking-tight text-white leading-[1.1] animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
               style={{ animationDelay: "150ms" }}
             >
               Built For{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-red-400 to-primary">
-                The Wild
-              </span>
+              <span className="text-primary-bright">The Wild</span>
             </h1>
 
             {/* Subtitle */}
             <p
-              className="text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
+              className="text-base sm:text-lg lg:text-xl text-white/75 leading-relaxed max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
               style={{ animationDelay: "300ms" }}
             >
               Engineered accessories and limited-edition merch for the
@@ -133,7 +133,7 @@ export default function Hero() {
             >
               <Button
                 size="lg"
-                className="h-13 px-8 text-base shadow-xl shadow-primary/20 group cursor-pointer"
+                className="h-13 px-8 text-base shadow-xl shadow-black/30 group cursor-pointer"
                 asChild
               >
                 <Link
@@ -147,7 +147,7 @@ export default function Hero() {
               <Button
                 size="lg"
                 variant="outline"
-                className="h-13 px-8 text-base border-border/60 bg-background/20 backdrop-blur-sm hover:bg-background/40 cursor-pointer"
+                className="h-13 px-8 text-base border-white/30 bg-black/20 text-white backdrop-blur-sm hover:bg-black/40 hover:text-white cursor-pointer"
                 asChild
               >
                 <Link href="/products/car-accessories">
@@ -162,7 +162,7 @@ export default function Hero() {
       {/* Mute/Unmute toggle */}
       <button
         onClick={toggleMute}
-        className="absolute bottom-6 right-6 z-30 size-10 rounded-full border border-border/60 bg-background/40 backdrop-blur-md text-foreground/80 hover:bg-background/60 hover:text-foreground flex items-center justify-center transition-all cursor-pointer"
+        className="absolute bottom-6 right-6 z-30 size-10 rounded-full border border-white/30 bg-black/40 backdrop-blur-md text-white/80 hover:bg-black/60 hover:text-white flex items-center justify-center transition-all cursor-pointer"
         aria-label={isMuted ? "Unmute video" : "Mute video"}
       >
         {isMuted ? (
@@ -175,7 +175,7 @@ export default function Hero() {
       {/* Scroll indicator */}
       <button
         onClick={scrollToContent}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 text-muted-foreground/60 hover:text-muted-foreground transition-colors cursor-pointer group"
+        className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2 text-white/60 hover:text-white transition-colors cursor-pointer group"
         aria-label="Scroll down"
       >
         <span className="text-[10px] font-bold tracking-widest uppercase">
