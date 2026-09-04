@@ -205,6 +205,17 @@ const addressSchema = z.object({
   country: z.string().max(2).default("IN"),
 });
 
+// Contact details for a checkout placed without an account. Only meaningful
+// when the request is unauthenticated — resolveCheckoutUserId (order.service)
+// is what actually enforces these as required in that case, since a Zod
+// schema has no visibility into whether req.user is set.
+export const guestContactSchema = z.object({
+  email: z.string().email("A valid email is required").toLowerCase().trim(),
+  firstName: sanitized(z.string().min(1, "First name is required").max(50)),
+  lastName: sanitized(z.string().min(1, "Last name is required").max(50)),
+  phone: z.string().max(15).optional(),
+});
+
 // taxRate/shippingCost are intentionally absent — they are derived server-side
 // from system settings, so any values a client sends are ignored (Zod strips
 // unknown keys) rather than trusted.
@@ -213,6 +224,7 @@ export const placeOrderSchema = z.object({
   couponCode: z.string().max(50).optional(),
   paymentMethod: z.enum(["cod", "razorpay"]),
   sessionToken: z.string().optional(),
+  guest: guestContactSchema.optional(),
 });
 
 export const couponValidateSchema = z.object({

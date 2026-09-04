@@ -10,15 +10,18 @@ import {
   cancelOrder,
   getRefundsOwed,
   markPaymentRefunded,
+  resolveCheckoutUserId,
 } from "../services/order.service";
+import { signAuthToken } from "../services/auth.service";
+import { AUTH_COOKIE_NAME, AUTH_COOKIE_OPTIONS, AUTH_COOKIE_MAX_AGE } from "../lib/auth-cookie";
+import { setCsrfCookie } from "../lib/csrf";
 
 // ─── Customer Endpoints ───────────────────────────────────────────────────────
 
-// POST /api/orders — place a new order (auth required)
+// POST /api/orders — place a new order (signed in, or guest with contact details)
 export const placeOrder = async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
-    const { address, couponCode, paymentMethod, sessionToken } = req.body;
+    const { address, couponCode, paymentMethod, sessionToken, guest } = req.body;
 
     if (!address || !address.addressLine1 || !address.city || !address.state || !address.postalCode) {
       return res.status(400).json({ message: "Shipping address is incomplete." });
@@ -27,6 +30,8 @@ export const placeOrder = async (req: Request, res: Response) => {
     if (!paymentMethod || !["cod", "razorpay"].includes(paymentMethod)) {
       return res.status(400).json({ message: "Invalid payment method. Use 'cod' or 'razorpay'." });
     }
+
+    const { userId, resolvedGuestUser } = await resolveCheckoutUserId(req.user?.id, guest, sessionToken);
 
     // Tax and shipping are derived server-side from system settings — see
     // prepareCheckout. Nothing money-related is accepted from the client.
@@ -38,10 +43,20 @@ export const placeOrder = async (req: Request, res: Response) => {
       sessionToken,
     });
 
+    // A newly resolved guest account gets signed into it — otherwise the
+    // requireAuth-gated confirmation/order-lookup routes would 401 the very
+    // customer who just placed the order.
+    if (resolvedGuestUser) {
+      const token = signAuthToken(resolvedGuestUser);
+      res.cookie(AUTH_COOKIE_NAME, token, { ...AUTH_COOKIE_OPTIONS, maxAge: AUTH_COOKIE_MAX_AGE });
+      setCsrfCookie(res);
+    }
+
     res.status(201).json(order);
   } catch (error: any) {
     logger.error({ err: error }, "Error in placeOrder controller");
-    res.status(400).json({ message: error.message || "Failed to place order." });
+    const status = /already exists with this email/.test(error.message || "") ? 409 : 400;
+    res.status(status).json({ message: error.message || "Failed to place order." });
   }
 };
 

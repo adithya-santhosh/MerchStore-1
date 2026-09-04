@@ -401,6 +401,16 @@ export interface OrderAddress {
   country?: string;
 }
 
+// Contact details for a checkout placed without an account — omit entirely
+// when the request is authenticated, since the signed-in user's own id is
+// used instead.
+export interface GuestCheckoutContact {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
 // Tax and shipping are computed server-side from store settings — the client
 // never sends money-related values.
 export interface CreateOrderPayload {
@@ -408,6 +418,7 @@ export interface CreateOrderPayload {
   couponCode?: string;
   paymentMethod: "cod" | "razorpay";
   sessionToken?: string;
+  guest?: GuestCheckoutContact;
 }
 
 export interface OrderItem {
@@ -473,6 +484,7 @@ export interface CreatePaymentOrderPayload {
   address: OrderAddress;
   couponCode?: string;
   sessionToken?: string;
+  guest?: GuestCheckoutContact;
 }
 
 export interface RazorpayOrderResponse {
@@ -511,6 +523,7 @@ export interface VerifyPaymentPayload {
   address: OrderAddress;
   couponCode?: string;
   sessionToken?: string;
+  guest?: GuestCheckoutContact;
 }
 
 export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Order> {

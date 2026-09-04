@@ -28,6 +28,10 @@ vi.mock("../../src/services/payment.service", () => ({
   verifyMembershipPayment: vi.fn(),
 }));
 
+vi.mock("../../src/services/order.service", () => ({
+  resolveCheckoutUserId: vi.fn(),
+}));
+
 // requireAuth checks tokenVersion against the DB on every request.
 vi.mock("../../src/lib/prisma", () => ({
   default: { user: { findUnique: vi.fn().mockResolvedValue({ tokenVersion: 0 }) } },
@@ -38,11 +42,13 @@ import * as analyticsService from "../../src/services/analytics.service";
 import * as customerService from "../../src/services/customer.service";
 import * as settingsService from "../../src/services/settings.service";
 import * as paymentService from "../../src/services/payment.service";
+import * as orderService from "../../src/services/order.service";
 
 const analytics = vi.mocked(analyticsService);
 const customers = vi.mocked(customerService);
 const settings = vi.mocked(settingsService);
 const payments = vi.mocked(paymentService);
+const orderSvc = vi.mocked(orderService);
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 const tokenWithRole = (role: string, id = 7) =>
@@ -286,15 +292,71 @@ describe("payment endpoints", () => {
     postalCode: "560001",
   };
 
+  beforeEach(() => {
+    // Matches customerAuth's id (7) by default; guest-checkout tests below
+    // override this per-case.
+    orderSvc.resolveCheckoutUserId.mockResolvedValue({ userId: 7 });
+  });
+
   it.each([
-    "/api/payment/create-order",
-    "/api/payment/verify",
     "/api/payment/create-membership-order",
     "/api/payment/verify-membership",
   ])("requires authentication for %s", async (path) => {
     const res = await request(app).post(path).send({});
 
     expect(res.status).toBe(401);
+  });
+
+  it("requires guest contact details for /api/payment/create-order when signed out", async () => {
+    orderSvc.resolveCheckoutUserId.mockRejectedValue(
+      new Error("Please enter your name and email to check out as a guest.")
+    );
+
+    const res = await request(app).post("/api/payment/create-order").send({ address });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/guest/i);
+  });
+
+  it("requires guest contact details for /api/payment/verify when signed out", async () => {
+    orderSvc.resolveCheckoutUserId.mockRejectedValue(
+      new Error("Please enter your name and email to check out as a guest.")
+    );
+
+    const res = await request(app)
+      .post("/api/payment/verify")
+      .send({ address, razorpayOrderId: "order_xyz", razorpayPaymentId: "pay_abc", razorpaySignature: "sig" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/guest/i);
+  });
+
+  it("places a guest Razorpay order using the resolved guest user id, and signs them in", async () => {
+    orderSvc.resolveCheckoutUserId.mockResolvedValue({
+      userId: 42,
+      resolvedGuestUser: { id: 42, email: "g@example.com", role: "CUSTOMER", firstName: "G", lastName: "T", tokenVersion: 0 },
+    });
+    payments.createRazorpayOrder.mockResolvedValue({ orderId: "order_xyz" } as any);
+
+    const res = await request(app)
+      .post("/api/payment/create-order")
+      .send({ address, guest: { email: "g@example.com", firstName: "G", lastName: "T" } });
+
+    expect(res.status).toBe(200);
+    expect(payments.createRazorpayOrder).toHaveBeenCalledWith(expect.objectContaining({ userId: 42 }));
+    expect(res.headers["set-cookie"]?.some((c: string) => c.startsWith("token="))).toBe(true);
+  });
+
+  it("maps a guest email that already belongs to a real account to 409", async () => {
+    orderSvc.resolveCheckoutUserId.mockRejectedValue(
+      new Error("An account already exists with this email. Please log in to continue.")
+    );
+
+    const res = await request(app)
+      .post("/api/payment/create-order")
+      .send({ address, guest: { email: "real@example.com", firstName: "G", lastName: "T" } });
+
+    expect(res.status).toBe(409);
   });
 
   it("creates a gateway order for the id in the token", async () => {

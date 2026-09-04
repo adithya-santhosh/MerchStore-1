@@ -276,10 +276,28 @@ describe("authenticated requests", () => {
     expect(JSON.parse(calledInit().body as string)).toEqual(payload);
   });
 
+  it("forwards guest contact details for an order placed without an account", async () => {
+    fetchMock.mockResolvedValue(ok({ id: 1 }));
+    const guest = { email: "guest@example.com", firstName: "Grace", lastName: "Hopper" };
+    const payload = { address: { city: "Bengaluru" }, paymentMethod: "cod", guest };
+
+    await createOrder(payload as never);
+
+    expect(JSON.parse(calledInit().body as string).guest).toEqual(guest);
+  });
+
   it("surfaces the API's own error message when an order fails", async () => {
     fetchMock.mockResolvedValue(fail(400, { message: "Your cart is empty." }));
 
     await expect(createOrder({} as never)).rejects.toThrow("Your cart is empty.");
+  });
+
+  it("maps a guest email already tied to a real account to that error message", async () => {
+    fetchMock.mockResolvedValue(
+      fail(409, { message: "An account already exists with this email. Please log in to continue." })
+    );
+
+    await expect(createOrder({} as never)).rejects.toThrow(/already exists with this email/i);
   });
 
   it("falls back to a generic message when the API sends no message", async () => {

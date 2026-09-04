@@ -28,9 +28,19 @@ vi.mock("../../src/services/settings.service", () => ({
   getSettings: vi.fn(),
 }));
 
+vi.mock("../../src/services/auth.service", () => ({
+  resolveGuestUser: vi.fn(),
+}));
+
+vi.mock("../../src/services/cart.service", () => ({
+  getOrCreateCart: vi.fn(),
+}));
+
 import prisma from "../../src/lib/prisma";
 import { getSettings } from "../../src/services/settings.service";
 import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "../../src/services/email.service";
+import { resolveGuestUser } from "../../src/services/auth.service";
+import { getOrCreateCart } from "../../src/services/cart.service";
 import {
   prepareCheckout,
   finalizeOrder,
@@ -44,6 +54,7 @@ import {
   getRefundsOwed,
   updateOrderStatus,
   triggerOrderConfirmationEmail,
+  resolveCheckoutUserId,
   CANCELLABLE_STATUSES,
   CreateOrderInput,
   PreparedCheckout,
@@ -51,6 +62,8 @@ import {
 
 const mockedPrisma = vi.mocked(prisma, true);
 const mockedGetSettings = vi.mocked(getSettings);
+const mockedResolveGuestUser = vi.mocked(resolveGuestUser);
+const mockedGetOrCreateCart = vi.mocked(getOrCreateCart);
 
 /** Store config helper — defaults to the live setup: no GST, no shipping. */
 const settingsOf = (over: Partial<{ tax_rate: number; shipping_limit: number; shipping_cost: number }> = {}) => ({
@@ -907,5 +920,54 @@ describe("triggerOrderConfirmationEmail", () => {
     // Fire-and-forget from checkout: a mail bookkeeping error must not surface
     // to a customer who has already paid.
     await expect(triggerOrderConfirmationEmail(1)).resolves.toBeUndefined();
+  });
+});
+
+describe("resolveCheckoutUserId", () => {
+  const guestContact = { email: "guest@example.com", firstName: "Grace", lastName: "Hopper" };
+
+  it("uses the signed-in user's id as-is, without touching guest resolution", async () => {
+    const result = await resolveCheckoutUserId(7, undefined, undefined);
+
+    expect(result).toEqual({ userId: 7 });
+    expect(mockedResolveGuestUser).not.toHaveBeenCalled();
+    expect(mockedGetOrCreateCart).not.toHaveBeenCalled();
+  });
+
+  it("rejects an anonymous checkout that doesn't supply guest contact details", async () => {
+    await expect(resolveCheckoutUserId(undefined, undefined, "sess-1")).rejects.toThrow(/guest/i);
+    expect(mockedResolveGuestUser).not.toHaveBeenCalled();
+  });
+
+  it("rejects guest contact details missing a required field", async () => {
+    await expect(
+      resolveCheckoutUserId(undefined, { email: "guest@example.com" }, "sess-1")
+    ).rejects.toThrow(/guest/i);
+    expect(mockedResolveGuestUser).not.toHaveBeenCalled();
+  });
+
+  it("resolves a guest user and links their session cart to it", async () => {
+    const guestUser = { id: 42, email: "guest@example.com", isGuest: true } as any;
+    mockedResolveGuestUser.mockResolvedValue(guestUser);
+
+    const result = await resolveCheckoutUserId(undefined, guestContact, "sess-1");
+
+    expect(mockedResolveGuestUser).toHaveBeenCalledWith(guestContact);
+    // The cart a guest built up while browsing lives under sessionToken, not a
+    // userId — it has to be linked so prepareCheckout's `where: { userId }`
+    // lookup can find it.
+    expect(mockedGetOrCreateCart).toHaveBeenCalledWith("sess-1", 42);
+    expect(result).toEqual({ userId: 42, resolvedGuestUser: guestUser });
+  });
+
+  it("surfaces the account-already-exists error from guest resolution unchanged", async () => {
+    mockedResolveGuestUser.mockRejectedValue(
+      new Error("An account already exists with this email. Please log in to continue.")
+    );
+
+    await expect(resolveCheckoutUserId(undefined, guestContact, undefined)).rejects.toThrow(
+      "An account already exists with this email. Please log in to continue."
+    );
+    expect(mockedGetOrCreateCart).not.toHaveBeenCalled();
   });
 });
