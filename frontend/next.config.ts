@@ -36,6 +36,15 @@ const apiOrigin = (() => {
 // risks breaking Radix/Motion internals that aren't audited for Trusted
 // Types compatibility.
 const isDev = process.env.NODE_ENV === "development";
+
+// Both the legacy report-uri directive and the newer Reporting API
+// (report-to + a Reporting-Endpoints header naming the group) point at
+// the same backend route — report-uri for browsers that don't support
+// the newer API yet, report-to for the ones that do and prefer it when
+// both are present. Only added when the backend origin actually
+// resolved; a report-uri pointing at "" is worse than no reporting.
+const cspReportEndpoint = apiOrigin ? `${apiOrigin}/api/csp-report` : "";
+
 const cspDirectives = [
   `default-src 'self'`,
   `script-src 'self' 'unsafe-inline' https://checkout.razorpay.com https://*.razorpay.com https://va.vercel-scripts.com${
@@ -53,6 +62,9 @@ const cspDirectives = [
   `form-action 'self'`,
   `frame-ancestors 'self'`,
   `upgrade-insecure-requests`,
+  ...(cspReportEndpoint
+    ? [`report-uri ${cspReportEndpoint}`, `report-to csp-endpoint`]
+    : []),
 ].join("; ");
 
 const nextConfig: NextConfig = {
@@ -62,6 +74,14 @@ const nextConfig: NextConfig = {
         source: "/(.*)",
         headers: [
           { key: "Content-Security-Policy", value: cspDirectives },
+          ...(cspReportEndpoint
+            ? [
+                {
+                  key: "Reporting-Endpoints",
+                  value: `csp-endpoint="${cspReportEndpoint}"`,
+                },
+              ]
+            : []),
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           {
