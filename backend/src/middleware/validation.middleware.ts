@@ -270,3 +270,24 @@ export const contactMessageSchema = z.object({
   email: z.string().email("Invalid email address").toLowerCase().trim(),
   message: sanitized(z.string().min(1, "Message is required").max(5000)),
 });
+
+// ─── Address Book Schemas ─────────────────────────────────────────────────────
+// addressSchema (order shipping address) already covers the shape; these add
+// the create/update variants for the standalone address-book endpoints. Label
+// and isDefault aren't part of a placed order's address, so they're added here
+// rather than widening addressSchema, which stays scoped to what an order needs.
+
+export const createAddressSchema = addressSchema.extend({
+  isDefault: z.boolean().optional().default(false),
+});
+
+// `.partial()` makes every field optional but does NOT drop `.default()` — the
+// same pitfall documented on updateCouponSchema/updateProductSchema above. Both
+// `country` (defaults to "IN" on addressSchema) and `isDefault` (defaults to
+// false just above) would otherwise get silently reset on every partial edit
+// that doesn't happen to mention them. Overriding both as plain optionals
+// restores "not sent" meaning "leave unchanged".
+export const updateAddressSchema = createAddressSchema.partial().extend({
+  country: z.string().max(2).optional(),
+  isDefault: z.boolean().optional(),
+});

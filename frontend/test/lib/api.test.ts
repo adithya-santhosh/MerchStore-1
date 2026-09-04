@@ -19,6 +19,10 @@ import {
   getPendingReviewsApi,
   approveReviewApi,
   adminDeleteReviewApi,
+  getAddressesApi,
+  createAddressApi,
+  updateAddressApi,
+  deleteAddressApi,
 } from "@/lib/api";
 import { ApiValidationError } from "@/lib/errors";
 import type { ProductWritePayload } from "@/types/products";
@@ -577,3 +581,80 @@ describe("review moderation (admin)", () => {
     fetchMock.mockResolvedValue(ok({ message: "Review removed" }));
 
     await adminDeleteReviewApi(42);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/reviews/admin/42`);
+    expect(calledInit().method).toBe("DELETE");
+  });
+
+  it("adminDeleteReviewApi surfaces the API's error message on failure", async () => {
+    fetchMock.mockResolvedValue(fail(404, { message: "Review not found" }));
+
+    await expect(adminDeleteReviewApi(42)).rejects.toThrow("Review not found");
+  });
+});
+
+describe("address book", () => {
+  const address = {
+    label: "Home",
+    addressLine1: "221B Baker Street",
+    addressLine2: "",
+    city: "Bengaluru",
+    state: "KA",
+    postalCode: "560001",
+    country: "IN",
+  };
+
+  it("getAddressesApi attaches the user's token", async () => {
+    setCookie("jwt-abc");
+    fetchMock.mockResolvedValue(ok([]));
+
+    await getAddressesApi();
+
+    expect(calledUrl()).toBe(`${API_URL}/api/addresses`);
+    expect((calledInit().headers as Record<string, string>).Authorization).toBe("Bearer jwt-abc");
+  });
+
+  it("createAddressApi posts the address as JSON", async () => {
+    fetchMock.mockResolvedValue(ok({ id: 1, ...address, isDefault: false }));
+
+    await createAddressApi(address);
+
+    expect(calledInit().method).toBe("POST");
+    expect(JSON.parse(calledInit().body as string)).toEqual(address);
+  });
+
+  it("createAddressApi surfaces a field-level validation error", async () => {
+    fetchMock.mockResolvedValue(
+      fail(422, { message: "Validation failed", errors: [{ field: "postalCode", message: "Postal code must be 6 digits" }] })
+    );
+
+    await expect(createAddressApi(address)).rejects.toThrow("Postal code must be 6 digits");
+  });
+
+  it("updateAddressApi sends a PUT to the address's own endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ id: 1, ...address, isDefault: true }));
+
+    await updateAddressApi(1, { isDefault: true });
+
+    expect(calledUrl()).toBe(`${API_URL}/api/addresses/1`);
+    expect(calledInit().method).toBe("PUT");
+    expect(JSON.parse(calledInit().body as string)).toEqual({ isDefault: true });
+  });
+
+  it("deleteAddressApi sends a DELETE to the address's own endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Address deleted successfully" }));
+
+    await deleteAddressApi(1);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/addresses/1`);
+    expect(calledInit().method).toBe("DELETE");
+  });
+
+  it("deleteAddressApi surfaces a conflict when the address is still on an order", async () => {
+    fetchMock.mockResolvedValue(
+      fail(409, { message: "This address is used on a past order and can't be deleted" })
+    );
+
+    await expect(deleteAddressApi(1)).rejects.toThrow(/past order/i);
+  });
+});

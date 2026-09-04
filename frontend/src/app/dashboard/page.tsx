@@ -8,6 +8,7 @@ import { PasswordInput } from "@/components/ui/password-input";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductCard from "@/components/ProductCard";
+import AddressBook from "@/components/dashboard/AddressBook";
 import { useAuth } from "@/hooks/useAuth";
 import { useWishlist } from "@/hooks/useWishlist";
 import { getMyOrders, updateProfile, Order, OrderItem, getWishlist, WishlistItem, changePasswordAPI, cancelOrderApi, isOrderCancellable, resendVerificationApi } from "@/lib/api";
@@ -49,7 +50,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string;
   cancelled:  { label: "Cancelled",  color: "text-rose-500",    bg: "bg-rose-500/10 border-rose-500/30",        dot: "bg-rose-500" },
 };
 
-type DashboardTab = "overview" | "orders" | "profile" | "wishlist";
+type DashboardTab = "overview" | "orders" | "profile" | "wishlist" | "addresses";
 
 function DashboardContent() {
   const { user, loading: authLoading, logout, updateProfile: updateProfileContext, becomeMember } = useAuth();
@@ -448,13 +449,25 @@ function DashboardContent() {
               <button
                 onClick={() => { setActiveTab("profile"); setSelectedOrder(null); }}
                 className={`flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all w-full min-w-[130px] lg:min-w-0 text-left border ${
-                  activeTab === "profile" 
-                    ? "bg-primary/5 text-primary-bright border-primary/20 shadow-sm" 
+                  activeTab === "profile"
+                    ? "bg-primary/5 text-primary-bright border-primary/20 shadow-sm"
                     : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/15"
                 }`}
               >
                 <Settings className="size-4 shrink-0" />
                 <span>Profile Settings</span>
+              </button>
+
+              <button
+                onClick={() => { setActiveTab("addresses"); setSelectedOrder(null); }}
+                className={`flex items-center gap-3 px-4 py-3 text-xs font-bold uppercase tracking-wider rounded-xl transition-all w-full min-w-[130px] lg:min-w-0 text-left border ${
+                  activeTab === "addresses"
+                    ? "bg-primary/5 text-primary-bright border-primary/20 shadow-sm"
+                    : "text-muted-foreground hover:text-foreground border-transparent hover:bg-muted/15"
+                }`}
+              >
+                <MapPin className="size-4 shrink-0" />
+                <span>Addresses</span>
               </button>
 
               <button
@@ -903,6 +916,9 @@ function DashboardContent() {
                   </div>
                 </div>
               )}
+
+              {/* TAB: ADDRESSES */}
+              {activeTab === "addresses" && <AddressBook />}
 
               {/* TAB 4: WISHLIST */}
               {activeTab === "wishlist" && (

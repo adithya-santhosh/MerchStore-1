@@ -953,6 +953,76 @@ export async function updateProfile(payload: { firstName: string; lastName: stri
   return response.json();
 }
 
+// ─── Address Book ─────────────────────────────────────────────────────────────
+
+export type AddressInput = Omit<UserAddress, "id" | "isDefault"> & { isDefault?: boolean };
+
+export async function getAddressesApi(): Promise<UserAddress[]> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses`, {
+    credentials: "include",
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch addresses");
+  return response.json();
+}
+
+export async function createAddressApi(payload: AddressInput): Promise<UserAddress> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw await apiError(response, "Failed to save address");
+  }
+  return response.json();
+}
+
+export async function updateAddressApi(
+  id: number,
+  payload: Partial<AddressInput>
+): Promise<UserAddress> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw await apiError(response, "Failed to update address");
+  }
+  return response.json();
+}
+
+export async function deleteAddressApi(id: number): Promise<{ message: string }> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+  });
+  if (!response.ok) {
+    throw await apiError(response, "Failed to delete address");
+  }
+  return response.json();
+}
+
 // ─── Review API Helpers ───────────────────────────────────────────────────────
 
 export interface ReviewUser {
