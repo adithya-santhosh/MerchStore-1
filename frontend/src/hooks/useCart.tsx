@@ -249,8 +249,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const validateCouponOnServer = async (code: string, orderAmount: number) => {
     const response = await fetch(`${API_URL}/api/coupons/validate`, {
       method: "POST",
+      // requireAuth on the backend needs the HttpOnly auth cookie, which only
+      // rides along on a `credentials: "include"` request.
+      credentials: "include",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getCsrfHeader(),
       },
       body: JSON.stringify({ code, orderAmount })
     });

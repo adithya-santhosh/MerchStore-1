@@ -11,6 +11,7 @@ import { createOrder, createPaymentOrder, verifyPayment } from "@/lib/api";
 import { getProductImageSrc } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { getErrorMessage } from "@/lib/errors";
+import { getCsrfHeader } from "@/utils/cookie";
 import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 import {
   MapPin,
@@ -222,9 +223,12 @@ export default function CheckoutPage() {
     setCouponLoading(true);
     setCouponError("");
     try {
+      // requireAuth on the backend needs the HttpOnly auth cookie, which only
+      // rides along on a `credentials: "include"` request.
       const res = await fetch(`${API_URL}/api/coupons/validate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...getCsrfHeader() },
         body: JSON.stringify({ code: couponCode, orderAmount: subtotal }),
       });
       if (!res.ok) {
