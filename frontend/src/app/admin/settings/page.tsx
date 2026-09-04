@@ -16,7 +16,7 @@ import {
   Settings
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getCookie } from "@/utils/cookie";
+import { getCookie, getCsrfHeader } from "@/utils/cookie";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -129,7 +129,8 @@ export default function AdminSettingsPage() {
     try {
       const token = getCookie("token");
       const headers: Record<string, string> = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getCsrfHeader(),
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
@@ -177,7 +178,8 @@ export default function AdminSettingsPage() {
     try {
       const token = getCookie("token");
       const headers: Record<string, string> = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getCsrfHeader(),
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
@@ -225,7 +227,8 @@ export default function AdminSettingsPage() {
     try {
       const token = getCookie("token");
       const headers: Record<string, string> = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getCsrfHeader(),
       };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
@@ -250,7 +253,7 @@ export default function AdminSettingsPage() {
 
     try {
       const token = getCookie("token");
-      const headers: Record<string, string> = {};
+      const headers: Record<string, string> = { ...getCsrfHeader() };
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }

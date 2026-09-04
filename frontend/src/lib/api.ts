@@ -1,5 +1,5 @@
 import { Product, type ProductWritePayload } from "@/types/products";
-import { getCookie } from "@/utils/cookie";
+import { getCookie, getCsrfHeader } from "@/utils/cookie";
 import { ApiValidationError, type ApiFieldError } from "@/lib/errors";
 import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 
@@ -110,6 +110,7 @@ export async function deleteProduct(id: number) {
       credentials: "include",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...getCsrfHeader(),
       },
     }
   );
@@ -153,6 +154,7 @@ export async function createProduct(product: ProductWritePayload){
     headers : {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body : JSON.stringify(product),
   });
@@ -170,6 +172,7 @@ export async function updateProduct(id: string | number, product: ProductWritePa
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(product),
   });
@@ -453,6 +456,7 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -487,6 +491,7 @@ export async function createPaymentOrder(payload: CreatePaymentOrderPayload): Pr
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -516,6 +521,7 @@ export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Orde
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -656,6 +662,7 @@ export async function updateAdminOrderStatus(id: number, status: string): Promis
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ status }),
   });
@@ -748,6 +755,7 @@ export async function bulkUpdateProducts(
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ ids, action }),
   });
@@ -932,6 +940,7 @@ export async function updateProfile(payload: { firstName: string; lastName: stri
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -1006,6 +1015,7 @@ export async function submitReview(
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(data),
   });
@@ -1023,6 +1033,7 @@ export async function deleteReviewApi(reviewId: number): Promise<void> {
     credentials: "include",
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
   });
   if (!response.ok) {
@@ -1076,6 +1087,7 @@ export async function addToWishlistApi(productId: number): Promise<void> {
   await fetch(`${API_URL}/api/wishlist/${productId}`, {
     method: "POST",
     credentials: "include",
+    headers: { ...getCsrfHeader() },
   });
 }
 
@@ -1083,6 +1095,7 @@ export async function removeFromWishlistApi(productId: number): Promise<void> {
   await fetch(`${API_URL}/api/wishlist/${productId}`, {
     method: "DELETE",
     credentials: "include",
+    headers: { ...getCsrfHeader() },
   });
 }
 
@@ -1106,6 +1119,7 @@ export async function submitVendorShipment(orderId: number, data: { carrier: str
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(data),
   });
@@ -1155,6 +1169,7 @@ export async function createVendorAccount(data: {
     headers: {
       "Content-Type": "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(data),
   });
@@ -1173,6 +1188,7 @@ export async function assignProductVendor(productId: number, vendorId: number | 
     headers: {
       "Content-Type": "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ vendorId }),
   });
@@ -1202,6 +1218,7 @@ export async function purchaseMembershipRazorpay(userToken?: string): Promise<Au
     headers: {
       "Content-Type": "application/json",
       ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+      ...getCsrfHeader(),
     },
   });
 
@@ -1229,6 +1246,7 @@ export async function purchaseMembershipRazorpay(userToken?: string): Promise<Au
             headers: {
               "Content-Type": "application/json",
               ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+              ...getCsrfHeader(),
             },
             body: JSON.stringify({
               razorpayOrderId: paymentResponse.razorpay_order_id,
@@ -1273,6 +1291,7 @@ export async function changePasswordAPI(currentPassword: string, newPassword: st
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ currentPassword, newPassword }),
   });
@@ -1300,6 +1319,7 @@ export async function cancelOrderApi(orderId: number, reason?: string): Promise<
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(reason ? { reason } : {}),
   });
@@ -1374,6 +1394,7 @@ export async function resendVerificationApi(): Promise<{ message: string }> {
   const res = await fetch(`${API_URL}/api/auth/resend-verification`, {
     method: "POST",
     credentials: "include",
+    headers: { ...getCsrfHeader() },
   });
 
   if (!res.ok) {
@@ -1418,6 +1439,7 @@ export async function recordRefundApi(orderId: number, reference?: string): Prom
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(reference ? { reference } : {}),
   });

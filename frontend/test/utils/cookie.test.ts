@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach } from "vitest";
-import { getCookie } from "@/utils/cookie";
+import { getCookie, getCsrfHeader } from "@/utils/cookie";
 
 /** Clears every cookie jsdom is currently holding. */
 const clearCookies = () => {
@@ -64,5 +64,23 @@ describe("getCookie", () => {
     document.cookie = "other=second";
 
     expect(getCookie("token")).toBe("first");
+  });
+});
+
+describe("getCsrfHeader", () => {
+  it("returns no header at all when there is no CSRF cookie yet", () => {
+    expect(getCsrfHeader()).toEqual({});
+  });
+
+  it("echoes the CSRF cookie back as X-CSRF-Token", () => {
+    document.cookie = "csrf_token=abc123";
+
+    expect(getCsrfHeader()).toEqual({ "X-CSRF-Token": "abc123" });
+  });
+
+  it("does not confuse the auth token cookie for the CSRF one", () => {
+    document.cookie = "token=some-jwt";
+
+    expect(getCsrfHeader()).toEqual({});
   });
 });

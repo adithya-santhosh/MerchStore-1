@@ -9,6 +9,12 @@ import {
   AUTH_COOKIE_OPTIONS,
   AUTH_COOKIE_MAX_AGE,
 } from "../lib/auth-cookie";
+import {
+  CSRF_COOKIE_NAME,
+  CSRF_COOKIE_OPTIONS,
+  parseCookies,
+  setCsrfCookie,
+} from "../lib/csrf";
 
 export const register = async (req: Request, res: Response) => {
   try {
@@ -19,6 +25,7 @@ export const register = async (req: Request, res: Response) => {
 
     const result = await registerUser(req.body);
     res.cookie(AUTH_COOKIE_NAME, result.token, { ...AUTH_COOKIE_OPTIONS, maxAge: AUTH_COOKIE_MAX_AGE });
+    setCsrfCookie(res);
     res.status(201).json(result);
   } catch (error: any) {
     logger.error({ err: error }, "Error in register controller");
@@ -35,6 +42,7 @@ export const login = async (req: Request, res: Response) => {
 
     const result = await loginUser(req.body);
     res.cookie(AUTH_COOKIE_NAME, result.token, { ...AUTH_COOKIE_OPTIONS, maxAge: AUTH_COOKIE_MAX_AGE });
+    setCsrfCookie(res);
     res.json(result);
   } catch (error: any) {
     logger.error({ err: error }, "Error in login controller");
@@ -44,6 +52,7 @@ export const login = async (req: Request, res: Response) => {
 
 export const logout = async (_req: Request, res: Response) => {
   res.clearCookie(AUTH_COOKIE_NAME, AUTH_COOKIE_OPTIONS);
+  res.clearCookie(CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS);
   res.json({ message: "Logged out successfully" });
 };
 
@@ -55,6 +64,12 @@ export const me = async (req: Request, res: Response) => {
     const user = await getUserById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
+    }
+    // Backfills the CSRF cookie for a session that predates this cookie
+    // existing — otherwise a browser signed in before this shipped is stuck
+    // failing every mutating request until it logs in again.
+    if (!parseCookies(req)[CSRF_COOKIE_NAME]) {
+      setCsrfCookie(res);
     }
     res.json(user);
   } catch (error: any) {

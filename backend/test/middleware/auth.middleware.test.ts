@@ -28,8 +28,8 @@ const mockRes = () => {
   return res as Response;
 };
 
-const mockReq = (headers: Record<string, string> = {}): Request =>
-  ({ headers, user: undefined } as unknown as Request);
+const mockReq = (headers: Record<string, string> = {}, method = "GET"): Request =>
+  ({ headers, method, user: undefined } as unknown as Request);
 
 describe("requireAuth", () => {
   it("rejects a request with no token", async () => {
@@ -129,6 +129,72 @@ describe("requireAuth", () => {
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
+
+  describe("CSRF", () => {
+    const cookieAuth = (id: number, extra: Record<string, any> = {}) => {
+      const token = signToken({ id, email: "a@b.com", role: "CUSTOMER", firstName: "A", lastName: "B", ...extra });
+      return `token=${token}`;
+    };
+
+    it("rejects a cookie-authenticated mutating request with no CSRF header", async () => {
+      const req = mockReq({ cookie: cookieAuth(1) }, "POST");
+      const res = mockRes();
+      const next = vi.fn();
+
+      await requireAuth(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("rejects a cookie-authenticated mutating request whose CSRF header doesn't match the cookie", async () => {
+      const req = mockReq(
+        { cookie: `${cookieAuth(1)}; csrf_token=real-value`, "x-csrf-token": "attacker-guess" },
+        "POST"
+      );
+      const res = mockRes();
+      const next = vi.fn();
+
+      await requireAuth(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("accepts a cookie-authenticated mutating request whose CSRF header matches the cookie", async () => {
+      const req = mockReq(
+        { cookie: `${cookieAuth(1)}; csrf_token=real-value`, "x-csrf-token": "real-value" },
+        "POST"
+      );
+      const res = mockRes();
+      const next = vi.fn();
+
+      await requireAuth(req, res, next);
+
+      expect(next).toHaveBeenCalledOnce();
+    });
+
+    it("does not require a CSRF header for a cookie-authenticated GET", async () => {
+      const req = mockReq({ cookie: cookieAuth(1) }, "GET");
+      const res = mockRes();
+      const next = vi.fn();
+
+      await requireAuth(req, res, next);
+
+      expect(next).toHaveBeenCalledOnce();
+    });
+
+    it("does not require a CSRF header when the request supplies its own Authorization header", async () => {
+      const token = signToken({ id: 1, email: "a@b.com", role: "CUSTOMER", firstName: "A", lastName: "B" });
+      const req = mockReq({ authorization: `Bearer ${token}` }, "POST");
+      const res = mockRes();
+      const next = vi.fn();
+
+      await requireAuth(req, res, next);
+
+      expect(next).toHaveBeenCalledOnce();
+    });
+  });
 });
 
 describe("requireAdmin", () => {
@@ -211,5 +277,45 @@ describe("optionalAuth", () => {
 
     expect(next).toHaveBeenCalledOnce();
     expect(req.user).toBeUndefined();
+  });
+
+  describe("CSRF", () => {
+    it("rejects a cookie-authenticated mutating request with no CSRF header", async () => {
+      const token = signToken({ id: 5, email: "e@f.com", role: "CUSTOMER", firstName: "E", lastName: "F" });
+      const req = mockReq({ cookie: `token=${token}` }, "POST");
+      const res = mockRes();
+      const next = vi.fn();
+
+      await optionalAuth(req, res, next);
+
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(next).not.toHaveBeenCalled();
+    });
+
+    it("accepts a cookie-authenticated mutating request with a matching CSRF header", async () => {
+      const token = signToken({ id: 5, email: "e@f.com", role: "CUSTOMER", firstName: "E", lastName: "F" });
+      const req = mockReq(
+        { cookie: `token=${token}; csrf_token=real-value`, "x-csrf-token": "real-value" },
+        "POST"
+      );
+      const res = mockRes();
+      const next = vi.fn();
+
+      await optionalAuth(req, res, next);
+
+      expect(next).toHaveBeenCalledOnce();
+      expect(req.user?.id).toBe(5);
+    });
+
+    it("does not require a CSRF header for a genuine guest — no token at all", async () => {
+      const req = mockReq({}, "POST");
+      const res = mockRes();
+      const next = vi.fn();
+
+      await optionalAuth(req, res, next);
+
+      expect(next).toHaveBeenCalledOnce();
+      expect(req.user).toBeUndefined();
+    });
   });
 });
