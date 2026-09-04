@@ -16,6 +16,7 @@ import paymentRoutes from "./routes/payment.routes";
 import reviewRoutes from "./routes/review.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
 import vendorRoutes from "./routes/vendor.routes";
+import contactRoutes from "./routes/contact.routes";
 
 // Express app assembly, split out from server.ts so tests can import it with
 // Supertest without also binding a port (app.listen lives in server.ts only).
@@ -139,6 +140,7 @@ app.use("/api/payment", apiLimiter, paymentRoutes);
 app.use("/api/reviews", apiLimiter, reviewRoutes);
 app.use("/api/wishlist", apiLimiter, wishlistRoutes);
 app.use("/api/vendors", apiLimiter, vendorRoutes);
+app.use("/api/contact", apiLimiter, contactRoutes);
 
 // ─── 404 — nothing matched ────────────────────────────────────────────────────
 // Registered after every route so it only runs when nothing else handled the

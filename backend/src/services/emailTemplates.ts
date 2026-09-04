@@ -363,3 +363,37 @@ export const getEmailVerificationHtml = (name: string, verifyUrl: string): strin
       )
     ].join("\n")
   });
+
+export const getContactNotificationEmailHtml = (data: {
+  name: string;
+  email: string;
+  message: string;
+}): string =>
+  layout({
+    title: "New Contact Form Message",
+    // The preheader isn't inside a band()/esc() call site like the rest of
+    // this template's content — easy to miss that it needs its own escaping.
+    preheader: `${esc(data.name)} sent a message through the contact form.`,
+    content: [
+      band(
+        `${eyebrow("Contact form")}
+              ${display("New message received")}
+              ${lead(`From ${esc(data.name)} (${esc(data.email)}).`)}`,
+        "32px 40px 0 40px"
+      ),
+      band(
+        `<table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation" style="background-color: ${color.panelBg}; border: 1px solid ${color.hairline}; border-radius: 8px;">
+                  <tr>
+                    <td style="padding: 18px 20px;">
+                      <p style="margin: 0; font-family: ${FONT}; font-size: 14px; line-height: 1.65; color: ${color.textPrimary}; white-space: pre-wrap;">${esc(data.message)}</p>
+                    </td>
+                  </tr>
+                </table>`,
+        "28px 40px 0 40px"
+      ),
+      band(
+        note(`Reply directly to this email to respond to ${esc(data.name)}.`),
+        "28px 40px 32px 40px"
+      )
+    ].join("\n")
+  });

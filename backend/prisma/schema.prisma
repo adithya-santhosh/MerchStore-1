@@ -384,6 +384,19 @@ model Coupon {
   @@map("coupons")
 }
 
+// ─── CONTACT MESSAGE ─────────────────────────────────────────────────────────
+// Submissions from the public /contact form. No user relation — the sender
+// doesn't have to be logged in, or even have an account at all.
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("contact_messages")
+}
+
 // ─── SYSTEM SETTING ──────────────────────────────────────────────────────────
 model SystemSetting {
   id    Int    @id @default(autoincrement())

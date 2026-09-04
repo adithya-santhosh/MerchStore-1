@@ -5,7 +5,8 @@ import {
   getOrderConfirmationEmailHtml,
   getOrderStatusEmailHtml,
   getPasswordResetEmailHtml,
-  getEmailVerificationHtml
+  getEmailVerificationHtml,
+  getContactNotificationEmailHtml
 } from "./emailTemplates";
 
 // Lazy-initialize Resend SDK using environment variable
@@ -24,6 +25,10 @@ const getFromAddress = (): string => {
 
 const getFrontendUrl = (): string => {
   return process.env.FRONTEND_URL || "http://localhost:3000";
+};
+
+const getContactNotificationEmail = (): string | null => {
+  return process.env.CONTACT_NOTIFICATION_EMAIL || null;
 };
 
 // ─── Email Methods ─────────────────────────────────────────────────────────────
@@ -188,5 +193,50 @@ export const sendEmailVerification = async (params: SendEmailVerificationParams)
     }
   } catch (error) {
     logger.error({ err: error }, "[EmailService ERROR] Exception in sendEmailVerification");
+  }
+};
+
+export interface SendContactNotificationParams {
+  name: string;
+  email: string;
+  message: string;
+}
+
+export const sendContactNotification = async (params: SendContactNotificationParams): Promise<void> => {
+  try {
+    const to = getContactNotificationEmail();
+    if (!to) {
+      logger.warn(
+        "[EmailService] CONTACT_NOTIFICATION_EMAIL is not set. The message is saved but no one was notified."
+      );
+      return;
+    }
+
+    const resend = getResendClient();
+    const html = getContactNotificationEmailHtml(params);
+
+    if (!resend) {
+      logger.info(`[EmailService DEV] Contact notification queued for ${to} (from ${params.email})`);
+      return;
+    }
+
+    const response = await resend.emails.send({
+      from: getFromAddress(),
+      to: [to],
+      // Lets the person monitoring the inbox hit Reply and land straight in
+      // the visitor's mailbox, instead of copy-pasting their address out of
+      // the message body.
+      replyTo: params.email,
+      subject: `New contact form message from ${params.name}`,
+      html
+    });
+
+    if (response.error) {
+      logger.error({ err: response.error }, "[EmailService ERROR] Failed to send contact notification");
+    } else {
+      logger.info(`[EmailService SUCCESS] Contact notification sent to ${to} (ID: ${response.data?.id})`);
+    }
+  } catch (error) {
+    logger.error({ err: error }, "[EmailService ERROR] Exception in sendContactNotification");
   }
 };

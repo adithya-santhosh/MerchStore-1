@@ -1448,3 +1448,47 @@ export async function recordRefundApi(orderId: number, reference?: string): Prom
   }
   return res.json();
 }
+
+// ─── Contact Form ─────────────────────────────────────────────────────────────
+
+export interface ContactMessagePayload {
+  name: string;
+  email: string;
+  message: string;
+}
+
+export async function submitContactMessageApi(
+  payload: ContactMessagePayload
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/contact`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to send your message. Please try again."));
+  }
+
+  return res.json();
+}
+
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: string;
+}
+
+/** Admin-only inbox for messages submitted through /contact. */
+export async function getContactMessagesApi(token?: string): Promise<ContactMessage[]> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/contact`, {
+    credentials: "include",
+    headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch messages");
+  return res.json();
+}

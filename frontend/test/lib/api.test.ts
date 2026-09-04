@@ -14,6 +14,8 @@ import {
   updateProduct,
   requestPasswordResetAPI,
   getUploadSignature,
+  submitContactMessageApi,
+  getContactMessagesApi,
 } from "@/lib/api";
 import { ApiValidationError } from "@/lib/errors";
 import type { ProductWritePayload } from "@/types/products";
@@ -475,3 +477,67 @@ describe("readApiError (via requestPasswordResetAPI)", () => {
     );
   });
 });
+
+describe("submitContactMessageApi", () => {
+  const payload = { name: "Ada", email: "ada@example.com", message: "Do you ship to Ladakh?" };
+
+  it("posts to /api/contact with no auth header — the endpoint is public", async () => {
+    setCookie("jwt-abc");
+    fetchMock.mockResolvedValue(ok({ message: "Thanks for reaching out." }));
+
+    await submitContactMessageApi(payload);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/contact`);
+    expect(calledInit().method).toBe("POST");
+    expect(JSON.parse(calledInit().body as string)).toEqual(payload);
+    expect(calledInit().headers).not.toHaveProperty("Authorization");
+  });
+
+  it("returns the confirmation message", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Thanks for reaching out." }));
+
+    await expect(submitContactMessageApi(payload)).resolves.toEqual({
+      message: "Thanks for reaching out.",
+    });
+  });
+
+  it("surfaces the API's validation message on a 422", async () => {
+    fetchMock.mockResolvedValue(
+      fail(422, { message: "Validation failed", errors: [{ field: "email", message: "Invalid email address" }] })
+    );
+
+    await expect(submitContactMessageApi(payload)).rejects.toThrow("Invalid email address");
+  });
+
+  it("falls back to a generic message when the API sends nothing usable", async () => {
+    fetchMock.mockResolvedValue(fail(500));
+
+    await expect(submitContactMessageApi(payload)).rejects.toThrow(
+      "Failed to send your message. Please try again."
+    );
+  });
+});
+
+describe("getContactMessagesApi", () => {
+  it("attaches the admin's token and hits the admin inbox endpoint", async () => {
+    setCookie("jwt-admin");
+    fetchMock.mockResolvedValue(ok([]));
+
+    await getContactMessagesApi();
+
+    expect(calledUrl()).toBe(`${API_URL}/api/contact`);
+    expect((calledInit().headers as Record<string, string>).Authorization).toBe("Bearer jwt-admin");
+    expect(calledInit().credentials).toBe("include");
+  });
+
+  it("returns the message list", async () => {
+    const messages = [{ id: 1, name: "Ada", email: "ada@example.com", message: "Hi", createdAt: "2026-01-01" }];
+    fetchMock.mockResolvedValue(ok(messages));
+
+    await expect(getContactMessagesApi("token")).resolves.toEqual(messages);
+  });
+
+  it("throws when the request is rejected", async () => {
+    fetchMock.mockResolvedValue(fail(403));
+
+    await expect(getContactMessagesApi("token")).rejects.toThrow("Failed to fetch messages");
