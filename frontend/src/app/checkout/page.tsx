@@ -11,6 +11,7 @@ import { createOrder, createPaymentOrder, verifyPayment } from "@/lib/api";
 import { getProductImageSrc } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { getErrorMessage } from "@/lib/errors";
+import { getCsrfHeader } from "@/utils/cookie";
 import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 import {
   MapPin,
@@ -32,6 +33,7 @@ import {
 
 interface AddressForm {
   fullName: string;
+  email: string;
   phone: string;
   addressLine1: string;
   addressLine2: string;
@@ -42,6 +44,7 @@ interface AddressForm {
 
 const EMPTY_ADDRESS: AddressForm = {
   fullName: "",
+  email: "",
   phone: "",
   addressLine1: "",
   addressLine2: "",
@@ -144,6 +147,18 @@ function Field({
   );
 }
 
+// The address form collects one "full name" field regardless of guest/signed-in
+// status; guest checkout needs it split for the account it creates behind the
+// scenes. First word is the first name, everything else the last — falls back
+// to repeating the first name for a single-word entry rather than leaving the
+// last name empty.
+function splitFullName(fullName: string): { firstName: string; lastName: string } {
+  const parts = fullName.trim().split(/\s+/);
+  const firstName = parts[0] || "";
+  const lastName = parts.slice(1).join(" ") || firstName;
+  return { firstName, lastName };
+}
+
 const inputClass =
   "w-full px-4 py-3 text-sm font-medium bg-muted/20 border border-border rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/30 transition-all";
 
@@ -168,23 +183,15 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
 
-  // Auth guard. The param has to be `callbackUrl` — that is the name the login
-  // page and the route middleware both read. A `redirect` param is silently
-  // ignored, which dropped the shopper on the home page after signing in
-  // instead of back here. `replace` keeps /checkout out of history, so Back
-  // returns to the cart rather than bouncing off this guard again.
-  useEffect(() => {
-    if (!authLoading && !isAuthenticated) {
-      router.replace(`/login?callbackUrl=${encodeURIComponent("/checkout")}`);
-    }
-  }, [authLoading, isAuthenticated, router]);
-
-  // Pre-fill name and phone from user profile
+  // Pre-fill name, email and phone from user profile. Checkout no longer
+  // requires signing in — a shopper who isn't logged in fills the (now
+  // editable) email field themselves and checks out as a guest.
   useEffect(() => {
     if (user) {
       setAddress((prev) => ({
         ...prev,
         fullName: prev.fullName || `${user.firstName} ${user.lastName}`.trim(),
+        email: user.email,
         phone: prev.phone || user.phone || "",
       }));
     }
@@ -216,9 +223,12 @@ export default function CheckoutPage() {
     setCouponLoading(true);
     setCouponError("");
     try {
+      // requireAuth on the backend needs the HttpOnly auth cookie, which only
+      // rides along on a `credentials: "include"` request.
       const res = await fetch(`${API_URL}/api/coupons/validate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", ...getCsrfHeader() },
         body: JSON.stringify({ code: couponCode, orderAmount: subtotal }),
       });
       if (!res.ok) {
@@ -245,6 +255,9 @@ export default function CheckoutPage() {
   const validateAddress = useCallback((): boolean => {
     const errors: Partial<AddressForm> = {};
     if (!address.fullName.trim()) errors.fullName = "Full name is required";
+    if (!address.email.trim()) errors.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(address.email.trim()))
+      errors.email = "Enter a valid email address";
     if (!address.phone.trim()) errors.phone = "Phone number is required";
     else if (!/^[6-9]\d{9}$/.test(address.phone.replace(/\s/g, "")))
       errors.phone = "Enter a valid 10-digit Indian mobile number";
@@ -283,6 +296,12 @@ export default function CheckoutPage() {
         country: "IN",
       };
 
+      // Only sent (and only needed) when checking out without an account —
+      // an authenticated request is already tied to the signed-in user.
+      const guestPayload = isAuthenticated
+        ? undefined
+        : { email: address.email, ...splitFullName(address.fullName), phone: address.phone };
+
       if (paymentMethod === "razorpay") {
         // 1. Load Razorpay script
         const isScriptLoaded = await new Promise<boolean>((resolve) => {
@@ -310,6 +329,7 @@ export default function CheckoutPage() {
           address: addressPayload,
           couponCode: couponDetails?.code,
           sessionToken,
+          guest: guestPayload,
         });
 
         // 3. Open Razorpay checkout
@@ -331,6 +351,7 @@ export default function CheckoutPage() {
                 address: addressPayload,
                 couponCode: couponDetails?.code,
                 sessionToken,
+                guest: guestPayload,
               });
 
               clearCart();
@@ -345,7 +366,7 @@ export default function CheckoutPage() {
           prefill: {
             name: address.fullName,
             contact: address.phone,
-            email: user?.email || "",
+            email: user?.email || address.email,
           },
           theme: {
             color: "#000000",
@@ -365,6 +386,7 @@ export default function CheckoutPage() {
           couponCode: couponDetails?.code,
           paymentMethod: "cod",
           sessionToken,
+          guest: guestPayload,
         });
 
         clearCart();
@@ -379,22 +401,14 @@ export default function CheckoutPage() {
 
   // ── Loading / Guard ───────────────────────────────────────────────────────
 
-  // The signed-out case is folded in here on purpose: the guard above only
-  // *starts* a navigation, so this renders for a frame or two afterwards.
-  // Returning null there painted a bare white page — no navbar, no footer —
-  // which reads as "the checkout page didn't load".
-  const redirectingToLogin = !authLoading && !isAuthenticated;
-
-  if (authLoading || cartLoading || redirectingToLogin) {
+  if (authLoading || cartLoading) {
     return (
       <div className="flex flex-col min-h-screen bg-background text-foreground">
         <Navbar />
         <main className="flex-grow flex items-center justify-center">
           <div className="space-y-4 text-center">
             <div className="size-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-sm text-muted-foreground">
-              {redirectingToLogin ? "Taking you to sign in..." : "Loading checkout..."}
-            </p>
+            <p className="text-sm text-muted-foreground">Loading checkout...</p>
           </div>
         </main>
         <Footer />
@@ -481,6 +495,7 @@ export default function CheckoutPage() {
                             if (selected) {
                               setAddress({
                                 fullName: `${user.firstName} ${user.lastName}`.trim(),
+                                email: user.email,
                                 phone: user.phone || address.phone || "",
                                 addressLine1: selected.addressLine1,
                                 addressLine2: selected.addressLine2 || "",
@@ -492,6 +507,7 @@ export default function CheckoutPage() {
                           } else {
                             setAddress({
                               fullName: `${user.firstName} ${user.lastName}`.trim(),
+                              email: user.email,
                               phone: user.phone || "",
                               addressLine1: "",
                               addressLine2: "",
@@ -532,6 +548,29 @@ export default function CheckoutPage() {
                         className={inputClass}
                       />
                     </Field>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <Field label="Email" id="email" required error={addressErrors.email}>
+                      <input
+                        id="email"
+                        type="email"
+                        placeholder="you@example.com"
+                        value={address.email}
+                        disabled={isAuthenticated}
+                        onChange={(e) => setAddress({ ...address, email: e.target.value })}
+                        className={`${inputClass} ${isAuthenticated ? "opacity-60 cursor-not-allowed" : ""}`}
+                      />
+                    </Field>
+                    {!isAuthenticated && (
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        We&apos;ll send your order confirmation here.{" "}
+                        <Link href={`/login?callbackUrl=${encodeURIComponent("/checkout")}`} className="text-primary-bright font-semibold hover:underline">
+                          Log in
+                        </Link>{" "}
+                        if you have an account.
+                      </p>
+                    )}
                   </div>
 
                   <div className="sm:col-span-2">

@@ -1,18 +1,20 @@
 import { Router } from "express";
 import { createPaymentOrder, verifyPayment, createMembershipOrder, verifyMembership } from "../controllers/payment.controller";
-import { requireAuth } from "../middleware/auth.middleware";
+import { requireAuth, optionalAuth } from "../middleware/auth.middleware";
 
 const router = Router();
 
+// optionalAuth: a signed-in shopper's id is used as-is; an anonymous request
+// must carry guest contact details instead (see resolveCheckoutUserId).
 router.post(
     "/create-order",
-    requireAuth,
+    optionalAuth,
     createPaymentOrder
 );
 
 router.post(
     "/verify",
-    requireAuth,
+    optionalAuth,
     verifyPayment
 );
 

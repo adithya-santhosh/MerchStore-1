@@ -7,6 +7,7 @@ vi.mock("../../src/lib/prisma", () => ({
       findFirst: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
       delete: vi.fn(),
     },
     order: { findFirst: vi.fn() },
@@ -20,6 +21,9 @@ import {
   createReview,
   deleteReview,
   getUserReviewForProduct,
+  getPendingReviews,
+  approveReview,
+  adminDeleteReview,
 } from "../../src/services/review.service";
 
 const mockedPrisma = vi.mocked(prisma, true);
@@ -30,6 +34,7 @@ const reviewRow = (over: Record<string, any> = {}) => ({
   title: "Excellent",
   body: "Fits perfectly.",
   isVerifiedPurchase: true,
+  isApproved: false,
   createdAt: new Date("2026-03-01"),
   user: { id: 7, firstName: "Ada", lastName: "Lovelace" },
   ...over,
@@ -249,6 +254,110 @@ describe("createReview", () => {
 
     await expect(createReview(7, 10, { rating: 1 })).resolves.toBeTruthy();
     await expect(createReview(7, 10, { rating: 5 })).resolves.toBeTruthy();
+  });
+
+  it("holds every new review back from the public listing until an admin approves it", async () => {
+    mockedPrisma.review.findFirst.mockResolvedValue(null as any);
+    mockedPrisma.order.findFirst.mockResolvedValue(null as any);
+    mockedPrisma.review.create.mockResolvedValue(reviewRow() as any);
+
+    await createReview(7, 10, { rating: 5 });
+
+    const data = (mockedPrisma.review.create.mock.calls[0]?.[0] as any).data;
+    expect(data.isApproved).toBe(false);
+  });
+
+  it("tells the caller the review is pending, so the UI can say so immediately", async () => {
+    mockedPrisma.review.findFirst.mockResolvedValue(null as any);
+    mockedPrisma.order.findFirst.mockResolvedValue(null as any);
+    mockedPrisma.review.create.mockResolvedValue(reviewRow({ isApproved: false }) as any);
+
+    const review = await createReview(7, 10, { rating: 5 });
+
+    expect(review.isApproved).toBe(false);
+  });
+});
+
+describe("getPendingReviews", () => {
+  const pendingRow = (over: Record<string, any> = {}) => ({
+    id: 1,
+    rating: 3,
+    title: "Decent",
+    body: "Works, but the fit is loose.",
+    isVerifiedPurchase: true,
+    createdAt: new Date("2026-03-01"),
+    user: { id: 7, firstName: "Ada", lastName: "Lovelace", email: "ada@example.com" },
+    product: { id: 10, name: "Roof Rack", slug: "roof-rack" },
+    ...over,
+  });
+
+  it("only fetches unapproved reviews", async () => {
+    mockedPrisma.review.findMany.mockResolvedValue([] as any);
+
+    await getPendingReviews();
+
+    expect(mockedPrisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { isApproved: false } })
+    );
+  });
+
+  it("orders oldest first — first submitted, first reviewed", async () => {
+    mockedPrisma.review.findMany.mockResolvedValue([] as any);
+
+    await getPendingReviews();
+
+    expect(mockedPrisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { createdAt: "asc" } })
+    );
+  });
+
+  it("gives the moderator enough context to judge the review: full name, email, and which product", async () => {
+    mockedPrisma.review.findMany.mockResolvedValue([pendingRow()] as any);
+
+    const result = await getPendingReviews();
+
+    expect(result[0]).toMatchObject({
+      user: { id: 7, name: "Ada Lovelace", email: "ada@example.com" },
+      product: { id: 10, name: "Roof Rack", slug: "roof-rack" },
+    });
+  });
+});
+
+describe("approveReview", () => {
+  it("reports a missing review rather than throwing something opaque", async () => {
+    mockedPrisma.review.findUnique.mockResolvedValue(null as any);
+
+    await expect(approveReview(999)).rejects.toThrow(/not found/i);
+    expect(mockedPrisma.review.update).not.toHaveBeenCalled();
+  });
+
+  it("flips isApproved to true", async () => {
+    mockedPrisma.review.findUnique.mockResolvedValue(reviewRow() as any);
+    mockedPrisma.review.update.mockResolvedValue(reviewRow({ isApproved: true }) as any);
+
+    await approveReview(1);
+
+    expect(mockedPrisma.review.update).toHaveBeenCalledWith({
+      where: { id: 1 },
+      data: { isApproved: true },
+    });
+  });
+});
+
+describe("adminDeleteReview", () => {
+  it("reports a missing review rather than throwing something opaque", async () => {
+    mockedPrisma.review.findUnique.mockResolvedValue(null as any);
+
+    await expect(adminDeleteReview(999)).rejects.toThrow(/not found/i);
+    expect(mockedPrisma.review.delete).not.toHaveBeenCalled();
+  });
+
+  it("removes a review regardless of who wrote it — no ownership check, unlike deleteReview", async () => {
+    mockedPrisma.review.findUnique.mockResolvedValue(reviewRow({ userId: 999 }) as any);
+
+    await adminDeleteReview(1);
+
+    expect(mockedPrisma.review.delete).toHaveBeenCalledWith({ where: { id: 1 } });
   });
 });
 

@@ -205,6 +205,17 @@ const addressSchema = z.object({
   country: z.string().max(2).default("IN"),
 });
 
+// Contact details for a checkout placed without an account. Only meaningful
+// when the request is unauthenticated — resolveCheckoutUserId (order.service)
+// is what actually enforces these as required in that case, since a Zod
+// schema has no visibility into whether req.user is set.
+export const guestContactSchema = z.object({
+  email: z.string().email("A valid email is required").toLowerCase().trim(),
+  firstName: sanitized(z.string().min(1, "First name is required").max(50)),
+  lastName: sanitized(z.string().min(1, "Last name is required").max(50)),
+  phone: z.string().max(15).optional(),
+});
+
 // taxRate/shippingCost are intentionally absent — they are derived server-side
 // from system settings, so any values a client sends are ignored (Zod strips
 // unknown keys) rather than trusted.
@@ -213,6 +224,7 @@ export const placeOrderSchema = z.object({
   couponCode: z.string().max(50).optional(),
   paymentMethod: z.enum(["cod", "razorpay"]),
   sessionToken: z.string().optional(),
+  guest: guestContactSchema.optional(),
 });
 
 export const couponValidateSchema = z.object({
@@ -261,4 +273,33 @@ export const updateProfileSchema = z.object({
     .regex(/^[+]?[\d\s\-().]{7,15}$/, "Invalid phone number format")
     .optional()
     .nullable(),
+});
+
+// ─── Contact Form Schema ──────────────────────────────────────────────────────
+
+export const contactMessageSchema = z.object({
+  name: sanitized(z.string().min(1, "Name is required").max(100)),
+  email: z.string().email("Invalid email address").toLowerCase().trim(),
+  message: sanitized(z.string().min(1, "Message is required").max(5000)),
+});
+
+// ─── Address Book Schemas ─────────────────────────────────────────────────────
+// addressSchema (order shipping address) already covers the shape; these add
+// the create/update variants for the standalone address-book endpoints. Label
+// and isDefault aren't part of a placed order's address, so they're added here
+// rather than widening addressSchema, which stays scoped to what an order needs.
+
+export const createAddressSchema = addressSchema.extend({
+  isDefault: z.boolean().optional().default(false),
+});
+
+// `.partial()` makes every field optional but does NOT drop `.default()` — the
+// same pitfall documented on updateCouponSchema/updateProductSchema above. Both
+// `country` (defaults to "IN" on addressSchema) and `isDefault` (defaults to
+// false just above) would otherwise get silently reset on every partial edit
+// that doesn't happen to mention them. Overriding both as plain optionals
+// restores "not sent" meaning "leave unchanged".
+export const updateAddressSchema = createAddressSchema.partial().extend({
+  country: z.string().max(2).optional(),
+  isDefault: z.boolean().optional(),
 });

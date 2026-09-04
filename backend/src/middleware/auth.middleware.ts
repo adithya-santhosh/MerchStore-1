@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { UserRole } from "@prisma/client";
 import prisma from "../lib/prisma";
+import { parseCookies, requiresCsrfCheck, csrfTokenIsValid } from "../lib/csrf";
 
 // ─── JWT Payload Type ─────────────────────────────────────────────────────────
 interface JwtPayload {
@@ -41,16 +42,7 @@ const extractToken = (req: Request): string | undefined => {
     return authHeader.split(" ")[1];
   }
 
-  if (req.headers.cookie) {
-    const cookies = req.headers.cookie.split(";").reduce((acc, c) => {
-      const [k, v] = c.trim().split("=");
-      if (k && v) acc[k] = decodeURIComponent(v);
-      return acc;
-    }, {} as Record<string, string>);
-    return cookies["token"];
-  }
-
-  return undefined;
+  return parseCookies(req)["token"];
 };
 
 // ─── Session revocation check ─────────────────────────────────────────────────
@@ -78,6 +70,15 @@ export const requireAuth = async (req: Request, res: Response, next: NextFunctio
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     if (await isSessionRevoked(decoded)) {
       return res.status(401).json({ message: "Session expired. Please log in again." });
+    }
+
+    // Only meaningful when the request just authenticated off the cookie: a
+    // cross-site page can get the victim's browser to attach that cookie
+    // automatically, but can't read it to forge a matching header. A request
+    // that supplied its own Authorization header isn't riding an ambient
+    // credential, so nothing here for CSRF to protect.
+    if (requiresCsrfCheck(req) && !csrfTokenIsValid(req)) {
+      return res.status(403).json({ message: "Invalid or missing CSRF token" });
     }
 
     req.user = {
@@ -112,6 +113,14 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     if (token) {
       const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
       if (!(await isSessionRevoked(decoded))) {
+        // A guest's cart identity travels in the request body/localStorage,
+        // never an ambient cookie, so CSRF only applies once we know this
+        // request is actually authenticated — a forged cross-site request
+        // has no reason to carry a real session's CSRF header.
+        if (requiresCsrfCheck(req) && !csrfTokenIsValid(req)) {
+          return res.status(403).json({ message: "Invalid or missing CSRF token" });
+        }
+
         req.user = {
           id: decoded.id,
           email: decoded.email,

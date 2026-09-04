@@ -89,3 +89,17 @@ export const AUTH_COOKIE_OPTIONS: CookieOptions = {
 
 /** 7 days — kept in step with the JWT's own expiry. */
 export const AUTH_COOKIE_MAX_AGE = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * Same secure/sameSite/domain/path as the auth cookie, minus httpOnly — for
+ * any cookie (currently just the CSRF token, see lib/csrf.ts) that has to be
+ * readable by client JS instead of hidden from it. Kept here so the two never
+ * drift apart on the attributes that actually govern whether the browser
+ * sends them at all.
+ */
+export const SHARED_COOKIE_ATTRS: Omit<CookieOptions, "httpOnly"> = {
+  secure: isProduction,
+  sameSite,
+  path: "/",
+  domain: cookieDomain,
+};

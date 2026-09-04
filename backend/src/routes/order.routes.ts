@@ -10,7 +10,7 @@ import {
   adminListRefundsOwed,
   adminRecordRefund,
 } from "../controllers/order.controller";
-import { requireAuth, requireAdmin } from "../middleware/auth.middleware";
+import { requireAuth, requireAdmin, optionalAuth } from "../middleware/auth.middleware";
 import { validate, placeOrderSchema } from "../middleware/validation.middleware";
 
 const router = Router();
@@ -24,7 +24,9 @@ router.get("/admin/:id",          requireAuth, requireAdmin, adminGetOrder);
 router.patch("/admin/:id/status", requireAuth, requireAdmin, adminUpdateStatus);
 
 // ── Customer routes ───────────────────────────────────────────────────────────
-router.post("/",   requireAuth, validate(placeOrderSchema), placeOrder);
+// optionalAuth: a signed-in shopper's id is used as-is; an anonymous request
+// must carry guest contact details instead (see resolveCheckoutUserId).
+router.post("/",   optionalAuth, validate(placeOrderSchema), placeOrder);
 router.get("/",    requireAuth, listOrders);
 // Registered before the generic /:id so "cancel" isn't swallowed as an id.
 router.patch("/:id/cancel", requireAuth, cancelMyOrder);

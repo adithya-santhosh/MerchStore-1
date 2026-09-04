@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, ShieldCheck, Trash2, MessageSquare, AlertCircle } from "lucide-react";
+import { Star, ShieldCheck, Trash2, MessageSquare, AlertCircle, Clock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   getProductReviews,
@@ -299,6 +299,12 @@ export default function ProductReviews({ productId }: ProductReviewsProps) {
                   {deleting ? "Deleting..." : "Delete"}
                 </button>
               </div>
+              {myReview.isApproved === false && (
+                <p className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-500">
+                  <Clock className="size-3" />
+                  Awaiting approval — only you can see this until a moderator approves it.
+                </p>
+              )}
               {myReview.title && (
                 <p className="text-sm font-bold text-foreground">
                   {myReview.title}

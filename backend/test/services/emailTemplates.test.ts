@@ -5,6 +5,7 @@ import {
   getOrderStatusEmailHtml,
   getPasswordResetEmailHtml,
   getEmailVerificationHtml,
+  getContactNotificationEmailHtml,
 } from "../../src/services/emailTemplates";
 
 const FRONTEND = "https://shop.example.com";
@@ -311,5 +312,44 @@ describe("template escaping", () => {
 
     expect(resetHtml).not.toContain(payload);
     expect(verifyHtml).not.toContain(payload);
+  });
+
+  it("escapes markup in a contact form submission — the sender fully controls this content", () => {
+    const html = getContactNotificationEmailHtml({
+      name: '<img src=x onerror="alert(1)">',
+      email: "visitor@example.com",
+      message: "<script>alert(1)</script>Is this compatible with a 2020 Gypsy?",
+    });
+
+    expect(html).not.toContain("<img src=x onerror");
+    expect(html).not.toContain("<script>alert(1)</script>");
+    expect(html).toContain("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+    expect(html).toContain("&lt;script&gt;alert(1)&lt;/script&gt;");
+  });
+});
+
+describe("getContactNotificationEmailHtml", () => {
+  const data = { name: "Ada Lovelace", email: "ada@example.com", message: "Do you ship to Ladakh?" };
+
+  it("includes the sender's name, email and message", () => {
+    const html = getContactNotificationEmailHtml(data);
+
+    expect(html).toContain("Ada Lovelace");
+    expect(html).toContain("ada@example.com");
+    expect(html).toContain("Do you ship to Ladakh?");
+  });
+
+  it("preserves line breaks in a multi-line message", () => {
+    const html = getContactNotificationEmailHtml({ ...data, message: "Line one\nLine two" });
+
+    expect(html).toContain("white-space: pre-wrap");
+    expect(html).toContain("Line one\nLine two");
+  });
+
+  it("produces a complete HTML document", () => {
+    const html = getContactNotificationEmailHtml(data);
+
+    expect(html).toContain("<!DOCTYPE html>");
+    expect(html).toContain("</html>");
   });
 });

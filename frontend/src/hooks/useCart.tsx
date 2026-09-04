@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { Cart, CartItem } from "@/types/cart";
 import { useAuth } from "./useAuth";
-import { getCookie } from "@/utils/cookie";
+import { getCookie, getCsrfHeader } from "@/utils/cookie";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -152,7 +152,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const tokenCookie = getCookie("token");
       const headers: HeadersInit = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getCsrfHeader(),
       };
       if (tokenCookie) {
         headers["Authorization"] = `Bearer ${tokenCookie}`;
@@ -187,7 +188,8 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const tokenCookie = getCookie("token");
       const headers: HeadersInit = {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getCsrfHeader(),
       };
       if (tokenCookie) {
         headers["Authorization"] = `Bearer ${tokenCookie}`;
@@ -219,7 +221,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!user && !token) return;
     try {
       const tokenCookie = getCookie("token");
-      const headers: HeadersInit = {};
+      const headers: HeadersInit = { ...getCsrfHeader() };
       if (tokenCookie) {
         headers["Authorization"] = `Bearer ${tokenCookie}`;
       }
@@ -247,8 +249,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const validateCouponOnServer = async (code: string, orderAmount: number) => {
     const response = await fetch(`${API_URL}/api/coupons/validate`, {
       method: "POST",
+      // requireAuth on the backend needs the HttpOnly auth cookie, which only
+      // rides along on a `credentials: "include"` request.
+      credentials: "include",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        ...getCsrfHeader(),
       },
       body: JSON.stringify({ code, orderAmount })
     });

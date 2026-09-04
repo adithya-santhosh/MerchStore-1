@@ -99,7 +99,9 @@ export const createReview = async (
       title: data.title || null,
       body: data.body || null,
       isVerifiedPurchase: !!deliveredOrder,
-      isApproved: true, // Auto-approve for now
+      // Held back from the public listing (getReviewsForProduct filters on
+      // this) until an admin approves it via the moderation queue.
+      isApproved: false,
     },
     include: {
       user: {
@@ -118,6 +120,7 @@ export const createReview = async (
     title: review.title,
     body: review.body,
     isVerifiedPurchase: review.isVerifiedPurchase,
+    isApproved: review.isApproved,
     createdAt: review.createdAt,
     user: {
       id: review.user.id,
@@ -125,6 +128,49 @@ export const createReview = async (
       lastInitial: review.user.lastName ? review.user.lastName[0] + "." : "",
     },
   };
+};
+
+// ─── Admin moderation ─────────────────────────────────────────────────────────
+
+/** Everything awaiting a decision, oldest first — first submitted, first reviewed. */
+export const getPendingReviews = async () => {
+  const reviews = await prisma.review.findMany({
+    where: { isApproved: false },
+    include: {
+      user: { select: { id: true, firstName: true, lastName: true, email: true } },
+      product: { select: { id: true, name: true, slug: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return reviews.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    title: r.title,
+    body: r.body,
+    isVerifiedPurchase: r.isVerifiedPurchase,
+    createdAt: r.createdAt,
+    user: { id: r.user.id, name: `${r.user.firstName} ${r.user.lastName}`.trim(), email: r.user.email },
+    product: { id: r.product.id, name: r.product.name, slug: r.product.slug },
+  }));
+};
+
+export const approveReview = async (reviewId: number) => {
+  const review = await prisma.review.findUnique({ where: { id: reviewId } });
+  if (!review) throw new Error("Review not found");
+
+  await prisma.review.update({ where: { id: reviewId }, data: { isApproved: true } });
+  return { message: "Review approved" };
+};
+
+/** Admin removal — unlike deleteReview below, not gated on ownership. Used to
+ *  reject a pending review or take down one that's already live. */
+export const adminDeleteReview = async (reviewId: number) => {
+  const review = await prisma.review.findUnique({ where: { id: reviewId } });
+  if (!review) throw new Error("Review not found");
+
+  await prisma.review.delete({ where: { id: reviewId } });
+  return { message: "Review removed" };
 };
 
 // ─── Delete own review ───────────────────────────────────────────────────────

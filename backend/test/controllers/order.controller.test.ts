@@ -12,6 +12,7 @@ vi.mock("../../src/services/order.service", () => ({
   cancelOrder: vi.fn(),
   getRefundsOwed: vi.fn(),
   markPaymentRefunded: vi.fn(),
+  resolveCheckoutUserId: vi.fn(),
 }));
 
 // requireAuth checks tokenVersion against the DB on every request.
@@ -44,14 +45,55 @@ const validOrder = { address: validAddress, paymentMethod: "cod" };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Matches customerAuth's id (7) by default; guest-checkout tests below
+  // override this per-case.
+  svc.resolveCheckoutUserId.mockResolvedValue({ userId: 7 });
 });
 
 describe("POST /api/orders", () => {
-  it("requires authentication", async () => {
+  it("requires guest contact details when placing an order while signed out", async () => {
+    svc.resolveCheckoutUserId.mockRejectedValue(
+      new Error("Please enter your name and email to check out as a guest.")
+    );
+
     const res = await request(app).post("/api/orders").send(validOrder);
 
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/guest/i);
     expect(svc.createOrder).not.toHaveBeenCalled();
+  });
+
+  it("places a guest order using the resolved guest user id, and signs them in", async () => {
+    svc.resolveCheckoutUserId.mockResolvedValue({ userId: 42, resolvedGuestUser: { id: 42, email: "g@example.com", role: "CUSTOMER", firstName: "G", lastName: "T", tokenVersion: 0 } });
+    svc.createOrder.mockResolvedValue({ id: 9 } as any);
+
+    const res = await request(app)
+      .post("/api/orders")
+      .send({ ...validOrder, guest: { email: "g@example.com", firstName: "G", lastName: "T" } });
+
+    expect(res.status).toBe(201);
+    expect(svc.createOrder).toHaveBeenCalledWith(expect.objectContaining({ userId: 42 }));
+    expect(res.headers["set-cookie"]?.some((c: string) => c.startsWith("token="))).toBe(true);
+  });
+
+  it("does not re-issue a session cookie for an already-authenticated checkout", async () => {
+    svc.createOrder.mockResolvedValue({ id: 1 } as any);
+
+    const res = await request(app).post("/api/orders").set("Authorization", customerAuth).send(validOrder);
+
+    expect(res.headers["set-cookie"]).toBeUndefined();
+  });
+
+  it("maps a guest email that already belongs to a real account to 409", async () => {
+    svc.resolveCheckoutUserId.mockRejectedValue(
+      new Error("An account already exists with this email. Please log in to continue.")
+    );
+
+    const res = await request(app)
+      .post("/api/orders")
+      .send({ ...validOrder, guest: { email: "real@example.com", firstName: "G", lastName: "T" } });
+
+    expect(res.status).toBe(409);
   });
 
   it("rejects a postal code that is not 6 digits with 422", async () => {

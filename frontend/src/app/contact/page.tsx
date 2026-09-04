@@ -4,24 +4,34 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Mail, Phone, MapPin, Clock } from "lucide-react";
+import { Mail, Phone, MapPin, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
+import { submitContactMessageApi } from "@/lib/api";
+import { getErrorMessage } from "@/lib/errors";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
-  // There is no contact-form endpoint on the API yet, so rather than a button
-  // that silently does nothing, we hand the message to the visitor's mail client
-  // pre-filled. Swap this for a real POST once the endpoint exists.
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = `Website enquiry from ${name || "a customer"}`;
-    const body = `${message}\n\n—\nName: ${name}\nEmail: ${email}`;
-    window.location.href = `mailto:${siteConfig.supportEmail}?subject=${encodeURIComponent(
-      subject
-    )}&body=${encodeURIComponent(body)}`;
+    setError("");
+    setSubmitting(true);
+    try {
+      await submitContactMessageApi({ name, email, message });
+      setSubmitted(true);
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      setError(getErrorMessage(err, "Failed to send your message. Please try again."));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -112,66 +122,103 @@ export default function ContactPage() {
           </aside>
 
           {/* Message form */}
-          <form
-            onSubmit={handleSubmit}
-            className="lg:col-span-3 space-y-6 bg-card border border-border rounded-3xl p-8 shadow-sm"
-          >
-            <div>
-              <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
-                Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                placeholder="Your Name"
-                required
-              />
+          {submitted ? (
+            <div className="lg:col-span-3 flex flex-col items-center justify-center text-center gap-4 bg-card border border-border rounded-3xl p-8 shadow-sm min-h-[420px]">
+              <CheckCircle2 className="size-12 text-primary-bright" />
+              <div>
+                <h2 className="text-lg font-bold text-foreground">Message sent</h2>
+                <p className="text-sm text-muted-foreground mt-1.5 max-w-sm">
+                  Thanks for reaching out — we reply to most messages within one
+                  business day.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                className="cursor-pointer"
+                onClick={() => setSubmitted(false)}
+              >
+                Send another message
+              </Button>
             </div>
+          ) : (
+            <form
+              onSubmit={handleSubmit}
+              className="lg:col-span-3 space-y-6 bg-card border border-border rounded-3xl p-8 shadow-sm"
+            >
+              {error && (
+                <div
+                  role="alert"
+                  className="p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-xl flex items-start gap-2"
+                >
+                  <AlertCircle className="size-4.5 shrink-0 mt-0.5" />
+                  <span className="text-sm">{error}</span>
+                </div>
+              )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-foreground mb-2">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
-                placeholder="you@example.com"
-                required
-              />
-            </div>
+              <div>
+                <label htmlFor="name" className="block text-sm font-semibold text-foreground mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  placeholder="Your Name"
+                  disabled={submitting}
+                  required
+                />
+              </div>
 
-            <div>
-              <label htmlFor="message" className="block text-sm font-semibold text-foreground mb-2">
-                Message
-              </label>
-              <textarea
-                id="message"
-                name="message"
-                rows={5}
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none"
-                placeholder="What can we help you with?"
-                required
-              />
-            </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-foreground mb-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"
+                  placeholder="you@example.com"
+                  disabled={submitting}
+                  required
+                />
+              </div>
 
-            <Button type="submit" className="w-full shadow-md cursor-pointer py-6 text-base font-semibold">
-              Send Message
-            </Button>
-            <p className="text-[11px] text-muted-foreground text-center">
-              This opens your email app with the message ready to send. You can
-              also write to us directly at {siteConfig.supportEmail}.
-            </p>
-          </form>
+              <div>
+                <label htmlFor="message" className="block text-sm font-semibold text-foreground mb-2">
+                  Message
+                </label>
+                <textarea
+                  id="message"
+                  name="message"
+                  rows={5}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-transparent px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none"
+                  placeholder="What can we help you with?"
+                  disabled={submitting}
+                  required
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="w-full shadow-md cursor-pointer py-6 text-base font-semibold disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? "Sending..." : "Send Message"}
+              </Button>
+              <p className="text-[11px] text-muted-foreground text-center">
+                You can also write to us directly at {siteConfig.supportEmail}.
+              </p>
+            </form>
+          )}
         </div>
       </main>
       <Footer />

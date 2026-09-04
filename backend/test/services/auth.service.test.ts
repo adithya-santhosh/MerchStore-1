@@ -42,6 +42,8 @@ import {
   changeUserPassword,
   verifyEmailToken,
   resendVerificationEmail,
+  resolveGuestUser,
+  signAuthToken,
 } from "../../src/services/auth.service";
 
 const mockedPrisma = vi.mocked(prisma, true);
@@ -129,6 +131,19 @@ describe("registerUser", () => {
 
     const data = (mockedPrisma.user.create.mock.calls[0]?.[0] as any).data;
     expect(data.role).toBe("ADMIN");
+  });
+
+  it("doesn't count guest-checkout accounts toward the first-account bootstrap", async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(null as any);
+    mockedPrisma.user.count.mockResolvedValue(0 as any);
+    mockedPrisma.user.create.mockResolvedValue(userRow({ role: "ADMIN" }) as any);
+
+    await registerUser(registerInput);
+
+    // A store's first-ever visitor could place a guest order before the
+    // owner ever registers. If that guest row counted, the owner's real
+    // registration would land as CUSTOMER #2 instead of the bootstrap admin.
+    expect(mockedPrisma.user.count).toHaveBeenCalledWith({ where: { isGuest: false } });
   });
 
   it("makes every later account a plain customer", async () => {
@@ -810,5 +825,100 @@ describe("resendVerificationEmail", () => {
     // The user explicitly asked for this one, so a silent failure would leave
     // them waiting for a mail that never comes.
     await expect(resendVerificationEmail(7)).rejects.toThrow("SMTP down");
+  });
+});
+
+describe("resolveGuestUser", () => {
+  const guestInput = {
+    email: "  Guest@Example.COM ",
+    firstName: " Grace ",
+    lastName: " Hopper ",
+    phone: "9876543210",
+  };
+
+  it("creates a lightweight guest account when the email is new", async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(null as any);
+    mockedPrisma.user.create.mockResolvedValue(userRow({ id: 50, isGuest: true }) as any);
+
+    const result = await resolveGuestUser(guestInput);
+
+    const data = (mockedPrisma.user.create.mock.calls[0]?.[0] as any).data;
+    expect(data.email).toBe("guest@example.com");
+    expect(data.firstName).toBe("Grace");
+    expect(data.lastName).toBe("Hopper");
+    expect(data.role).toBe("CUSTOMER");
+    expect(data.isGuest).toBe(true);
+    expect(result.id).toBe(50);
+  });
+
+  it("never creates a guest account that could log in with a guessable password", async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(null as any);
+    mockedPrisma.user.create.mockResolvedValue(userRow({ isGuest: true }) as any);
+
+    await resolveGuestUser(guestInput);
+
+    const data = (mockedPrisma.user.create.mock.calls[0]?.[0] as any).data;
+    expect(await bcrypt.compare("", data.passwordHash)).toBe(false);
+    expect(await bcrypt.compare("password", data.passwordHash)).toBe(false);
+  });
+
+  it("reuses the existing guest account on a repeat guest checkout with the same email", async () => {
+    const existingGuest = userRow({ id: 51, isGuest: true });
+    mockedPrisma.user.findUnique.mockResolvedValue(existingGuest as any);
+
+    const result = await resolveGuestUser(guestInput);
+
+    expect(result).toBe(existingGuest);
+    expect(mockedPrisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("refuses to attach a guest order to someone else's real account", async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(userRow({ isGuest: false }) as any);
+
+    await expect(resolveGuestUser(guestInput)).rejects.toThrow(
+      "An account already exists with this email. Please log in to continue."
+    );
+    expect(mockedPrisma.user.create).not.toHaveBeenCalled();
+  });
+
+  it("recovers from a create-order/verify race on the same email by reusing the winning guest row", async () => {
+    mockedPrisma.user.findUnique
+      .mockResolvedValueOnce(null as any) // initial lookup: not found yet
+      .mockResolvedValueOnce(userRow({ id: 52, isGuest: true }) as any); // re-fetch after the race
+    mockedPrisma.user.create.mockRejectedValue({ code: "P2002" });
+
+    const result = await resolveGuestUser(guestInput);
+
+    expect(result.id).toBe(52);
+  });
+
+  it("still refuses when the race was actually lost to someone else's real account", async () => {
+    mockedPrisma.user.findUnique
+      .mockResolvedValueOnce(null as any)
+      .mockResolvedValueOnce(userRow({ isGuest: false }) as any);
+    mockedPrisma.user.create.mockRejectedValue({ code: "P2002" });
+
+    await expect(resolveGuestUser(guestInput)).rejects.toThrow(
+      "An account already exists with this email. Please log in to continue."
+    );
+  });
+
+  it("lets an unrelated database error propagate rather than masking it as a duplicate email", async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(null as any);
+    mockedPrisma.user.create.mockRejectedValue(new Error("connection lost"));
+
+    await expect(resolveGuestUser(guestInput)).rejects.toThrow("connection lost");
+  });
+});
+
+describe("signAuthToken", () => {
+  it("carries the user's id, role and tokenVersion", () => {
+    const token = signAuthToken(userRow({ id: 9, role: "ADMIN", tokenVersion: 3 }) as any);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    expect(decoded.id).toBe(9);
+    expect(decoded.role).toBe("ADMIN");
+    expect(decoded.tokenVersion).toBe(3);
+    expect(decoded.exp - decoded.iat).toBe(7 * 24 * 60 * 60);
   });
 });

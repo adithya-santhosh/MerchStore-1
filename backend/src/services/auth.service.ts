@@ -33,6 +33,30 @@ interface LoginInput {
   sessionToken?: string;
 }
 
+/** Minimal shape signAuthToken needs — satisfied by any full User row. */
+interface SignableUser {
+  id: number;
+  email: string;
+  role: UserRole;
+  firstName: string;
+  lastName: string;
+  tokenVersion: number;
+}
+
+export const signAuthToken = (user: SignableUser): string =>
+  jwt.sign(
+    {
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      tokenVersion: user.tokenVersion
+    },
+    JWT_SECRET,
+    { expiresIn: "7d" }
+  );
+
 export const registerUser = async (data: RegisterInput) => {
   const email = data.email.toLowerCase().trim();
   const existingUser = await prisma.user.findUnique({
@@ -46,8 +70,11 @@ export const registerUser = async (data: RegisterInput) => {
   // Hash password
   const passwordHash = await bcrypt.hash(data.password, 10);
 
-  // Only the very first registered user becomes ADMIN
-  const userCount = await prisma.user.count();
+  // Only the very first genuinely registered user becomes ADMIN — a guest
+  // checkout account (see resolveGuestUser) doesn't count, or a store's first
+  // real visitor placing a guest order before the owner ever registers would
+  // permanently block the bootstrap admin from ever being granted.
+  const userCount = await prisma.user.count({ where: { isGuest: false } });
   const role: UserRole = userCount === 0 ? UserRole.ADMIN : UserRole.CUSTOMER;
 
   const user = await prisma.user.create({
@@ -73,18 +100,7 @@ export const registerUser = async (data: RegisterInput) => {
     logger.error({ err }, "[AuthService] Verification email background error")
   );
 
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      tokenVersion: user.tokenVersion
-    },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  const token = signAuthToken(user);
 
   return {
     user: {
@@ -204,18 +220,7 @@ export const loginUser = async (data: LoginInput) => {
     }
   }
 
-  const token = jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      firstName: user.firstName,
-      lastName: user.lastName,
-      tokenVersion: user.tokenVersion
-    },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  const token = signAuthToken(user);
 
   return {
     user: {
@@ -418,18 +423,7 @@ export const changeUserPassword = async (userId: number, currentPassword: string
     data: { passwordHash: newHash, tokenVersion: { increment: 1 } }
   });
 
-  const token = jwt.sign(
-    {
-      id: updated.id,
-      email: updated.email,
-      role: updated.role,
-      firstName: updated.firstName,
-      lastName: updated.lastName,
-      tokenVersion: updated.tokenVersion
-    },
-    JWT_SECRET,
-    { expiresIn: "7d" }
-  );
+  const token = signAuthToken(updated);
 
   return { message: "Password updated successfully.", token };
 };
@@ -499,4 +493,62 @@ export const resendVerificationEmail = async (userId: number) => {
 
   await sendVerificationEmailFor(user);
   return { message: "Verification email sent. Check your inbox." };
+};
+
+// ─── Guest Checkout ─────────────────────────────────────────────────────────
+
+export interface GuestContactInput {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string | undefined;
+}
+
+/**
+ * Resolves a guest checkout to a User row without ever asking them to set a
+ * password — creating one with an unguessable random hash if this is their
+ * first guest order, or reusing the same one on a repeat guest order (also
+ * covers the two-step Razorpay flow, which resolves this twice per checkout:
+ * once to create the payment order, again to verify it).
+ *
+ * If the email already belongs to a real registered account, this refuses
+ * rather than silently attaching the order to a stranger's account — they're
+ * told to log in instead.
+ */
+export const resolveGuestUser = async (data: GuestContactInput) => {
+  const email = data.email.toLowerCase().trim();
+  const alreadyRegistered = "An account already exists with this email. Please log in to continue.";
+
+  const existing = await prisma.user.findUnique({ where: { email } });
+  if (existing) {
+    if (!existing.isGuest) throw new Error(alreadyRegistered);
+    return existing;
+  }
+
+  const passwordHash = await bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
+
+  try {
+    return await prisma.user.create({
+      data: {
+        email,
+        passwordHash,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName.trim(),
+        phone: data.phone?.trim() || null,
+        role: UserRole.CUSTOMER,
+        isGuest: true,
+      }
+    });
+  } catch (err: any) {
+    // Unique constraint race: another request resolved the same email between
+    // our lookup and create (e.g. the create-order and verify legs of a
+    // Razorpay checkout firing close together). Re-fetch and treat it exactly
+    // like the found-above case rather than surfacing a raw DB error.
+    if (err.code === "P2002") {
+      const raceWinner = await prisma.user.findUnique({ where: { email } });
+      if (raceWinner?.isGuest) return raceWinner;
+      throw new Error(alreadyRegistered);
+    }
+    throw err;
+  }
 };

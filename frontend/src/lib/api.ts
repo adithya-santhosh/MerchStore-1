@@ -1,5 +1,5 @@
 import { Product, type ProductWritePayload } from "@/types/products";
-import { getCookie } from "@/utils/cookie";
+import { getCookie, getCsrfHeader } from "@/utils/cookie";
 import { ApiValidationError, type ApiFieldError } from "@/lib/errors";
 import type { RazorpaySuccessResponse, RazorpayFailureResponse } from "@/types/razorpay";
 
@@ -110,6 +110,7 @@ export async function deleteProduct(id: number) {
       credentials: "include",
       headers: {
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...getCsrfHeader(),
       },
     }
   );
@@ -153,6 +154,7 @@ export async function createProduct(product: ProductWritePayload){
     headers : {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body : JSON.stringify(product),
   });
@@ -170,6 +172,7 @@ export async function updateProduct(id: string | number, product: ProductWritePa
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(product),
   });
@@ -398,6 +401,16 @@ export interface OrderAddress {
   country?: string;
 }
 
+// Contact details for a checkout placed without an account — omit entirely
+// when the request is authenticated, since the signed-in user's own id is
+// used instead.
+export interface GuestCheckoutContact {
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+}
+
 // Tax and shipping are computed server-side from store settings — the client
 // never sends money-related values.
 export interface CreateOrderPayload {
@@ -405,6 +418,7 @@ export interface CreateOrderPayload {
   couponCode?: string;
   paymentMethod: "cod" | "razorpay";
   sessionToken?: string;
+  guest?: GuestCheckoutContact;
 }
 
 export interface OrderItem {
@@ -453,6 +467,7 @@ export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -469,6 +484,7 @@ export interface CreatePaymentOrderPayload {
   address: OrderAddress;
   couponCode?: string;
   sessionToken?: string;
+  guest?: GuestCheckoutContact;
 }
 
 export interface RazorpayOrderResponse {
@@ -487,6 +503,7 @@ export async function createPaymentOrder(payload: CreatePaymentOrderPayload): Pr
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -506,6 +523,7 @@ export interface VerifyPaymentPayload {
   address: OrderAddress;
   couponCode?: string;
   sessionToken?: string;
+  guest?: GuestCheckoutContact;
 }
 
 export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Order> {
@@ -516,6 +534,7 @@ export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Orde
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -656,6 +675,7 @@ export async function updateAdminOrderStatus(id: number, status: string): Promis
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ status }),
   });
@@ -748,6 +768,7 @@ export async function bulkUpdateProducts(
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ ids, action }),
   });
@@ -932,6 +953,7 @@ export async function updateProfile(payload: { firstName: string; lastName: stri
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(payload),
   });
@@ -941,6 +963,76 @@ export async function updateProfile(payload: { firstName: string; lastName: stri
     throw new Error(err.message || "Failed to update profile");
   }
 
+  return response.json();
+}
+
+// ─── Address Book ─────────────────────────────────────────────────────────────
+
+export type AddressInput = Omit<UserAddress, "id" | "isDefault"> & { isDefault?: boolean };
+
+export async function getAddressesApi(): Promise<UserAddress[]> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses`, {
+    credentials: "include",
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+    cache: "no-store",
+  });
+  if (!response.ok) throw new Error("Failed to fetch addresses");
+  return response.json();
+}
+
+export async function createAddressApi(payload: AddressInput): Promise<UserAddress> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw await apiError(response, "Failed to save address");
+  }
+  return response.json();
+}
+
+export async function updateAddressApi(
+  id: number,
+  payload: Partial<AddressInput>
+): Promise<UserAddress> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses/${id}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    throw await apiError(response, "Failed to update address");
+  }
+  return response.json();
+}
+
+export async function deleteAddressApi(id: number): Promise<{ message: string }> {
+  const token = getCookie("token");
+  const response = await fetch(`${API_URL}/api/addresses/${id}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+  });
+  if (!response.ok) {
+    throw await apiError(response, "Failed to delete address");
+  }
   return response.json();
 }
 
@@ -958,6 +1050,10 @@ export interface Review {
   title: string | null;
   body: string | null;
   isVerifiedPurchase: boolean;
+  // Only present on the create response and GET /:productId/mine — the public
+  // list (getProductReviews) already only ever contains approved reviews, so
+  // it doesn't bother sending the flag.
+  isApproved?: boolean;
   createdAt: string;
   user: ReviewUser;
 }
@@ -1006,6 +1102,7 @@ export async function submitReview(
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(data),
   });
@@ -1023,12 +1120,69 @@ export async function deleteReviewApi(reviewId: number): Promise<void> {
     credentials: "include",
     headers: {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
   });
   if (!response.ok) {
     const err = await response.json();
     throw new Error(err.message || "Failed to delete review");
   }
+}
+
+// ─── Review Moderation (Admin) ────────────────────────────────────────────────
+
+export interface PendingReview {
+  id: number;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  isVerifiedPurchase: boolean;
+  createdAt: string;
+  user: { id: number; name: string; email: string };
+  product: { id: number; name: string; slug: string };
+}
+
+export async function getPendingReviewsApi(token?: string): Promise<PendingReview[]> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/reviews/admin/pending`, {
+    credentials: "include",
+    headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch pending reviews");
+  return res.json();
+}
+
+export async function approveReviewApi(reviewId: number): Promise<{ message: string }> {
+  const token = getCookie("token");
+  const res = await fetch(`${API_URL}/api/reviews/admin/${reviewId}/approve`, {
+    method: "PATCH",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to approve review"));
+  }
+  return res.json();
+}
+
+export async function adminDeleteReviewApi(reviewId: number): Promise<{ message: string }> {
+  const token = getCookie("token");
+  const res = await fetch(`${API_URL}/api/reviews/admin/${reviewId}`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
+    },
+  });
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to remove review"));
+  }
+  return res.json();
 }
 
 // ─── Wishlist API Helpers ─────────────────────────────────────────────────────
@@ -1076,6 +1230,7 @@ export async function addToWishlistApi(productId: number): Promise<void> {
   await fetch(`${API_URL}/api/wishlist/${productId}`, {
     method: "POST",
     credentials: "include",
+    headers: { ...getCsrfHeader() },
   });
 }
 
@@ -1083,6 +1238,7 @@ export async function removeFromWishlistApi(productId: number): Promise<void> {
   await fetch(`${API_URL}/api/wishlist/${productId}`, {
     method: "DELETE",
     credentials: "include",
+    headers: { ...getCsrfHeader() },
   });
 }
 
@@ -1106,6 +1262,7 @@ export async function submitVendorShipment(orderId: number, data: { carrier: str
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(data),
   });
@@ -1155,6 +1312,7 @@ export async function createVendorAccount(data: {
     headers: {
       "Content-Type": "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(data),
   });
@@ -1173,6 +1331,7 @@ export async function assignProductVendor(productId: number, vendorId: number | 
     headers: {
       "Content-Type": "application/json",
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ vendorId }),
   });
@@ -1202,6 +1361,7 @@ export async function purchaseMembershipRazorpay(userToken?: string): Promise<Au
     headers: {
       "Content-Type": "application/json",
       ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+      ...getCsrfHeader(),
     },
   });
 
@@ -1229,6 +1389,7 @@ export async function purchaseMembershipRazorpay(userToken?: string): Promise<Au
             headers: {
               "Content-Type": "application/json",
               ...(userToken ? { Authorization: `Bearer ${userToken}` } : {}),
+              ...getCsrfHeader(),
             },
             body: JSON.stringify({
               razorpayOrderId: paymentResponse.razorpay_order_id,
@@ -1273,6 +1434,7 @@ export async function changePasswordAPI(currentPassword: string, newPassword: st
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify({ currentPassword, newPassword }),
   });
@@ -1300,6 +1462,7 @@ export async function cancelOrderApi(orderId: number, reason?: string): Promise<
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(reason ? { reason } : {}),
   });
@@ -1374,6 +1537,7 @@ export async function resendVerificationApi(): Promise<{ message: string }> {
   const res = await fetch(`${API_URL}/api/auth/resend-verification`, {
     method: "POST",
     credentials: "include",
+    headers: { ...getCsrfHeader() },
   });
 
   if (!res.ok) {
@@ -1418,11 +1582,56 @@ export async function recordRefundApi(orderId: number, reference?: string): Prom
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...getCsrfHeader(),
     },
     body: JSON.stringify(reference ? { reference } : {}),
   });
   if (!res.ok) {
     throw new Error(await readApiError(res, "Failed to record refund"));
   }
+  return res.json();
+}
+
+// ─── Contact Form ─────────────────────────────────────────────────────────────
+
+export interface ContactMessagePayload {
+  name: string;
+  email: string;
+  message: string;
+}
+
+export async function submitContactMessageApi(
+  payload: ContactMessagePayload
+): Promise<{ message: string }> {
+  const res = await fetch(`${API_URL}/api/contact`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    throw new Error(await readApiError(res, "Failed to send your message. Please try again."));
+  }
+
+  return res.json();
+}
+
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: string;
+}
+
+/** Admin-only inbox for messages submitted through /contact. */
+export async function getContactMessagesApi(token?: string): Promise<ContactMessage[]> {
+  const authToken = token || getCookie("token");
+  const res = await fetch(`${API_URL}/api/contact`, {
+    credentials: "include",
+    headers: { ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}) },
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch messages");
   return res.json();
 }

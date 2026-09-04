@@ -14,6 +14,15 @@ import {
   updateProduct,
   requestPasswordResetAPI,
   getUploadSignature,
+  submitContactMessageApi,
+  getContactMessagesApi,
+  getPendingReviewsApi,
+  approveReviewApi,
+  adminDeleteReviewApi,
+  getAddressesApi,
+  createAddressApi,
+  updateAddressApi,
+  deleteAddressApi,
 } from "@/lib/api";
 import { ApiValidationError } from "@/lib/errors";
 import type { ProductWritePayload } from "@/types/products";
@@ -267,10 +276,28 @@ describe("authenticated requests", () => {
     expect(JSON.parse(calledInit().body as string)).toEqual(payload);
   });
 
+  it("forwards guest contact details for an order placed without an account", async () => {
+    fetchMock.mockResolvedValue(ok({ id: 1 }));
+    const guest = { email: "guest@example.com", firstName: "Grace", lastName: "Hopper" };
+    const payload = { address: { city: "Bengaluru" }, paymentMethod: "cod", guest };
+
+    await createOrder(payload as never);
+
+    expect(JSON.parse(calledInit().body as string).guest).toEqual(guest);
+  });
+
   it("surfaces the API's own error message when an order fails", async () => {
     fetchMock.mockResolvedValue(fail(400, { message: "Your cart is empty." }));
 
     await expect(createOrder({} as never)).rejects.toThrow("Your cart is empty.");
+  });
+
+  it("maps a guest email already tied to a real account to that error message", async () => {
+    fetchMock.mockResolvedValue(
+      fail(409, { message: "An account already exists with this email. Please log in to continue." })
+    );
+
+    await expect(createOrder({} as never)).rejects.toThrow(/already exists with this email/i);
   });
 
   it("falls back to a generic message when the API sends no message", async () => {
@@ -473,5 +500,179 @@ describe("readApiError (via requestPasswordResetAPI)", () => {
     await expect(requestPasswordResetAPI("a@b.com")).rejects.toThrow(
       "Failed to send the reset link. Please try again."
     );
+  });
+});
+
+describe("submitContactMessageApi", () => {
+  const payload = { name: "Ada", email: "ada@example.com", message: "Do you ship to Ladakh?" };
+
+  it("posts to /api/contact with no auth header — the endpoint is public", async () => {
+    setCookie("jwt-abc");
+    fetchMock.mockResolvedValue(ok({ message: "Thanks for reaching out." }));
+
+    await submitContactMessageApi(payload);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/contact`);
+    expect(calledInit().method).toBe("POST");
+    expect(JSON.parse(calledInit().body as string)).toEqual(payload);
+    expect(calledInit().headers).not.toHaveProperty("Authorization");
+  });
+
+  it("returns the confirmation message", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Thanks for reaching out." }));
+
+    await expect(submitContactMessageApi(payload)).resolves.toEqual({
+      message: "Thanks for reaching out.",
+    });
+  });
+
+  it("surfaces the API's validation message on a 422", async () => {
+    fetchMock.mockResolvedValue(
+      fail(422, { message: "Validation failed", errors: [{ field: "email", message: "Invalid email address" }] })
+    );
+
+    await expect(submitContactMessageApi(payload)).rejects.toThrow("Invalid email address");
+  });
+
+  it("falls back to a generic message when the API sends nothing usable", async () => {
+    fetchMock.mockResolvedValue(fail(500));
+
+    await expect(submitContactMessageApi(payload)).rejects.toThrow(
+      "Failed to send your message. Please try again."
+    );
+  });
+});
+
+describe("getContactMessagesApi", () => {
+  it("attaches the admin's token and hits the admin inbox endpoint", async () => {
+    setCookie("jwt-admin");
+    fetchMock.mockResolvedValue(ok([]));
+
+    await getContactMessagesApi();
+
+    expect(calledUrl()).toBe(`${API_URL}/api/contact`);
+    expect((calledInit().headers as Record<string, string>).Authorization).toBe("Bearer jwt-admin");
+    expect(calledInit().credentials).toBe("include");
+  });
+
+  it("returns the message list", async () => {
+    const messages = [{ id: 1, name: "Ada", email: "ada@example.com", message: "Hi", createdAt: "2026-01-01" }];
+    fetchMock.mockResolvedValue(ok(messages));
+
+    await expect(getContactMessagesApi("token")).resolves.toEqual(messages);
+  });
+
+  it("throws when the request is rejected", async () => {
+    fetchMock.mockResolvedValue(fail(403));
+
+    await expect(getContactMessagesApi("token")).rejects.toThrow("Failed to fetch messages");
+  });
+});
+
+describe("review moderation (admin)", () => {
+  it("getPendingReviewsApi hits the pending-queue endpoint with the admin's token", async () => {
+    setCookie("jwt-admin");
+    fetchMock.mockResolvedValue(ok([]));
+
+    await getPendingReviewsApi();
+
+    expect(calledUrl()).toBe(`${API_URL}/api/reviews/admin/pending`);
+    expect((calledInit().headers as Record<string, string>).Authorization).toBe("Bearer jwt-admin");
+  });
+
+  it("approveReviewApi sends a PATCH to the review's approve endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Review approved" }));
+
+    await approveReviewApi(42);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/reviews/admin/42/approve`);
+    expect(calledInit().method).toBe("PATCH");
+  });
+
+  it("approveReviewApi surfaces the API's error message on failure", async () => {
+    fetchMock.mockResolvedValue(fail(404, { message: "Review not found" }));
+
+    await expect(approveReviewApi(42)).rejects.toThrow("Review not found");
+  });
+
+  it("adminDeleteReviewApi sends a DELETE to the admin review endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Review removed" }));
+
+    await adminDeleteReviewApi(42);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/reviews/admin/42`);
+    expect(calledInit().method).toBe("DELETE");
+  });
+
+  it("adminDeleteReviewApi surfaces the API's error message on failure", async () => {
+    fetchMock.mockResolvedValue(fail(404, { message: "Review not found" }));
+
+    await expect(adminDeleteReviewApi(42)).rejects.toThrow("Review not found");
+  });
+});
+
+describe("address book", () => {
+  const address = {
+    label: "Home",
+    addressLine1: "221B Baker Street",
+    addressLine2: "",
+    city: "Bengaluru",
+    state: "KA",
+    postalCode: "560001",
+    country: "IN",
+  };
+
+  it("getAddressesApi attaches the user's token", async () => {
+    setCookie("jwt-abc");
+    fetchMock.mockResolvedValue(ok([]));
+
+    await getAddressesApi();
+
+    expect(calledUrl()).toBe(`${API_URL}/api/addresses`);
+    expect((calledInit().headers as Record<string, string>).Authorization).toBe("Bearer jwt-abc");
+  });
+
+  it("createAddressApi posts the address as JSON", async () => {
+    fetchMock.mockResolvedValue(ok({ id: 1, ...address, isDefault: false }));
+
+    await createAddressApi(address);
+
+    expect(calledInit().method).toBe("POST");
+    expect(JSON.parse(calledInit().body as string)).toEqual(address);
+  });
+
+  it("createAddressApi surfaces a field-level validation error", async () => {
+    fetchMock.mockResolvedValue(
+      fail(422, { message: "Validation failed", errors: [{ field: "postalCode", message: "Postal code must be 6 digits" }] })
+    );
+
+    await expect(createAddressApi(address)).rejects.toThrow("Postal code must be 6 digits");
+  });
+
+  it("updateAddressApi sends a PUT to the address's own endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ id: 1, ...address, isDefault: true }));
+
+    await updateAddressApi(1, { isDefault: true });
+
+    expect(calledUrl()).toBe(`${API_URL}/api/addresses/1`);
+    expect(calledInit().method).toBe("PUT");
+    expect(JSON.parse(calledInit().body as string)).toEqual({ isDefault: true });
+  });
+
+  it("deleteAddressApi sends a DELETE to the address's own endpoint", async () => {
+    fetchMock.mockResolvedValue(ok({ message: "Address deleted successfully" }));
+
+    await deleteAddressApi(1);
+
+    expect(calledUrl()).toBe(`${API_URL}/api/addresses/1`);
+    expect(calledInit().method).toBe("DELETE");
+  });
+
+  it("deleteAddressApi surfaces a conflict when the address is still on an order", async () => {
+    fetchMock.mockResolvedValue(
+      fail(409, { message: "This address is used on a past order and can't be deleted" })
+    );
+
+    await expect(deleteAddressApi(1)).rejects.toThrow(/past order/i);
   });
 });

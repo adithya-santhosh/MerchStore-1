@@ -169,6 +169,13 @@ model User {
   failedLoginAttempts Int                  @default(0)
   lockedUntil         DateTime?
 
+  // Auto-created at checkout for a shopper who never registered — an
+  // unguessable password, never intended to be logged into directly. Lets
+  // guest checkout reuse every order/payment code path unchanged (userId
+  // stays a required, non-null column everywhere) while still being able to
+  // tell "a guest we made up" apart from "a real account" by email lookup.
+  isGuest             Boolean              @default(false)
+
   addresses           Address[]
   orders              Order[]
   cart                Cart?
@@ -382,6 +389,19 @@ model Coupon {
   isActive       Boolean   @default(true)
 
   @@map("coupons")
+}
+
+// ─── CONTACT MESSAGE ─────────────────────────────────────────────────────────
+// Submissions from the public /contact form. No user relation — the sender
+// doesn't have to be logged in, or even have an account at all.
+model ContactMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String
+  message   String
+  createdAt DateTime @default(now())
+
+  @@map("contact_messages")
 }
 
 // ─── SYSTEM SETTING ──────────────────────────────────────────────────────────

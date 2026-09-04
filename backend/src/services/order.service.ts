@@ -1,8 +1,11 @@
 import logger from "../lib/logger";
 import prisma from "../lib/prisma";
-import { OrderStatus, PaymentStatus, Prisma } from "@prisma/client";
+import { OrderStatus, PaymentStatus, Prisma, User } from "@prisma/client";
 import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "./email.service";
 import { getSettings } from "./settings.service";
+import { resolveGuestUser } from "./auth.service";
+import { getOrCreateCart } from "./cart.service";
+import { guestContactSchema } from "../middleware/validation.middleware";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,6 +39,42 @@ export type PreparedCheckout = {
     shippingCost: number
     totalAmount: number
 }
+
+// ─── Guest Checkout ───────────────────────────────────────────────────────────
+
+/**
+ * Resolves who an order/payment belongs to. A signed-in shopper's id is used
+ * as-is; an anonymous one must supply guest contact details, which get turned
+ * into a lightweight User row (see resolveGuestUser) so every downstream
+ * order/payment code path keeps treating userId as the required column it
+ * already is — no nullable-userId branches needed anywhere else.
+ *
+ * The cart a guest built up while browsing lives under `sessionToken`, not a
+ * userId, so it's linked to the freshly resolved account here — otherwise
+ * prepareCheckout's `where: { userId }` cart lookup would find nothing.
+ *
+ * Returns `resolvedGuestUser` only when a *new* resolution happened (i.e. the
+ * caller wasn't already authenticated), so the controller knows to issue that
+ * user a session — an already-authenticated request should never have its
+ * cookies re-issued here.
+ */
+export const resolveCheckoutUserId = async (
+  authUserId: number | undefined,
+  guest: unknown,
+  sessionToken: string | undefined
+): Promise<{ userId: number; resolvedGuestUser?: User }> => {
+  if (authUserId) return { userId: authUserId };
+
+  const parsed = guestContactSchema.safeParse(guest);
+  if (!parsed.success) {
+    throw new Error("Please enter your name and email to check out as a guest.");
+  }
+
+  const guestUser = await resolveGuestUser(parsed.data);
+  await getOrCreateCart(sessionToken, guestUser.id);
+
+  return { userId: guestUser.id, resolvedGuestUser: guestUser };
+};
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 

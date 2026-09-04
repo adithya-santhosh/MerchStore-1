@@ -114,6 +114,16 @@ describe("POST /api/auth/register", () => {
     expect(cookie).toMatch(/Path=\//);
   });
 
+  it("also sets a CSRF token cookie that is readable by script, unlike the auth cookie", async () => {
+    svc.registerUser.mockResolvedValue({ user: sessionUser, token: "jwt-token" } as any);
+
+    const res = await post("/api/auth/register").send(validRegistration);
+    const csrfCookie = res.headers["set-cookie"]!.find((c: string) => c.startsWith("csrf_token="));
+
+    expect(csrfCookie).toBeTruthy();
+    expect(csrfCookie).not.toMatch(/HttpOnly/i);
+  });
+
   it("answers 400, not 500, when the email is already registered", async () => {
     svc.registerUser.mockRejectedValue(new Error("Email is already registered"));
 
@@ -175,6 +185,19 @@ describe("POST /api/auth/login", () => {
     expect(res.headers["set-cookie"]![0]).toMatch(/HttpOnly/i);
   });
 
+  it("also sets a fresh, script-readable CSRF token cookie", async () => {
+    svc.loginUser.mockResolvedValue({ user: sessionUser, token: "jwt-token" } as any);
+
+    const res = await post("/api/auth/login").send({
+      email: "ada@example.com",
+      password: "password123",
+    });
+    const csrfCookie = res.headers["set-cookie"]!.find((c: string) => c.startsWith("csrf_token="));
+
+    expect(csrfCookie).toBeTruthy();
+    expect(csrfCookie).not.toMatch(/HttpOnly/i);
+  });
+
   it("never echoes the password back", async () => {
     svc.loginUser.mockResolvedValue({ user: sessionUser, token: "jwt-token" } as any);
 
@@ -207,6 +230,13 @@ describe("POST /api/auth/logout", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers["set-cookie"]![0]).toMatch(/^token=;/);
+  });
+
+  it("clears the CSRF token cookie too", async () => {
+    const res = await post("/api/auth/logout").send({});
+
+    const csrfCookie = res.headers["set-cookie"]!.find((c: string) => c.startsWith("csrf_token="));
+    expect(csrfCookie).toMatch(/^csrf_token=;/);
   });
 
   it("succeeds even when nobody is signed in", async () => {
@@ -269,6 +299,28 @@ describe("GET /api/auth/me", () => {
     const res = await get("/api/auth/me").set("Cookie", `token=${tokenFor()}`);
 
     expect(res.status).toBe(200);
+  });
+
+  it("backfills a CSRF cookie for a session that predates it", async () => {
+    svc.getUserById.mockResolvedValue(sessionUser as any);
+
+    // No csrf_token in the request cookie — an existing session from before
+    // this feature shipped, which would otherwise fail every mutating
+    // request forever without a fresh login.
+    const res = await get("/api/auth/me").set("Cookie", `token=${tokenFor()}`);
+
+    const csrfCookie = res.headers["set-cookie"]?.find((c: string) => c.startsWith("csrf_token="));
+    expect(csrfCookie).toBeTruthy();
+    expect(csrfCookie).not.toMatch(/HttpOnly/i);
+  });
+
+  it("does not re-issue the CSRF cookie when the session already has one", async () => {
+    svc.getUserById.mockResolvedValue(sessionUser as any);
+
+    const res = await get("/api/auth/me").set("Cookie", `token=${tokenFor()}; csrf_token=already-set`);
+
+    const csrfCookie = res.headers["set-cookie"]?.find((c: string) => c.startsWith("csrf_token="));
+    expect(csrfCookie).toBeUndefined();
   });
 });
 
