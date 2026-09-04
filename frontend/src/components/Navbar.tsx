@@ -141,7 +141,7 @@ export default function Navbar() {
         className={`sticky top-0 z-50 w-full transition-all duration-300 border-b ${
           scrolled
             ? "bg-background/80 backdrop-blur-lg border-border/80 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.1)]"
-            : "bg-background/40 backdrop-blur-sm border-transparent"
+            : "bg-background/60 backdrop-blur-sm border-transparent"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -231,7 +231,7 @@ export default function Navbar() {
                     className="flex items-center gap-2 p-1 pr-2.5 rounded-full border border-border/60 hover:border-primary/40 hover:bg-muted transition-all cursor-pointer"
                     aria-label="User menu"
                   >
-                    <div className="size-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
+                    <div className="size-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary-bright text-xs font-black">
                       {getUserInitials()}
                     </div>
                     <span className="text-xs font-semibold text-foreground hidden lg:inline max-w-[80px] truncate">
@@ -661,7 +661,7 @@ export default function Navbar() {
                 {user ? (
                   <>
                     <div className="flex items-center gap-3 px-3 py-2 text-muted-foreground">
-                      <div className="size-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary text-xs font-black">
+                      <div className="size-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary-bright text-xs font-black">
                         {getUserInitials()}
                       </div>
                       <span className="text-sm font-bold text-foreground">

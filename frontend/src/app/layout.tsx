@@ -50,6 +50,13 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      {/* Rendered as JSX rather than the metadata API's icons/etc fields
+          because there's no dedicated preconnect field there — Next
+          hoists any <link>/<meta> rendered in a layout into <head>
+          automatically, so this doesn't need its own <head> element. */}
+      <link rel="preconnect" href="https://images.unsplash.com" />
+      <link rel="preconnect" href="https://res.cloudinary.com" />
+      <link rel="preconnect" href="https://checkout.razorpay.com" />
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <CartProvider>
