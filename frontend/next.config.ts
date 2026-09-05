@@ -37,6 +37,22 @@ const apiOrigin = (() => {
 // Types compatibility.
 const isDev = process.env.NODE_ENV === "development";
 
+// The browser SDK (instrumentation-client.ts) posts events straight to
+// Sentry's ingest host, not through our own backend — connect-src has to
+// allow it explicitly or every client-side error report gets silently CSP-
+// blocked. Derived from the DSN itself (its "origin" is the ingest host;
+// the DSN's public key is userinfo, which .origin strips) rather than
+// hardcoded, since the ingest host encodes both org and data-residency
+// region (e.g. "de" for EU) and shouldn't need a manual update if the
+// Sentry project changes.
+const sentryIngestOrigin = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SENTRY_DSN || "").origin;
+  } catch {
+    return "";
+  }
+})();
+
 // Both the legacy report-uri directive and the newer Reporting API
 // (report-to + a Reporting-Endpoints header naming the group) point at
 // the same backend route — report-uri for browsers that don't support
@@ -55,7 +71,7 @@ const cspDirectives = [
   `font-src 'self' data:`,
   `connect-src 'self' https://api.cloudinary.com https://*.razorpay.com${
     apiOrigin ? ` ${apiOrigin}` : ""
-  }`,
+  }${sentryIngestOrigin ? ` ${sentryIngestOrigin}` : ""}`,
   `frame-src https://*.razorpay.com`,
   `object-src 'none'`,
   `base-uri 'self'`,
