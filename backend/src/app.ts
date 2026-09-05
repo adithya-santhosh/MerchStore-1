@@ -1,4 +1,5 @@
 import logger from "./lib/logger";
+import { Sentry } from "./lib/sentry";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -18,6 +19,8 @@ import wishlistRoutes from "./routes/wishlist.routes";
 import vendorRoutes from "./routes/vendor.routes";
 import contactRoutes from "./routes/contact.routes";
 import addressRoutes from "./routes/address.routes";
+import cspReportRoutes from "./routes/csp-report.routes";
+import prisma from "./lib/prisma";
 
 // Express app assembly, split out from server.ts so tests can import it with
 // Supertest without also binding a port (app.listen lives in server.ts only).
@@ -120,8 +123,20 @@ const apiLimiter = rateLimit({
 });
 
 // ─── Health Check ─────────────────────────────────────────────────────────────
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+// Checks the database too, not just "the process is alive": an uptime
+// monitor pinging this should be able to tell "server up, DB unreachable"
+// apart from "everything's fine" — those need different responses from
+// whoever's on call, and a bare 200 can't tell them apart.
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ok", timestamp: new Date().toISOString() });
+  } catch (err) {
+    logger.error({ err }, "Health check: database unreachable");
+    res
+      .status(503)
+      .json({ status: "error", detail: "database unreachable", timestamp: new Date().toISOString() });
+  }
 });
 
 app.get("/", (_req, res) => {
@@ -143,6 +158,7 @@ app.use("/api/wishlist", apiLimiter, wishlistRoutes);
 app.use("/api/vendors", apiLimiter, vendorRoutes);
 app.use("/api/contact", apiLimiter, contactRoutes);
 app.use("/api/addresses", apiLimiter, addressRoutes);
+app.use("/api/csp-report", apiLimiter, cspReportRoutes);
 
 // ─── 404 — nothing matched ────────────────────────────────────────────────────
 // Registered after every route so it only runs when nothing else handled the
@@ -177,6 +193,7 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
   // Anything else is genuinely unexpected: log it in full, but never leak
   // internals (stack traces, driver messages) to the client.
   logger.error({ err }, "Unhandled error");
+  Sentry.captureException(err);
   res.status(500).json({ message: "Internal server error" });
 });
 

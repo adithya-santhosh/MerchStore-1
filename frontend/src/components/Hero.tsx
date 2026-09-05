@@ -80,6 +80,7 @@ export default function Hero() {
         loop
         muted
         playsInline
+        aria-hidden="true"
         poster={HERO_POSTER}
         className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${
           isLoaded ? "opacity-100" : "opacity-0"

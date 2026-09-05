@@ -1,12 +1,34 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import request from "supertest";
+
+// /health now checks the database (see app.ts) rather than answering
+// unconditionally — several tests below reuse /health as a convenient
+// side-effect-free GET route to exercise CORS/error-handling middleware,
+// not because they care about health-check semantics specifically, so
+// they need a DB call to resolve rather than reject with no real DB here.
+vi.mock("../src/lib/prisma", () => ({
+  default: { $queryRaw: vi.fn().mockResolvedValue([{ "?column?": 1 }]) },
+}));
+
 import app from "../src/app";
+import prisma from "../src/lib/prisma";
 
 describe("app", () => {
   it("GET /health returns ok", async () => {
     const res = await request(app).get("/health");
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("ok");
+  });
+
+  it("GET /health returns 503 when the database is unreachable", async () => {
+    // An uptime monitor needs to be able to tell "server up, DB down"
+    // apart from "everything's fine" — that's the entire point of
+    // checking the DB here instead of answering unconditionally.
+    vi.mocked(prisma.$queryRaw).mockRejectedValueOnce(new Error("connection refused"));
+
+    const res = await request(app).get("/health");
+    expect(res.status).toBe(503);
+    expect(res.body.status).toBe("error");
   });
 
   it("GET / returns a plain-text confirmation", async () => {
@@ -18,6 +40,30 @@ describe("app", () => {
   it("blocks an admin route with no auth token", async () => {
     const res = await request(app).get("/api/products/admin/stats");
     expect(res.status).toBe(401);
+  });
+});
+
+describe("CSP violation reporting", () => {
+  it("accepts a report-uri style violation report", async () => {
+    const res = await request(app)
+      .post("/api/csp-report")
+      .set("Content-Type", "application/csp-report")
+      .send(
+        JSON.stringify({
+          "csp-report": { "violated-directive": "script-src", "blocked-uri": "https://evil.example" },
+        })
+      );
+
+    expect(res.status).toBe(204);
+  });
+
+  it("accepts a Reporting API style violation report", async () => {
+    const res = await request(app)
+      .post("/api/csp-report")
+      .set("Content-Type", "application/reports+json")
+      .send(JSON.stringify([{ type: "csp-violation", body: { blockedURL: "https://evil.example" } }]));
+
+    expect(res.status).toBe(204);
   });
 });
 

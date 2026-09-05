@@ -147,6 +147,7 @@ Prisma reads `DATABASE_URL` at runtime via the `pg` driver adapter
 | `EMAIL_FROM` | `MerchStore <noreply@example.com>` after domain verification |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_SECRET` | **live** keys (Phase 10) |
 | `CLOUDINARY_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | from the Cloudinary console (Dashboard > Account Details) — without all three, the admin image uploader answers 503 but the rest of the app still runs |
+| `SENTRY_DSN` | optional — from your Sentry project's Client Keys settings. Omit and error tracking is just a no-op, nothing else breaks |
 
 - [ ] Do **not** set `PORT` — Render provides it and
       [server.ts](backend/src/server.ts) already reads it
@@ -166,6 +167,8 @@ Prisma reads `DATABASE_URL` at runtime via the `pg` driver adapter
 |---|---|
 | `NEXT_PUBLIC_API_URL` | `https://api.example.com` — **origin only, no `/api`** |
 | `JWT_SECRET` | **byte-identical** to the backend's. No `NEXT_PUBLIC_` prefix |
+| `NEXT_PUBLIC_SITE_URL` | `https://www.example.com` — canonical/OG URLs; falls back to `localhost` if unset |
+| `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` | optional — same Sentry project as the backend's `SENTRY_DSN`. `SENTRY_DSN` covers server-side rendering errors, `NEXT_PUBLIC_SENTRY_DSN` covers the browser |
 
 Cloudinary needs nothing here — uploads are signed by the backend
 (`CLOUDINARY_NAME`/`CLOUDINARY_API_KEY`/`CLOUDINARY_API_SECRET` in Phase 4),
@@ -319,8 +322,9 @@ Once both custom domains resolve with valid certificates:
 - [ ] Improve the default `title` / `description` — currently just "MerchStore"
 - [ ] Add `frontend/src/app/robots.ts` and `sitemap.ts` (neither exists yet)
 - [ ] Replace the default `favicon.ico` and add an OG share image
-- [ ] Add `frontend/.env.example` documenting the four frontend variables — there
-      isn't one today
+- [x] ~~Add `frontend/.env.example` documenting the four frontend variables...~~
+      Fixed: [frontend/.env.example](frontend/.env.example) now documents all five
+      (the Sentry pair was added alongside error tracking).
 - [ ] Fix the `NEXT_PUBLIC_API_URL` line in [README.md](README.md)
 - [ ] Confirm the policy pages (privacy, terms, refund, shipping) name your real
       business and are linked in the footer — payment gateways check for these
@@ -351,9 +355,25 @@ Run these as a real customer would, in a fresh incognito window:
 ## Phase 13 — After launch
 
 - [ ] Uptime monitor on `https://api.example.com/health` and on the storefront
-      (UptimeRobot, Better Stack)
+      (UptimeRobot, Better Stack — both have a free tier). `/health` now checks
+      the database too ([app.ts](backend/src/app.ts)), returning `503` rather
+      than a bare `200` when Postgres is unreachable — point the monitor at
+      `/health` itself, not just a TCP/ping check, so a DB outage actually
+      pages someone instead of looking like "server's up, fine."
 - [ ] Confirm database backups actually ran, and restore one to a scratch DB once
-- [ ] Error tracking (Sentry) on both apps
+- [ ] Error tracking (Sentry) on both apps — the code side is done
+      (`@sentry/node` on the backend, `@sentry/browser` + Next's
+      `instrumentation.ts`/`instrumentation-client.ts` on the frontend; see
+      [sentry.ts](backend/src/lib/sentry.ts)). Create a Sentry project and set
+      `SENTRY_DSN` (Phase 4) and `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN`
+      (Phase 5) to turn it on — until then it runs as a safe no-op
+- [ ] CSP violation reporting is wired up already: the frontend's CSP
+      ([next.config.ts](frontend/next.config.ts)) reports blocked resources to
+      `POST /api/csp-report` ([csp-report.routes.ts](backend/src/routes/csp-report.routes.ts)),
+      which logs them and forwards to Sentry once a DSN is set. Worth
+      watching for a day or two after launch — a real customer's ad blocker
+      or extension can trip false positives, but a pattern from one browser
+      or one route usually means the CSP itself is too strict
 - [ ] Google Search Console + submit the sitemap
 - [ ] Analytics (Vercel Analytics, Plausible, or GA4)
 - [ ] Diary the domain renewal date independently of auto-renew

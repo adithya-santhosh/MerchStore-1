@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Layers } from "lucide-react";
 import ScrollReveal from "@/components/ScrollReveal";
 
@@ -80,12 +81,23 @@ export default function CategoryShowcase() {
                   {cat.label}
                 </div>
 
-                {/* 2. Full-bleed background image with Zoom Hover */}
+                {/* 2. Full-bleed background image with Zoom Hover.
+                    next/image rather than a plain <img>: this single
+                    source was shipped at 1024x1024 to every viewport
+                    regardless of the card's actual rendered size (a
+                    single-column ~600px-wide card on a high-DPI phone
+                    needs nearly that much, but the 3-column desktop
+                    layout needs far less) — a fixed resize would either
+                    stay oversized on desktop or go soft on mobile.
+                    next/image generates the srcset so each breakpoint
+                    gets its own size instead of guessing one. */}
                 <div className="absolute inset-0 w-full h-full">
-                  <img
+                  <Image
                     src={cat.imageSrc}
                     alt={cat.alt}
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    fill
+                    sizes="(min-width: 768px) 33vw, 100vw"
+                    className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     loading="lazy"
                   />
                 </div>

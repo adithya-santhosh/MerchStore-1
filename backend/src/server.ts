@@ -1,4 +1,10 @@
 import "dotenv/config";
+import { initSentry } from "./lib/sentry";
+
+// As early as possible: Sentry patches Node's built-ins for automatic
+// instrumentation, which only covers modules required after this runs.
+initSentry();
+
 import logger from "./lib/logger";
 
 // ─── Env Guards ──────────────────────────────────────────────────────────────
