@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Menu,
@@ -10,7 +11,6 @@ import {
   ShoppingBag,
   User,
   Search,
-  Sparkles,
   Shield,
   Tag,
   Car,
@@ -158,14 +158,15 @@ export default function Navbar() {
           <div className="flex justify-between items-center h-16 sm:h-20">
             {/* Logo Section */}
             <div className="flex-shrink-0">
-              <Link href="/" className="flex items-center gap-2 group">
-                <div className="size-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-transform duration-300 group-hover:rotate-12">
-                  <Sparkles className="size-5" />
-                </div>
-                <span className="font-heading text-xl font-semibold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
-                  Merch
-                  <span className="text-primary font-bold">Store</span>
-                </span>
+              <Link href="/" className="flex items-center group">
+                <Image
+                  src="/logo/offroad-world-badge.png"
+                  alt="OffRoad World"
+                  width={1747}
+                  height={868}
+                  priority
+                  className="h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
+                />
               </Link>
             </div>
 

@@ -18,11 +18,11 @@ export default function AboutPage() {
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl mb-6 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-            About MerchStore
+            About OffRoad World
           </h1>
           <div className="prose dark:prose-invert text-muted-foreground space-y-6">
             <p className="text-lg leading-relaxed">
-              Welcome to MerchStore, the ultimate destination for premium car styling accessories and lifestyle merchandise. 
+              Welcome to OffRoad World, the ultimate destination for premium car styling accessories and lifestyle merchandise.
               We are passionate about design, quality, and car culture.
             </p>
             <p className="leading-relaxed">

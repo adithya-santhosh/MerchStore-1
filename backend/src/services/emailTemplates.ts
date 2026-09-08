@@ -150,13 +150,13 @@ const layout = ({ title, preheader, content }: LayoutOptions): string => `<!DOCT
         <table align="center" width="600" border="0" cellspacing="0" cellpadding="0" role="presentation" style="width: 100%; max-width: 600px; background-color: ${color.cardBg}; border: 1px solid ${color.hairline}; border-radius: 10px;">
           <tr>
             <td class="gutter" style="padding: 34px 40px 0 40px;">
-              <p style="margin: 0; font-family: ${FONT}; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: ${color.textTertiary};">MerchStore</p>
+              <p style="margin: 0; font-family: ${FONT}; font-size: 11px; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: ${color.textTertiary};">OffRoad World</p>
             </td>
           </tr>
 ${content}
           <tr>
             <td class="gutter" style="padding: 28px 40px 34px 40px; border-top: 1px solid ${color.hairline};">
-              <p style="margin: 0; font-family: ${FONT}; font-size: 12px; line-height: 1.6; color: ${color.textTertiary};">© ${new Date().getFullYear()} MerchStore. Premium auto parts and automotive merch.</p>
+              <p style="margin: 0; font-family: ${FONT}; font-size: 12px; line-height: 1.6; color: ${color.textTertiary};">© ${new Date().getFullYear()} OffRoad World. Premium auto parts and automotive merch.</p>
             </td>
           </tr>
         </table>
@@ -170,7 +170,7 @@ ${content}
 
 export const getWelcomeEmailHtml = (name: string, frontendUrl: string): string =>
   layout({
-    title: "Welcome to MerchStore",
+    title: "Welcome to OffRoad World",
     preheader: "Your account is ready — explore parts and merch for your vehicle.",
     content: [
       band(
@@ -325,7 +325,7 @@ export const getPasswordResetEmailHtml = (name: string, resetUrl: string): strin
         `${eyebrow("Security")}
               ${display("Reset your password")}
               ${lead(
-                `Hello ${esc(name || "there")} — we received a request to reset the password on your MerchStore account. Choose a new one below. This link expires in 60 minutes.`
+                `Hello ${esc(name || "there")} — we received a request to reset the password on your OffRoad World account. Choose a new one below. This link expires in 60 minutes.`
               )}`,
         "32px 40px 0 40px"
       ),

@@ -530,7 +530,7 @@ function DashboardContent() {
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border border-primary/30 bg-primary/10 text-primary-bright text-[9px] font-black uppercase tracking-wider">
                             <Sparkles className="size-3" /> lifetime premium access
                           </span>
-                          <h3 className="text-lg font-black text-foreground">Join the MerchStore Premium Club</h3>
+                          <h3 className="text-lg font-black text-foreground">Join the OffRoad World Premium Club</h3>
                           <p className="text-xs text-muted-foreground leading-relaxed font-semibold">
                             Get an automatic 10% off storewide, priority express processing on your orders, and exclusive vip engineering consultations.
                           </p>

@@ -363,7 +363,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           <div className="border-t border-border/60 px-6 py-3 flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60 font-medium">
               <Command className="size-3" />
-              <span>Powered by MerchStore Search</span>
+              <span>Powered by OffRoad World Search</span>
             </div>
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
               <kbd className="px-1.5 py-0.5 rounded border border-border bg-muted/40 font-mono font-bold text-muted-foreground">

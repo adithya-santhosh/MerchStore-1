@@ -2,9 +2,10 @@
 
 import React, { useState, Suspense } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/hooks/useAuth";
 import { useSearchParams } from "next/navigation";
-import { Mail, Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
+import { Mail, AlertCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
 import { safeCallbackUrl } from "@/lib/utils";
@@ -56,9 +57,13 @@ function LoginForm() {
 
         {/* Branding header */}
         <div className="text-center space-y-2">
-          <div className="size-12 rounded-2xl bg-primary flex items-center justify-center text-primary-foreground shadow-[0_0_20px_rgba(var(--primary),0.3)] mx-auto transition-transform hover:rotate-12 duration-300">
-            <Sparkles className="size-6" />
-          </div>
+          <Image
+            src="/logo/offroad-world-badge.png"
+            alt="OffRoad World"
+            width={1747}
+            height={868}
+            className="h-16 w-auto mx-auto"
+          />
           <h1 className="text-2xl font-black tracking-tight mt-4">Welcome Back</h1>
           <p className="text-xs text-muted-foreground">Sign in to manage your configuration and profile</p>
         </div>

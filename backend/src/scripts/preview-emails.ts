@@ -34,7 +34,7 @@ const fullOrder = {
   items: [
     { productName: "Brembo Front Brake Pad Set — Ceramic", quantity: 1, totalPrice: 12490 },
     { productName: "K&N High-Flow Air Filter (Drop-in)", quantity: 2, totalPrice: 8500 },
-    { productName: "MerchStore Pit Crew Tee — Charcoal", quantity: 1, totalPrice: 4000 }
+    { productName: "OffRoad World Pit Crew Tee — Charcoal", quantity: 1, totalPrice: 4000 }
   ],
   shippingAddress: {
     addressLine1: "Flat 12B, Sunrise Residency",
@@ -97,7 +97,7 @@ const indexHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>MerchStore email previews</title>
+  <title>OffRoad World email previews</title>
   <style>
     body { margin: 0; padding: 48px 24px; background: #0f172a; color: #e2e8f0;
            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -115,7 +115,7 @@ const indexHtml = `<!DOCTYPE html>
 </head>
 <body>
   <main>
-    <h1>MerchStore email previews</h1>
+    <h1>OffRoad World email previews</h1>
     <p class="meta">Generated ${new Date().toLocaleString("en-IN")} · ${pages.length} templates · re-run <code>npm run preview:emails</code> after editing.</p>
     <ul>
       ${pages.map((p) => `<li><a href="./${p.file}">${p.label}<span>${p.file}</span></a></li>`).join("\n      ")}

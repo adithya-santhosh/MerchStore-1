@@ -337,7 +337,7 @@ export default function CheckoutPage() {
           key: orderData.key,
           amount: orderData.amount,
           currency: orderData.currency,
-          name: "MerchStore",
+          name: "OffRoad World",
           description: "Purchase Payment",
           order_id: orderData.orderId,
           handler: async function (response: RazorpaySuccessResponse) {

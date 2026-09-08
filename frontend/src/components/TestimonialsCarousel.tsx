@@ -52,7 +52,7 @@ const testimonials: Testimonial[] = [
     rating: 5,
     quote:
       "Been buying merch from here for 6 months. The quality of the caps and keychains is premium — everyone at our car meets asks where I got them.",
-    product: "MerchStore Apparel Collection",
+    product: "OffRoad World Apparel Collection",
   },
   {
     name: "Deepika Reddy",
@@ -124,7 +124,7 @@ export default function TestimonialsCarousel() {
               What Our Customers Say
             </h2>
             <p className="text-sm sm:text-base text-muted-foreground max-w-lg mx-auto">
-              Real reviews from real enthusiasts who trust MerchStore for their
+              Real reviews from real enthusiasts who trust OffRoad World for their
               automotive lifestyle gear.
             </p>
           </div>
