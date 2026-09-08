@@ -1378,7 +1378,7 @@ export async function purchaseMembershipRazorpay(userToken?: string): Promise<Au
       key: orderData.key,
       amount: orderData.amount,
       currency: orderData.currency,
-      name: "MerchStore VIP Membership",
+      name: "OffRoad World VIP Membership",
       description: `One-Time Membership Joining Fee (₹${orderData.membershipFee})`,
       order_id: orderData.orderId,
       handler: async function (paymentResponse: RazorpaySuccessResponse) {

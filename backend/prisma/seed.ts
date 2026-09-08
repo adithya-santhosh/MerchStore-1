@@ -57,7 +57,7 @@ async function main() {
     { name: "Toyota Genuine Parts", slug: "toyota-genuine" },
     { name: "Hyundai Genuine Accessories", slug: "hyundai-genuine" },
     { name: "Bajaj Genuine Parts", slug: "bajaj-genuine" },
-    { name: "MerchStore Apparel", slug: "merchstore-apparel" },
+    { name: "OffRoad World Apparel", slug: "merchstore-apparel" },
   ];
 
   const seededBrands: Record<string, any> = {};

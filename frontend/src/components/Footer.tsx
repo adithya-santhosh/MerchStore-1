@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Sparkles, MessageSquare, ShieldCheck } from "lucide-react";
+import Image from "next/image";
+import { MessageSquare, ShieldCheck } from "lucide-react";
 import { siteConfig } from "@/lib/site-config";
 
 export default function Footer() {
@@ -12,13 +13,14 @@ export default function Footer() {
 
           {/* Brand Info */}
           <div className="space-y-4 col-span-2">
-            <Link href="/" className="flex items-center gap-2 group w-max">
-              <div className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-                <Sparkles className="size-4" />
-              </div>
-              <span className="text-lg font-bold tracking-tight">
-                Merch<span className="text-primary-bright font-black">Store</span>
-              </span>
+            <Link href="/" className="flex items-center group w-max">
+              <Image
+                src="/logo/offroad-world-wordmark.png"
+                alt={siteConfig.brandName}
+                width={2171}
+                height={724}
+                className="h-7 w-auto"
+              />
             </Link>
             <p className="text-sm text-muted-foreground max-w-sm leading-relaxed">
               Premium automotive lifestyle gear and limited merchandise drops. Crafted for collectors, driven by enthusiasts.

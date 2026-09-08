@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
@@ -10,7 +11,6 @@ import {
   Users,
   Settings,
   ArrowLeft,
-  Sparkles,
   Search,
   Bell,
   Store,
@@ -63,11 +63,15 @@ export default function AdminLayout({
         {/* Branding header */}
         <div className="h-16 sm:h-20 flex items-center px-6 border-b border-border/60">
           <Link href="/admin/products" className="flex items-center gap-2 group">
-            <div className="size-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shadow-sm shadow-primary/30">
-              <Sparkles className="size-4" />
-            </div>
-            <span className="font-bold tracking-tight text-sm sm:text-base">
-              Merch<span className="text-primary-bright font-black">Admin</span>
+            <Image
+              src="/logo/offroad-world-badge.png"
+              alt="OffRoad World"
+              width={1747}
+              height={868}
+              className="h-8 w-auto"
+            />
+            <span className="font-bold tracking-tight text-sm sm:text-base text-muted-foreground">
+              Admin
             </span>
           </Link>
         </div>

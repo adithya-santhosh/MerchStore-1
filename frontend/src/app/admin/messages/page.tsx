@@ -48,7 +48,7 @@ export default async function AdminMessagesPage() {
                 {msg.message}
               </p>
               <a
-                href={`mailto:${msg.email}?subject=${encodeURIComponent(`Re: your message to MerchStore`)}`}
+                href={`mailto:${msg.email}?subject=${encodeURIComponent(`Re: your message to OffRoad World`)}`}
                 className="inline-flex items-center gap-1.5 text-xs font-bold text-primary-bright hover:underline"
               >
                 <Mail className="size-3.5" />

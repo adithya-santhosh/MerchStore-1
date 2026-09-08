@@ -20,7 +20,7 @@ const getResendClient = (): Resend | null => {
 };
 
 const getFromAddress = (): string => {
-  return process.env.EMAIL_FROM || "MerchStore <onboarding@resend.dev>";
+  return process.env.EMAIL_FROM || "OffRoad World <onboarding@resend.dev>";
 };
 
 const getFrontendUrl = (): string => {
@@ -51,7 +51,7 @@ export const sendWelcomeEmail = async (params: SendWelcomeParams): Promise<void>
     const response = await resend.emails.send({
       from: getFromAddress(),
       to: [params.to],
-      subject: "Welcome to MerchStore",
+      subject: "Welcome to OffRoad World",
       html
     });
 
@@ -149,7 +149,7 @@ export const sendPasswordResetEmail = async (params: SendPasswordResetParams): P
     const response = await resend.emails.send({
       from: getFromAddress(),
       to: [params.to],
-      subject: "Reset your MerchStore password",
+      subject: "Reset your OffRoad World password",
       html
     });
 

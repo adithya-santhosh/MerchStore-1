@@ -23,7 +23,7 @@
 
 export const siteConfig = {
   /** Customer-facing brand name. */
-  brandName: "MerchStore",
+  brandName: "OffRoad World",
 
   /** Registered legal entity — e.g. "Acme Retail Private Limited" or the
    *  proprietor's name for a sole proprietorship. Must match your bank and
