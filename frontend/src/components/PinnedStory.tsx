@@ -23,7 +23,7 @@ const FEATURES: Feature[] = [
     title: "Ready for the moment things go sideways.",
     description:
       "Kinetic ropes, traction boards and winch-ready mounts — packed for the day the trail wins.",
-    image: "/images/rally/pinned-recovery.jpg",
+    image: "/images/rally/pinned-rollover.jpg",
   },
   {
     label: "03 — Proven",
@@ -256,33 +256,41 @@ export default function PinnedStory() {
         ))}
       </div>
 
-      {/* Desktop: pin-and-scrub. */}
-      <div className="hidden w-full items-center overflow-hidden lg:sticky lg:top-20 lg:flex lg:h-[calc(100dvh-5rem)]">
-        <div className="mx-auto grid w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-4 sm:px-6 lg:px-8">
-          <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] border border-border/40">
-            {FEATURES.map((feature, i) => (
-              <ImageLayer
-                key={feature.image}
-                feature={feature}
-                index={i}
-                total={n}
-                scrollYProgress={scrollYProgress}
-              />
-            ))}
-          </div>
+      {/* Desktop: pin-and-scrub. `sticky` and `overflow-hidden` are
+          deliberately on separate nodes here, not combined on one element —
+          Chromium can mis-hit-test wheel input against a sticky+overflow-
+          hidden element once it scrolls past, effectively trapping further
+          wheel scroll for the rest of the page (mouse wheel and trackpad
+          both affected; scrollbar drag and keyboard scrolling are
+          unaffected, since they bypass wheel hit-testing entirely). */}
+      <div className="hidden w-full lg:sticky lg:top-20 lg:block lg:h-[calc(100dvh-5rem)]">
+        <div className="flex h-full w-full items-center overflow-hidden">
+          <div className="mx-auto grid w-full max-w-7xl grid-cols-[1fr_auto_1fr] items-center gap-6 px-4 sm:px-6 lg:px-8">
+            <div className="relative aspect-square w-full overflow-hidden rounded-[2rem] border border-border/40">
+              {FEATURES.map((feature, i) => (
+                <ImageLayer
+                  key={feature.image}
+                  feature={feature}
+                  index={i}
+                  total={n}
+                  scrollYProgress={scrollYProgress}
+                />
+              ))}
+            </div>
 
-          <CurvePath total={n} scrollYProgress={scrollYProgress} />
+            <CurvePath total={n} scrollYProgress={scrollYProgress} />
 
-          <div className="flex flex-col gap-10">
-            {FEATURES.map((feature, i) => (
-              <TextLayer
-                key={feature.label}
-                feature={feature}
-                index={i}
-                total={n}
-                scrollYProgress={scrollYProgress}
-              />
-            ))}
+            <div className="flex flex-col gap-10">
+              {FEATURES.map((feature, i) => (
+                <TextLayer
+                  key={feature.label}
+                  feature={feature}
+                  index={i}
+                  total={n}
+                  scrollYProgress={scrollYProgress}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </div>

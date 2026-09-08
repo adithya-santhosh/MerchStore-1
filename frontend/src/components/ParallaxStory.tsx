@@ -17,9 +17,9 @@ const LEFT: StoryCard = {
 
 const RIGHT: StoryCard[] = [
   {
-    image: "/images/rally/story-recovery.jpg",
-    eyebrow: "Ready For Anything",
-    headline: "Waist-deep and still moving.",
+    image: "/images/rally/story-ascent.jpg",
+    eyebrow: "No Room For Doubt",
+    headline: "Full commitment, straight up the incline.",
   },
   {
     image: "/images/rally/story-climb.jpg",

@@ -4,11 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useScroll, useTransform } from "motion/react";
 
 const ITEMS = [
-  { label: "Water Crossing", image: "/images/rally/trail-water-crossing.jpg" },
-  { label: "Mud Run", image: "/images/rally/trail-mud-run.jpg" },
   { label: "Summit Climb", image: "/images/rally/trail-summit-climb.jpg" },
   { label: "Recovery Line", image: "/images/rally/trail-recovery-line.jpg" },
   { label: "Deep Woods", image: "/images/rally/trail-deep-woods.jpg" },
+  { label: "Caked In Mud", image: "/images/rally/trail-mud-detail.jpg" },
   { label: "The Crew", image: "/images/rally/trail-crew.jpg" },
 ];
 
@@ -46,39 +45,48 @@ export default function HorizontalGallery() {
       className="relative w-full bg-background"
       style={{ height: "300dvh" }}
     >
-      <div className="sticky top-0 flex h-dvh flex-col justify-center overflow-hidden">
-        <div className="mx-auto mb-8 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-          <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary-bright">
-            From The Trail
-          </span>
-          <h2 className="mt-2 text-3xl font-black tracking-tight text-foreground sm:text-5xl">
-            Real rigs. Real mud. Real miles.
-          </h2>
-        </div>
+      {/* `sticky` and `overflow-hidden` are deliberately on separate nodes,
+          not combined on one element — Chromium can mis-hit-test wheel
+          input against a sticky+overflow-hidden element once it scrolls
+          past, effectively trapping further wheel scroll for the rest of
+          the page (mouse wheel and trackpad both affected; scrollbar drag
+          and keyboard scrolling are unaffected, since they bypass wheel
+          hit-testing entirely). */}
+      <div className="sticky top-0 h-dvh">
+        <div className="flex h-full flex-col justify-center overflow-hidden">
+          <div className="mx-auto mb-8 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+            <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary-bright">
+              From The Trail
+            </span>
+            <h2 className="mt-2 text-3xl font-black tracking-tight text-foreground sm:text-5xl">
+              Real rigs. Real mud. Real miles.
+            </h2>
+          </div>
 
-        <motion.div
-          ref={trackRef}
-          style={{ x }}
-          className="flex gap-6 pl-4 sm:pl-6 lg:pl-8"
-        >
-          {ITEMS.map((item) => (
-            <div
-              key={item.label}
-              className="relative h-[50vh] w-[70vw] shrink-0 overflow-hidden rounded-[2rem] border border-border/40 sm:w-[38vw] lg:w-[26vw]"
-            >
-              <img
-                src={item.image}
-                alt={item.label}
-                loading="lazy"
-                className="h-full w-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-              <span className="absolute bottom-6 left-6 text-lg font-black uppercase tracking-wide text-white">
-                {item.label}
-              </span>
-            </div>
-          ))}
-        </motion.div>
+          <motion.div
+            ref={trackRef}
+            style={{ x }}
+            className="flex gap-6 pl-4 sm:pl-6 lg:pl-8"
+          >
+            {ITEMS.map((item) => (
+              <div
+                key={item.label}
+                className="relative h-[50vh] w-[70vw] shrink-0 overflow-hidden rounded-[2rem] border border-border/40 sm:w-[38vw] lg:w-[26vw]"
+              >
+                <img
+                  src={item.image}
+                  alt={item.label}
+                  loading="lazy"
+                  className="h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <span className="absolute bottom-6 left-6 text-lg font-black uppercase tracking-wide text-white">
+                  {item.label}
+                </span>
+              </div>
+            ))}
+          </motion.div>
+        </div>
       </div>
     </section>
   );
