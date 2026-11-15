@@ -1,4 +1,6 @@
 import prisma from "../lib/prisma";
+import logger from "../lib/logger";
+import { notifyOrderShipped } from "./order.service";
 
 // ─── Get vendor profile for a given user ID ───────────────────────────────────
 export const getVendorByUserId = async (userId: number) => {
@@ -52,6 +54,7 @@ export const getVendorOrders = async (vendorId: number) => {
     id: order.id,
     orderNumber: order.orderNumber,
     status: order.status,
+    giftMessage: order.giftMessage ?? null,
     createdAt: order.createdAt,
     customer: {
       firstName: order.user.firstName,
@@ -64,6 +67,7 @@ export const getVendorOrders = async (vendorId: number) => {
       productName: item.productName,
       quantity: item.quantity,
       unitPrice: Number(item.unitPrice),
+      giftWrap: item.giftWrap === true,
       imageUrl: item.product?.images?.[0]?.imageUrl ?? null
     })),
     shipment: order.shipment ? {
@@ -98,6 +102,11 @@ export const submitVendorShipment = async (
 
   if (!orderItem) throw new Error("Order does not belong to this vendor");
 
+  const current = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { status: true },
+  });
+
   // Upsert the shipment record
   const shipment = await prisma.shipment.upsert({
     where: { orderId },
@@ -121,6 +130,14 @@ export const submitVendorShipment = async (
     where: { id: orderId },
     data: { status: "SHIPPED" }
   });
+
+  // A tracking correction on an order that is already shipped should not
+  // send the "your order shipped" mail a second time.
+  if (current?.status !== "SHIPPED") {
+    notifyOrderShipped(orderId).catch((err) =>
+      logger.error({ err }, "[VendorService] shipped email error")
+    );
+  }
 
   return shipment;
 };

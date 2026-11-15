@@ -22,6 +22,7 @@ import {
   ChevronDown,
   Save,
   AlertCircle,
+  Gift,
 } from "lucide-react";
 
 // ─── Status Config ────────────────────────────────────────────────────────────
@@ -262,6 +263,15 @@ export default function AdminOrderDetailPage() {
             </div>
           </SectionCard>
 
+          {order.items.some((item) => item.giftWrap) && (
+            <SectionCard icon={Gift} title="Gift wrap">
+              <p className="text-sm text-foreground">Merchandise in this order must be gift wrapped.</p>
+              {order.giftMessage && (
+                <p className="text-sm text-muted-foreground mt-2">Note: “{order.giftMessage}”</p>
+              )}
+            </SectionCard>
+          )}
+
           {/* Items Ordered */}
           <SectionCard icon={ShoppingBag} title={`Items Ordered (${order.items.length})`}>
             <div className="space-y-3">
@@ -285,6 +295,12 @@ export default function AdminOrderDetailPage() {
                     <p className="text-sm font-bold text-foreground truncate">{item.productName}</p>
                     <p className="text-xs text-muted-foreground">
                       {item.quantity} × ₹{item.unitPrice.toLocaleString("en-IN")}
+                    </p>
+                    {item.giftWrap && (
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-primary-bright mt-1">Gift wrap</p>
+                    )}
+                    <p className="text-[10px] text-muted-foreground font-medium">
+                      {item.supplierEmail ? `Supplier: ${item.supplierEmail}` : "Fulfilled by the store"}
                     </p>
                     <p className="text-[10px] text-muted-foreground font-medium">Product ID: #{item.productId}</p>
                   </div>

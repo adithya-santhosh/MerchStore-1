@@ -27,6 +27,7 @@ import {
   Sparkles,
   AlertCircle,
   Tag,
+  Gift,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -182,6 +183,11 @@ export default function CheckoutPage() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [giftWrap, setGiftWrap] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
+
+  const merchandiseItems = cart?.items.filter((item) => item.product.productType === "merch") ?? [];
+  const giftWrapSelected = giftWrap && merchandiseItems.length > 0;
 
   // Pre-fill name, email and phone from user profile. Checkout no longer
   // requires signing in — a shopper who isn't logged in fills the (now
@@ -302,6 +308,12 @@ export default function CheckoutPage() {
         ? undefined
         : { email: address.email, ...splitFullName(address.fullName), phone: address.phone };
 
+      // Sent only when the cart still has merchandise. The server wraps those
+      // lines and ignores the request for car accessories.
+      const giftPayload = giftWrapSelected
+        ? { giftWrap: true as const, giftMessage: giftMessage.trim() || undefined }
+        : undefined;
+
       if (paymentMethod === "razorpay") {
         // 1. Load Razorpay script
         const isScriptLoaded = await new Promise<boolean>((resolve) => {
@@ -330,6 +342,7 @@ export default function CheckoutPage() {
           couponCode: couponDetails?.code,
           sessionToken,
           guest: guestPayload,
+          ...giftPayload,
         });
 
         // 3. Open Razorpay checkout
@@ -352,6 +365,7 @@ export default function CheckoutPage() {
                 couponCode: couponDetails?.code,
                 sessionToken,
                 guest: guestPayload,
+                ...giftPayload,
               });
 
               clearCart();
@@ -387,6 +401,7 @@ export default function CheckoutPage() {
           paymentMethod: "cod",
           sessionToken,
           guest: guestPayload,
+          ...giftPayload,
         });
 
         clearCart();
@@ -696,6 +711,9 @@ export default function CheckoutPage() {
                           <p className="text-xs font-semibold text-primary-bright uppercase tracking-wider">{item.product.category}</p>
                           <p className="text-sm font-bold text-foreground truncate">{item.product.name}</p>
                           <p className="text-xs text-muted-foreground">Qty: {item.quantity} × ₹{item.unitPrice.toLocaleString("en-IN")}</p>
+                          {giftWrapSelected && item.product.productType === "merch" && (
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-primary-bright mt-1">Gift wrap</p>
+                          )}
                         </div>
                         <span className="text-sm font-black text-foreground shrink-0">
                           ₹{(item.quantity * item.unitPrice).toLocaleString("en-IN")}
@@ -704,6 +722,48 @@ export default function CheckoutPage() {
                     );
                   })}
                 </div>
+
+                {merchandiseItems.length > 0 && (
+                  <div className="rounded-2xl border border-border/60 bg-muted/10 p-4 space-y-3">
+                    <label htmlFor="gift-wrap" className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        id="gift-wrap"
+                        type="checkbox"
+                        checked={giftWrap}
+                        onChange={(e) => setGiftWrap(e.target.checked)}
+                        className="mt-1 size-4 accent-primary cursor-pointer"
+                      />
+                      <span className="space-y-1">
+                        <span className="flex items-center gap-1.5 text-sm font-bold text-foreground">
+                          <Gift className="size-4 text-primary" />
+                          Gift wrap the merchandise
+                        </span>
+                        <span className="block text-xs text-muted-foreground leading-relaxed">
+                          {merchandiseItems.length === cart.items.length
+                            ? "We'll wrap the items in this order as a gift. No extra charge."
+                            : "We'll wrap the merchandise only. Car accessories stay in their normal packaging. No extra charge."}
+                        </span>
+                      </span>
+                    </label>
+                    {giftWrap && (
+                      <div className="space-y-1.5 pl-7">
+                        <label htmlFor="gift-message" className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Gift note, optional
+                        </label>
+                        <textarea
+                          id="gift-message"
+                          value={giftMessage}
+                          onChange={(e) => setGiftMessage(e.target.value.slice(0, 300))}
+                          maxLength={300}
+                          rows={3}
+                          placeholder="A short note to include with the wrap"
+                          className={`${inputClass} resize-none`}
+                        />
+                        <p className="text-[10px] text-muted-foreground text-right">{giftMessage.length}/300</p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Coupon */}
                 <div className="space-y-2">
@@ -803,6 +863,9 @@ export default function CheckoutPage() {
                   <div>
                     <h2 className="text-base font-bold text-foreground">Select Payment Method</h2>
                     <p className="text-xs text-muted-foreground">All transactions are 100% secure</p>
+                    {giftWrapSelected && (
+                      <p className="text-xs font-semibold text-primary-bright mt-1">Merchandise in this order will be gift wrapped.</p>
+                    )}
                   </div>
                 </div>
 
@@ -947,6 +1010,12 @@ export default function CheckoutPage() {
                   <div className="flex justify-between text-muted-foreground font-semibold">
                     <span>GST ({(taxRate * 100).toFixed(0)}%)</span>
                     <span className="text-foreground">₹{Math.round(taxAmount).toLocaleString("en-IN")}</span>
+                  </div>
+                )}
+                {giftWrapSelected && (
+                  <div className="flex justify-between text-primary-bright font-bold">
+                    <span>Gift wrap</span>
+                    <span>Merchandise</span>
                   </div>
                 )}
                 {couponDetails && (

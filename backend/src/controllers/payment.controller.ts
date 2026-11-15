@@ -75,6 +75,8 @@ export const verifyPayment = async (
             couponCode,
             sessionToken,
             guest,
+            giftWrap,
+            giftMessage,
         } = req.body;
 
         if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
@@ -97,6 +99,8 @@ export const verifyPayment = async (
             razorpayOrderId,
             razorpayPaymentId,
             razorpaySignature,
+            giftWrap,
+            giftMessage,
         });
 
         issueGuestSessionIfNeeded(res, resolvedGuestUser);

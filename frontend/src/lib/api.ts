@@ -351,8 +351,10 @@ export interface VendorOrder {
     productName: string;
     quantity: number;
     unitPrice: number;
+    giftWrap?: boolean;
     imageUrl: string | null;
   }[];
+  giftMessage?: string | null;
   shipment: {
     carrier: string | null;
     trackingNumber: string | null;
@@ -419,6 +421,8 @@ export interface CreateOrderPayload {
   paymentMethod: "cod" | "razorpay";
   sessionToken?: string;
   guest?: GuestCheckoutContact;
+  giftWrap?: boolean;
+  giftMessage?: string;
 }
 
 export interface OrderItem {
@@ -428,6 +432,7 @@ export interface OrderItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+  giftWrap?: boolean;
   imageUrl?: string | null;
 }
 
@@ -441,6 +446,7 @@ export interface Order {
   taxAmount: number;
   totalAmount: number;
   couponCode: string | null;
+  giftMessage?: string | null;
   createdAt: string;
   shippingAddress: OrderAddress & { id: number };
   payment: {
@@ -524,6 +530,8 @@ export interface VerifyPaymentPayload {
   couponCode?: string;
   sessionToken?: string;
   guest?: GuestCheckoutContact;
+  giftWrap?: boolean;
+  giftMessage?: string;
 }
 
 export async function verifyPayment(payload: VerifyPaymentPayload): Promise<Order> {
@@ -573,6 +581,7 @@ export interface AdminOrderDetail {
   taxAmount: number;
   totalAmount: number;
   couponCode: string | null;
+  giftMessage?: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -613,6 +622,8 @@ export interface AdminOrderDetail {
     quantity: number;
     unitPrice: number;
     totalPrice: number;
+    giftWrap?: boolean;
+    supplierEmail?: string | null;
     imageUrl: string | null;
   }[];
 }

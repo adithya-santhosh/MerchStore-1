@@ -11,13 +11,10 @@ export const metadata: Metadata = buildMetadata({
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { ArrowLeft, Sparkles, AlertCircle } from "lucide-react";
-import ProductCard from "@/components/ProductCard";
-import { getProductBySubCategory } from "@/lib/api";
-import { Product } from "@/types/products";
+import { ArrowLeft, Sparkles } from "lucide-react";
+import ComingSoonBlock from "@/components/ComingSoonBlock";
 
 export default async function RecoveryGearPage() {
-  const products = await getProductBySubCategory("Recovery Gear");
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -48,23 +45,7 @@ export default async function RecoveryGearPage() {
           </p>
         </div>
 
-        {/* Products Grid using Reusable ProductCards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 sm:gap-8">
-          {products.map((prod: Product) => (
-            <ProductCard key={prod.id} product={prod} />
-          ))}
-        </div>
-
-        {/* Info Banner */}
-        <div className="mt-12 rounded-2xl border border-border/60 bg-muted/20 p-5 flex gap-3.5 items-start max-w-2xl">
-          <AlertCircle className="size-5 text-primary shrink-0 mt-0.5" />
-          <div className="space-y-1">
-            <h4 className="text-sm font-bold text-foreground">Inventory Integration in Progress</h4>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              We are connecting this section to our Cloudinary catalog and Express inventory database. Limited drops are launching shortly!
-            </p>
-          </div>
-        </div>
+        <ComingSoonBlock section="Recovery Gear" />
 
       </main>
 

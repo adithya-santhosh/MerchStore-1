@@ -9,7 +9,6 @@ import Footer from "@/components/Footer";
 import FeaturedSpotlight from "@/components/FeaturedSpotlight";
 import HorizontalGallery from "@/components/HorizontalGallery";
 // import TestimonialsCarousel from "@/components/TestimonialsCarousel";
-import NewsletterCTA from "@/components/NewsletterCTA";
 import BackToTop from "@/components/BackToTop";
 
 export default function Home() {
@@ -18,14 +17,13 @@ export default function Home() {
       <Navbar />
       <Hero />
       <ParallaxStory />
+      <NewLaunch />
       <CategoryShowcase />
       <PinnedStory />
       {/* <StatsCounter /> */}
       <FeaturedSpotlight />
       <HorizontalGallery />
-      <NewLaunch />
       {/* <TestimonialsCarousel /> */}
-      <NewsletterCTA />
       <Footer />
       <BackToTop />
     </main>

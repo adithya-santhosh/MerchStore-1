@@ -33,8 +33,8 @@ export const siteConfig = {
   /** e.g. "Private Limited Company", "Sole Proprietorship", "LLP" */
   entityType: "[Sole Proprietorship / Private Limited]",
 
-  /** Live site URL, used in policy text and (later) SEO metadata. */
-  domain: "[https://yourdomain.com]",
+  /** Live site URL, used in policy text and SEO metadata. */
+  domain: "https://offroadworld.in",
 
   address: {
     line1: "[Building / Street]",

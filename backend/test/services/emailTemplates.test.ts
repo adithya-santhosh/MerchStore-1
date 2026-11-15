@@ -6,6 +6,8 @@ import {
   getPasswordResetEmailHtml,
   getEmailVerificationHtml,
   getContactNotificationEmailHtml,
+  getSupplierNewOrderEmailHtml,
+  getSupplierOrderStatusEmailHtml,
 } from "../../src/services/emailTemplates";
 
 const FRONTEND = "https://shop.example.com";
@@ -78,6 +80,54 @@ describe("getOrderConfirmationEmailHtml", () => {
 
     expect(html).toContain("Roof Rack");
     expect(html).toContain("Recovery Strap");
+  });
+
+  it("tells the buyer which merchandise will be gift wrapped", () => {
+    const html = getOrderConfirmationEmailHtml(
+      order({
+        giftMessage: "Happy birthday",
+        items: [
+          { productName: "Keychain", quantity: 1, totalPrice: 200, giftWrap: true },
+          { productName: "Bumper", quantity: 1, totalPrice: 800, giftWrap: false },
+        ],
+      }),
+      FRONTEND
+    );
+
+    expect(html).toContain("Gift wrapped");
+    expect(html).toContain("Happy birthday");
+    expect(html).toContain("Bumper");
+  });
+
+  it("tells a supplier to pack only their lines", () => {
+    const html = getSupplierNewOrderEmailHtml(
+      {
+        orderNumber: "ORD-1",
+        giftMessage: "Happy birthday",
+        user: { firstName: "Ada", lastName: "Lovelace", phone: "9999900000" },
+        shippingAddress: { addressLine1: "1 Main", city: "Bengaluru", state: "KA", postalCode: "560001" },
+      },
+      [{ productName: "Keychain", quantity: 1, giftWrap: true }],
+      FRONTEND
+    );
+
+    expect(html).toContain("Keychain");
+    expect(html).toContain("9999900000");
+    expect(html).toContain("Happy birthday");
+    expect(html).not.toContain("Bumper");
+    expect(html).toContain(`${FRONTEND}/vendor/dashboard`);
+  });
+
+  it("tells a supplier not to ship a cancelled order", () => {
+    const html = getSupplierOrderStatusEmailHtml(
+      { orderNumber: "ORD-1", shipment: null },
+      [{ productName: "Keychain", quantity: 1 }],
+      "CANCELLED",
+      FRONTEND
+    );
+
+    expect(html).toContain("Do not ship");
+    expect(html).toContain("Keychain");
   });
 
   it("formats money in Indian digit grouping", () => {

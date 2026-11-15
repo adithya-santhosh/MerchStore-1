@@ -37,6 +37,7 @@ const mapCart = (cart: any) => {
           price: Number(item.product.price),
           compareAtPrice: item.product.compareAtPrice ? Number(item.product.compareAtPrice) : null,
           category: item.product.category?.name || "",
+          productType: item.product.productType === "merch" ? "merch" : "part",
           ImageURL
         }
       };

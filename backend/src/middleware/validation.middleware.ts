@@ -225,6 +225,10 @@ export const placeOrderSchema = z.object({
   paymentMethod: z.enum(["cod", "razorpay"]),
   sessionToken: z.string().optional(),
   guest: guestContactSchema.optional(),
+  // The service decides which lines actually get wrapped. A true value on a
+  // parts-only cart is stored as nothing.
+  giftWrap: z.boolean().optional(),
+  giftMessage: z.string().max(300).optional(),
 });
 
 export const couponValidateSchema = z.object({

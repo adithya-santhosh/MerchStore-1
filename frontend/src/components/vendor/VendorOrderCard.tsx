@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { submitVendorShipment } from "@/lib/api";
-import { Package, Truck, CheckCircle2, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Package, Truck, CheckCircle2, Clock, ChevronDown, ChevronUp, Gift } from "lucide-react";
 
 interface VendorOrderCardProps {
   order: {
@@ -18,7 +18,8 @@ interface VendorOrderCardProps {
       state: string;
       postalCode: string;
     };
-    items: { productId: number; productName: string; quantity: number; unitPrice: number; imageUrl: string | null }[];
+    giftMessage?: string | null;
+    items: { productId: number; productName: string; quantity: number; unitPrice: number; giftWrap?: boolean; imageUrl: string | null }[];
     shipment: { carrier: string | null; trackingNumber: string | null; status: string; shippedAt: string | null } | null;
   };
   onShipped: () => void;
@@ -41,6 +42,7 @@ export default function VendorOrderCard({ order, onShipped }: VendorOrderCardPro
   const [submitted, setSubmitted] = useState(!!order.shipment?.trackingNumber);
 
   const isShipped = order.status === "SHIPPED" || order.status === "DELIVERED";
+  const wrapsGift = order.items.some((item) => item.giftWrap);
 
   const handleShip = async () => {
     if (!carrier.trim() || !trackingNumber.trim()) return;
@@ -76,6 +78,11 @@ export default function VendorOrderCard({ order, onShipped }: VendorOrderCardPro
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {wrapsGift && (
+            <span className="px-2.5 py-1 rounded-full border text-xs font-bold bg-primary/10 text-primary border-primary/30 inline-flex items-center gap-1">
+              <Gift className="size-3" /> Gift wrap
+            </span>
+          )}
           <span className={`px-2.5 py-1 rounded-full border text-xs font-bold ${STATUS_COLORS[order.status] || "bg-muted/30 text-muted-foreground"}`}>
             {order.status}
           </span>
@@ -98,11 +105,26 @@ export default function VendorOrderCard({ order, onShipped }: VendorOrderCardPro
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{item.productName}</p>
                     <p className="text-xs text-muted-foreground">Qty: {item.quantity} · ₹{item.unitPrice.toLocaleString("en-IN")}</p>
+                    {item.giftWrap && (
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-primary mt-1">Gift wrap this item</p>
+                    )}
                   </div>
                 </div>
               ))}
             </div>
           </div>
+
+          {wrapsGift && (
+            <div className="rounded-xl border border-primary/30 bg-primary/5 p-3 flex gap-2.5">
+              <Gift className="size-4 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-foreground">Gift wrap the merchandise in this order.</p>
+                {order.giftMessage && (
+                  <p className="text-xs text-muted-foreground leading-relaxed">Note: “{order.giftMessage}”</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Shipping Address */}
           <div>

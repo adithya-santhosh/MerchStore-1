@@ -2,72 +2,31 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Sparkles,
-  Gauge,
-  Shield,
-  Wrench,
-  Zap,
-} from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProducts } from "@/lib/api";
 import { Product } from "@/types/products";
 import { getProductImageSrc } from "@/lib/utils";
 import ScrollReveal from "@/components/ScrollReveal";
 
-const fallbackProduct: Product = {
-  id: 101,
-  name: "Premium Hard-Shell Rooftop Tent",
-  description:
-    "Hydraulic opening shelter system with integrated high-density foam mattress, fits 3 people. Engineered for extreme weather conditions with a reinforced ABS shell and marine-grade zippers.",
-  price: 145000,
-  category: "Camping & Overland",
-  ImageURL: "/images/categories/camping_overland.webp",
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-};
-
-const specs = [
-  {
-    icon: Gauge,
-    label: "Military-Grade Construction",
-    detail: "Built to withstand extreme conditions",
-  },
-  {
-    icon: Shield,
-    label: "1-Year Warranty",
-    detail: "Full coverage, no questions asked",
-  },
-  {
-    icon: Wrench,
-    label: "Easy Installation",
-    detail: "Bolt-on fitment, no drilling required",
-  },
-  {
-    icon: Zap,
-    label: "Quick Deploy",
-    detail: "Setup in under 60 seconds",
-  },
-];
-
 export default function FeaturedSpotlight() {
-  const [product, setProduct] = useState<Product>(fallbackProduct);
+  const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     async function loadFeatured() {
       try {
         const products = await getProducts();
-        // Pick the first featured product, or the first one
-        const featured =
-          products.find((p) => p.isFeatured) || products[0];
-        if (featured) setProduct(featured);
+        const merchandise = products.filter((item) => item.productType !== "part");
+        const featured = merchandise.find((item) => item.isFeatured) || merchandise[0];
+        setProduct(featured ?? null);
       } catch {
-        // Fallback gracefully
+        setProduct(null);
       }
     }
     loadFeatured();
   }, []);
+
+  if (!product) return null;
 
   const imageSrc = getProductImageSrc(product.ImageURL) || "/images/categories/camping_overland.webp";
 
@@ -122,28 +81,6 @@ export default function FeaturedSpotlight() {
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-lg">
                 {product.description}
               </p>
-
-              {/* Spec list */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                {specs.map((spec) => (
-                  <div
-                    key={spec.label}
-                    className="flex items-start gap-3 p-3 rounded-xl border border-border/40 bg-card/20 hover:border-primary/30 hover:bg-card/40 transition-all duration-300"
-                  >
-                    <div className="shrink-0 size-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                      <spec.icon className="size-4" />
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-foreground">
-                        {spec.label}
-                      </p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {spec.detail}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
 
               {/* Price + CTA */}
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-4">

@@ -687,7 +687,39 @@ describe("getNavigationMetadata", () => {
     await getNavigationMetadata();
 
     const call = mockedPrisma.brand.findMany.mock.calls[0]?.[0] as any;
-    expect(call.where).toEqual({ isActive: true });
+    expect(call.where).toEqual({ isActive: true, products: { some: { isActive: true } } });
+  });
+
+  it("drops categories and subcategories that have no active products", async () => {
+    mockedPrisma.category.findMany.mockResolvedValue([
+      {
+        id: 1,
+        name: "Car Accessories",
+        _count: { products: 0 },
+        children: [
+          { id: 11, name: "Armor", _count: { products: 0 } },
+          { id: 12, name: "Lighting", _count: { products: 2 } },
+        ],
+      },
+      {
+        id: 2,
+        name: "Empty Parent",
+        _count: { products: 0 },
+        children: [],
+      },
+    ] as any);
+    mockedPrisma.brand.findMany.mockResolvedValue([] as any);
+    mockedPrisma.vehicle.findMany.mockResolvedValue([] as any);
+
+    const meta = await getNavigationMetadata();
+
+    expect(meta.categories).toEqual([
+      {
+        id: 1,
+        name: "Car Accessories",
+        children: [{ id: 12, name: "Lighting" }],
+      },
+    ]);
   });
 
   it("returns the three menu sections together", async () => {

@@ -1,9 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
+const { notifyOrderShipped } = vi.hoisted(() => ({
+  notifyOrderShipped: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../src/services/order.service", () => ({
+  notifyOrderShipped,
+}));
+
 vi.mock("../../src/lib/prisma", () => ({
   default: {
     vendor: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn() },
-    order: { findMany: vi.fn(), update: vi.fn() },
+    order: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
     orderItem: { findFirst: vi.fn() },
     shipment: { upsert: vi.fn() },
     user: { create: vi.fn() },
@@ -254,6 +262,19 @@ describe("submitVendorShipment", () => {
       where: { id: 1 },
       data: { status: "SHIPPED" },
     });
+    expect(notifyOrderShipped).toHaveBeenCalledWith(1);
+  });
+
+  it("does not send the shipped mail again when only the tracking number is corrected", async () => {
+    mockedPrisma.vendor.findUnique.mockResolvedValue(vendorRow() as any);
+    mockedPrisma.orderItem.findFirst.mockResolvedValue({ id: 1 } as any);
+    mockedPrisma.order.findUnique.mockResolvedValue({ status: "SHIPPED" } as any);
+    mockedPrisma.shipment.upsert.mockResolvedValue({ id: 5 } as any);
+    mockedPrisma.order.update.mockResolvedValue({} as any);
+
+    await submitVendorShipment(3, 1, shipmentInput);
+
+    expect(notifyOrderShipped).not.toHaveBeenCalled();
   });
 });
 

@@ -10,84 +10,14 @@ export default function NewLaunch() {
   const [products, setProducts] = useState<Product[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // 6 Premium mock fallback products
-  const fallbackProducts: Product[] = [
-    {
-      id: 101,
-      name: "Premium Hard-Shell Rooftop Tent",
-      description: "Hydraulic opening shelter system with integrated high-density foam mattress, fits 3 people.",
-      price: 145000,
-      category: "Camping & Overland",
-      ImageURL: "/images/categories/camping_overland.webp",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 102,
-      name: "Dual-Row 40-Inch LED Light Bar",
-      description: "Combo beam output system producing 20,000 raw lumens, fitted with heavy aluminum housing.",
-      price: 28000,
-      category: "Lighting & Electrical",
-      ImageURL: "/images/categories/lighting_electrical.webp",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 103,
-      name: "Heavy-Duty Steel Bull Bar Bumper",
-      description: "Winch-ready front bumper styled in textured black powder coat with shackle mounts.",
-      price: 68000,
-      category: "Armor & Protection",
-      ImageURL: "/images/categories/armor_protection.webp",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 104,
-      name: "Modular Low-Profile Roof Rack",
-      description: "Laser-cut steel brackets with lightweight T-slot extruded aluminum crossbars.",
-      price: 45000,
-      category: "Storage & Racks",
-      ImageURL: "/images/categories/storage_racks.webp",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 105,
-      name: "Synthetic Snatch Rope Shackles Kit",
-      description: "High-strength kinetic rigging links built for off-road extraction, comes as a pack of 2.",
-      price: 8500,
-      category: "Recovery Gear",
-      ImageURL: "/images/categories/recovery_gear.webp",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    {
-      id: 106,
-      name: "Stage 2 Performance Lift Kit",
-      description: "Includes high-travel coils, Control arms, and reservoir shocks for maximum ground clearance.",
-      price: 115000,
-      category: "Suspension & Wheels",
-      ImageURL: "/images/categories/suspension_wheels.webp",
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-  ];
-
   useEffect(() => {
     async function loadProducts() {
       try {
         const fetched = await getProducts();
-        if (fetched && fetched.length > 0) {
-          // Use fetched products, padded with fallback items to make sure we have at least 6 cards!
-          const merged = [...fetched, ...fallbackProducts].slice(0, 6);
-          setProducts(merged);
-        } else {
-          setProducts(fallbackProducts);
-        }
-      } catch (error) {
-        // Fallback gracefully on database connection error
-        setProducts(fallbackProducts);
+        const merchandise = (fetched ?? []).filter((product) => product.productType !== "part");
+        setProducts(merchandise.slice(0, 6));
+      } catch {
+        setProducts([]);
       }
     }
     loadProducts();
@@ -102,6 +32,8 @@ export default function NewLaunch() {
       scrollRef.current.scrollBy({ left: offset, behavior: "smooth" });
     }
   };
+
+  if (products.length === 0) return null;
 
   return (
     <section className="w-full bg-background pb-16 sm:pb-24">

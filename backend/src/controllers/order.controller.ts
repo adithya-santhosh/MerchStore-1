@@ -21,7 +21,7 @@ import { setCsrfCookie } from "../lib/csrf";
 // POST /api/orders — place a new order (signed in, or guest with contact details)
 export const placeOrder = async (req: Request, res: Response) => {
   try {
-    const { address, couponCode, paymentMethod, sessionToken, guest } = req.body;
+    const { address, couponCode, paymentMethod, sessionToken, guest, giftWrap, giftMessage } = req.body;
 
     if (!address || !address.addressLine1 || !address.city || !address.state || !address.postalCode) {
       return res.status(400).json({ message: "Shipping address is incomplete." });
@@ -41,6 +41,8 @@ export const placeOrder = async (req: Request, res: Response) => {
       couponCode,
       paymentMethod,
       sessionToken,
+      giftWrap,
+      giftMessage,
     });
 
     // A newly resolved guest account gets signed into it — otherwise the

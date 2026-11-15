@@ -6,7 +6,10 @@ import {
   getOrderStatusEmailHtml,
   getPasswordResetEmailHtml,
   getEmailVerificationHtml,
-  getContactNotificationEmailHtml
+  getContactNotificationEmailHtml,
+  getAdminNewOrderEmailHtml,
+  getSupplierNewOrderEmailHtml,
+  getSupplierOrderStatusEmailHtml,
 } from "./emailTemplates";
 
 // Lazy-initialize Resend SDK using environment variable
@@ -29,6 +32,10 @@ const getFrontendUrl = (): string => {
 
 const getContactNotificationEmail = (): string | null => {
   return process.env.CONTACT_NOTIFICATION_EMAIL || null;
+};
+
+const getAdminNotificationEmail = (): string | null => {
+  return process.env.ADMIN_NOTIFICATION_EMAIL || null;
 };
 
 // ─── Email Methods ─────────────────────────────────────────────────────────────
@@ -238,5 +245,114 @@ export const sendContactNotification = async (params: SendContactNotificationPar
     }
   } catch (error) {
     logger.error({ err: error }, "[EmailService ERROR] Exception in sendContactNotification");
+  }
+};
+
+// ─── Admin: New Order Notification ──────────────────────────────────────────
+
+export const sendAdminNewOrderNotification = async (order: any): Promise<void> => {
+  try {
+    const to = getAdminNotificationEmail();
+    if (!to) {
+      logger.warn(
+        "[EmailService] ADMIN_NOTIFICATION_EMAIL is not set. No admin order notification will be sent."
+      );
+      return;
+    }
+
+    const resend = getResendClient();
+    const html = getAdminNewOrderEmailHtml({
+      order,
+      adminUrl: getFrontendUrl(),
+    });
+
+    if (!resend) {
+      logger.info(`[EmailService DEV] Admin new-order notification queued for ${to} (Order #${order.orderNumber})`);
+      return;
+    }
+
+    const response = await resend.emails.send({
+      from: getFromAddress(),
+      to: [to],
+      subject: `🛍️ New Order #${order.orderNumber} — ${order.user?.firstName ?? "Guest"} (₹${Number(order.totalAmount ?? 0).toLocaleString("en-IN")})`,
+      html,
+    });
+
+    if (response.error) {
+      logger.error({ err: response.error }, "[EmailService ERROR] Failed to send admin new-order notification");
+    } else {
+      logger.info(`[EmailService SUCCESS] Admin new-order notification sent to ${to} (ID: ${response.data?.id})`);
+    }
+  } catch (error) {
+    logger.error({ err: error }, "[EmailService ERROR] Exception in sendAdminNewOrderNotification");
+  }
+};
+
+// ─── Supplier: new order and later status changes ────────────────────────────
+
+export const sendSupplierNewOrderEmail = async (params: {
+  to: string;
+  order: any;
+  items: any[];
+}): Promise<void> => {
+  try {
+    const resend = getResendClient();
+    const html = getSupplierNewOrderEmailHtml(params.order, params.items, getFrontendUrl());
+
+    if (!resend) {
+      logger.info(
+        `[EmailService DEV] Supplier new-order email queued for ${params.to} (Order #${params.order.orderNumber})`
+      );
+      return;
+    }
+
+    const response = await resend.emails.send({
+      from: getFromAddress(),
+      to: [params.to],
+      subject: `Order #${params.order.orderNumber} to fulfill`,
+      html,
+    });
+
+    if (response.error) {
+      logger.error({ err: response.error }, "[EmailService ERROR] Failed to send supplier new-order email");
+    } else {
+      logger.info(`[EmailService SUCCESS] Supplier new-order email sent to ${params.to} (ID: ${response.data?.id})`);
+    }
+  } catch (error) {
+    logger.error({ err: error }, "[EmailService ERROR] Exception in sendSupplierNewOrderEmail");
+  }
+};
+
+export const sendSupplierOrderStatusEmail = async (params: {
+  to: string;
+  order: any;
+  items: any[];
+  newStatus: string;
+}): Promise<void> => {
+  try {
+    const resend = getResendClient();
+    const html = getSupplierOrderStatusEmailHtml(params.order, params.items, params.newStatus, getFrontendUrl());
+
+    if (!resend) {
+      logger.info(
+        `[EmailService DEV] Supplier status email queued for ${params.to} (Order #${params.order.orderNumber} -> ${params.newStatus})`
+      );
+      return;
+    }
+
+    const response = await resend.emails.send({
+      from: getFromAddress(),
+      to: [params.to],
+      subject: `Order #${params.order.orderNumber} is now ${params.newStatus.toLowerCase()}`,
+      html,
+    });
+
+    if (response.error) {
+      logger.error({ err: response.error }, "[EmailService ERROR] Failed to send supplier status email");
+    } else {
+      logger.info(`[EmailService SUCCESS] Supplier status email sent to ${params.to} (ID: ${response.data?.id})`);
+    }
+  } catch (error) {
+    logger.error({ err: error }, "[EmailService ERROR] Exception in sendSupplierOrderStatusEmail");
   }
 };

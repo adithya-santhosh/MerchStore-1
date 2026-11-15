@@ -605,23 +605,38 @@ export const subCategories = async (categorySlugOrName: string) => {
 };
 
 export const getNavigationMetadata = async () => {
-  const categories = await prisma.category.findMany({
+  const categoryRows = await prisma.category.findMany({
     where: { parentId: null, isActive: true },
     include: {
       children: {
         where: { isActive: true },
-        orderBy: { sortOrder: "asc" }
-      }
+        orderBy: { sortOrder: "asc" },
+        include: { _count: { select: { products: { where: { isActive: true } } } } }
+      },
+      _count: { select: { products: { where: { isActive: true } } } }
     },
     orderBy: { sortOrder: "asc" }
   });
 
+  // Empty sections stay in the database and drop out of the shop menu.
+  const categories = categoryRows
+    .map((category) => ({
+      ...category,
+      children: (category.children ?? []).filter((child) => (child._count?.products ?? 0) > 0),
+    }))
+    .filter((category) => category.children.length > 0 || (category._count?.products ?? 0) > 0)
+    .map(({ _count, children, ...category }) => ({
+      ...category,
+      children: children.map(({ _count: _childCount, ...child }) => child),
+    }));
+
   const brands = await prisma.brand.findMany({
-    where: { isActive: true },
+    where: { isActive: true, products: { some: { isActive: true } } },
     orderBy: { name: "asc" }
   });
 
   const vehicles = await prisma.vehicle.findMany({
+    where: { products: { some: { product: { isActive: true } } } },
     orderBy: [
       { make: "asc" },
       { model: "asc" }

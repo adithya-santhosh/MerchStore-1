@@ -22,6 +22,9 @@ vi.mock("../../src/lib/prisma", () => ({
 vi.mock("../../src/services/email.service", () => ({
   sendOrderConfirmationEmail: vi.fn().mockResolvedValue(undefined),
   sendOrderStatusEmail: vi.fn().mockResolvedValue(undefined),
+  sendAdminNewOrderNotification: vi.fn().mockResolvedValue(undefined),
+  sendSupplierNewOrderEmail: vi.fn().mockResolvedValue(undefined),
+  sendSupplierOrderStatusEmail: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../src/services/settings.service", () => ({
@@ -38,7 +41,12 @@ vi.mock("../../src/services/cart.service", () => ({
 
 import prisma from "../../src/lib/prisma";
 import { getSettings } from "../../src/services/settings.service";
-import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "../../src/services/email.service";
+import {
+  sendOrderConfirmationEmail,
+  sendOrderStatusEmail,
+  sendSupplierNewOrderEmail,
+  sendSupplierOrderStatusEmail,
+} from "../../src/services/email.service";
 import { resolveGuestUser } from "../../src/services/auth.service";
 import { getOrCreateCart } from "../../src/services/cart.service";
 import {
@@ -54,6 +62,7 @@ import {
   getRefundsOwed,
   updateOrderStatus,
   triggerOrderConfirmationEmail,
+  notifyOrderShipped,
   resolveCheckoutUserId,
   CANCELLABLE_STATUSES,
   CreateOrderInput,
@@ -274,6 +283,113 @@ describe("finalizeOrder — stock race guard", () => {
     await finalizeOrder(checkout, baseInput);
 
     expect(tx.order.findUnique).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe("finalizeOrder — gift wrap", () => {
+  const mixedCheckout: PreparedCheckout = {
+    cart: {
+      id: 1,
+      items: [
+        {
+          id: 1,
+          productId: 10,
+          quantity: 1,
+          unitPrice: 100,
+          product: { id: 10, name: "Bumper", productType: "part", isActive: true, stockQty: 5 },
+        },
+        {
+          id: 2,
+          productId: 11,
+          quantity: 1,
+          unitPrice: 50,
+          product: { id: 11, name: "Keychain", productType: "merch", isActive: true, stockQty: 5 },
+        },
+      ],
+    } as any,
+    subtotal: 150,
+    discountAmount: 0,
+    resolvedCouponCode: undefined,
+    taxAmount: 0,
+    shippingCost: 0,
+    totalAmount: 150,
+  };
+
+  it("wraps merchandise only and stores a cleaned gift note", async () => {
+    const tx = makeTx();
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await finalizeOrder(mixedCheckout, {
+      ...baseInput,
+      giftWrap: true,
+      giftMessage: "  Hello <b>there</b>  ",
+    });
+
+    const created = tx.order.create.mock.calls[0]?.[0].data;
+    expect(created.giftMessage).toBe("Hello there");
+    expect(created.items.create).toEqual([
+      expect.objectContaining({ productId: 10, giftWrap: false }),
+      expect.objectContaining({ productId: 11, giftWrap: true }),
+    ]);
+  });
+
+  it("drops the gift request when the cart has no merchandise", async () => {
+    const tx = makeTx();
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await finalizeOrder(
+      {
+        ...mixedCheckout,
+        cart: cartWithOneItem({ quantity: 1, unitPrice: 100, stockQty: 5 }) as any,
+      },
+      { ...baseInput, giftWrap: true, giftMessage: "Hello" }
+    );
+
+    const created = tx.order.create.mock.calls[0]?.[0].data;
+    expect(created.giftMessage).toBeNull();
+    expect(created.items.create[0].giftWrap).toBe(false);
+  });
+
+  it("copies the supplier email onto the line and leaves a store-fulfilled line blank", async () => {
+    const tx = makeTx();
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await finalizeOrder(
+      {
+        ...mixedCheckout,
+        cart: {
+          id: 1,
+          items: [
+            {
+              id: 1,
+              productId: 10,
+              quantity: 1,
+              unitPrice: 100,
+              product: {
+                id: 10,
+                name: "Keychain",
+                productType: "merch",
+                isActive: true,
+                stockQty: 5,
+                vendor: { user: { email: "  pack@supply.test  " } },
+              },
+            },
+            {
+              id: 2,
+              productId: 11,
+              quantity: 1,
+              unitPrice: 50,
+              product: { id: 11, name: "Bumper", productType: "part", isActive: true, stockQty: 5 },
+            },
+          ],
+        } as any,
+      },
+      baseInput
+    );
+
+    const created = tx.order.create.mock.calls[0]?.[0].data;
+    expect(created.items.create[0].supplierEmail).toBe("pack@supply.test");
+    expect(created.items.create[1].supplierEmail).toBeNull();
   });
 });
 
@@ -711,6 +827,24 @@ describe("getOrderByIdAdmin", () => {
 
     expect((await getOrderByIdAdmin(1)).shipment).toBeNull();
   });
+
+  it("shows the supplier inbox copied onto each line", async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue(
+      adminOrder({
+        items: [
+          {
+            ...storedOrder().items[0],
+            supplierEmail: "pack@supply.test",
+            product: { images: [] },
+          },
+        ],
+      }) as any
+    );
+
+    const order = await getOrderByIdAdmin(1);
+
+    expect(order.items[0]?.supplierEmail).toBe("pack@supply.test");
+  });
 });
 
 // ─── Refund queue ─────────────────────────────────────────────────────────────
@@ -814,6 +948,19 @@ describe("updateOrderStatus", () => {
     );
   });
 
+  it("emails the supplier recorded on the line when the status changes", async () => {
+    mockedPrisma.order.update.mockResolvedValue({
+      ...updatedRow("PROCESSING"),
+      items: [{ productName: "Keychain", quantity: 1, supplierEmail: "pack@supply.test" }],
+    } as any);
+
+    await updateOrderStatus(1, "processing");
+
+    expect(sendSupplierOrderStatusEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "pack@supply.test", newStatus: "PROCESSING" })
+    );
+  });
+
   it("routes a cancellation through cancelOrder so stock is restored", async () => {
     const tx = makeCancelTx(orderFixture());
     mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
@@ -892,6 +1039,37 @@ describe("triggerOrderConfirmationEmail", () => {
     );
   });
 
+  it("emails each supplier only the lines they fulfill", async () => {
+    mockedPrisma.order.updateMany.mockResolvedValue({ count: 1 } as any);
+    mockedPrisma.order.findUnique.mockResolvedValue({
+      id: 1,
+      orderNumber: "ORD-2026-1",
+      user: { email: "ada@example.com", firstName: "Ada", lastName: "Lovelace", phone: "9999900000" },
+      items: [
+        { productName: "Keychain", quantity: 1, supplierEmail: "a@supply.test" },
+        { productName: "Sticker", quantity: 2, supplierEmail: "a@supply.test" },
+        { productName: "Calendar", quantity: 1, supplierEmail: "b@supply.test" },
+        { productName: "Bumper", quantity: 1, supplierEmail: null },
+      ],
+      shippingAddress: { addressLine1: "1 Main", city: "Bengaluru", state: "KA", postalCode: "560001" },
+    } as any);
+
+    await triggerOrderConfirmationEmail(1);
+
+    expect(sendSupplierNewOrderEmail).toHaveBeenCalledTimes(2);
+    expect(sendSupplierNewOrderEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: "a@supply.test",
+        items: [
+          expect.objectContaining({ productName: "Keychain" }),
+          expect.objectContaining({ productName: "Sticker" }),
+        ],
+      })
+    );
+    const calendarMail = vi.mocked(sendSupplierNewOrderEmail).mock.calls.find((call) => call[0].to === "b@supply.test");
+    expect(calendarMail?.[0].items).toEqual([expect.objectContaining({ productName: "Calendar" })]);
+  });
+
   it("sends nothing on a second call for the same order", async () => {
     mockedPrisma.order.updateMany.mockResolvedValue({ count: 0 } as any);
 
@@ -920,6 +1098,28 @@ describe("triggerOrderConfirmationEmail", () => {
     // Fire-and-forget from checkout: a mail bookkeeping error must not surface
     // to a customer who has already paid.
     await expect(triggerOrderConfirmationEmail(1)).resolves.toBeUndefined();
+  });
+});
+
+describe("notifyOrderShipped", () => {
+  it("tells the customer and the supplier", async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue({
+      id: 1,
+      orderNumber: "ORD-2026-1",
+      user: { email: "ada@example.com" },
+      items: [{ productName: "Keychain", quantity: 1, supplierEmail: "pack@supply.test" }],
+      shippingAddress: {},
+      shipment: { carrier: "Delhivery", trackingNumber: "DL1" },
+    } as any);
+
+    await notifyOrderShipped(1);
+
+    expect(sendOrderStatusEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "ada@example.com", newStatus: "SHIPPED" })
+    );
+    expect(sendSupplierOrderStatusEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ to: "pack@supply.test", newStatus: "SHIPPED" })
+    );
   });
 });
 

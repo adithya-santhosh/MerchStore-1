@@ -13,6 +13,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { buildMetadata, formatPrice } from "@/lib/seo";
+import { siteUrl } from "@/lib/site-config";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -81,8 +82,51 @@ export default async function ProductPage({ params }: PageProps) {
         .replace(/^-+|-+$/g, "")}`
     : "/products/merchandise";
 
+  // No aggregateRating here deliberately — Google's structured-data guidelines
+  // treat rating markup with no real reviews behind it as manipulative, and
+  // can trigger a manual action. Add it back once getReviewStats(product.id)
+  // has a non-zero totalReviews to report.
+  const absoluteImageUrl = (url: string | null | undefined): string | null => {
+    const resolved = getProductImageSrc(url);
+    if (!resolved) return null;
+    return resolved.startsWith("http") ? resolved : `${siteUrl}${resolved}`;
+  };
+  const productImages = (
+    product.images?.length
+      ? product.images.map((img) => absoluteImageUrl(img.imageUrl))
+      : [absoluteImageUrl(product.ImageURL)]
+  ).filter((url): url is string => Boolean(url));
+
+  const productJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.shortDescription || product.description || undefined,
+    image: productImages,
+    sku: product.sku || undefined,
+    brand: product.brand ? { "@type": "Brand", name: product.brand.name } : undefined,
+    offers: {
+      "@type": "Offer",
+      url: `${siteUrl}/products/${product.id}`,
+      priceCurrency: "INR",
+      price: product.price,
+      availability:
+        (product.stockQty ?? 0) > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
+    },
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
+      {/* `<` is escaped so a product description containing "</script>" can't
+          break out of this tag — JSON.stringify alone doesn't guard against that. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(productJsonLd).replace(/</g, "\\u003c"),
+        }}
+      />
       <Navbar />
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16">

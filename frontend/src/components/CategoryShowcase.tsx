@@ -54,7 +54,7 @@ export default function CategoryShowcase() {
                 Shop by Category
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl">
-                Engineered gear across every discipline — from overland camping rigs to heavy-duty armor protection.
+                Camping, lighting, and armor open when those products are in stock. Merchandise is available now.
               </p>
             </div>
             <Link
@@ -111,7 +111,7 @@ export default function CategoryShowcase() {
                     {cat.description}
                   </p>
                   <span className="inline-flex items-center gap-1 text-xs font-bold text-white/90 group-hover:text-primary-bright transition-colors">
-                    Explore
+                    Coming soon
                     <ArrowRight className="size-3 transition-transform group-hover:translate-x-1" />
                   </span>
                 </div>

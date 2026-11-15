@@ -195,6 +195,7 @@ describe("cart mapping", () => {
     // A Decimal serialises as a string over JSON, which breaks arithmetic in the
     // basket UI — so the mapper must hand back numbers.
     expect(item.unitPrice).toBe(1499);
+    expect(item.product.productType).toBe("part");
     expect(item.product.price).toBe(1499);
     expect(item.product.compareAtPrice).toBe(1999);
   });

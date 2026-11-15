@@ -198,6 +198,11 @@ export const getOrderConfirmationEmailHtml = (order: any, frontendUrl: string): 
                   <tr>
                     <td style="padding: 14px 20px; ${index > 0 ? `border-top: 1px solid ${color.hairline};` : ""}">
                       <p style="margin: 0; font-family: ${FONT}; font-size: 14px; font-weight: 500; line-height: 1.45; color: ${color.textPrimary};">${esc(item.productName)}</p>${
+                        item.giftWrap
+                          ? `
+                      <p style="margin: 4px 0 0 0; font-family: ${FONT}; font-size: 12px; font-weight: 600; color: ${color.textPrimary};">Gift wrapped</p>`
+                          : ""
+                      }${
                         // "Qty 1" is not information. Only a real quantity earns a line.
                         Number(item.quantity) > 1
                           ? `
@@ -217,6 +222,19 @@ export const getOrderConfirmationEmailHtml = (order: any, frontendUrl: string): 
     ? band(
         `<table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation" style="background-color: ${color.panelBg}; border: 1px solid ${color.hairline}; border-radius: 8px;">${itemsHtml}
                 </table>`,
+        "28px 40px 0 40px"
+      )
+    : "";
+
+  const giftNote = items.some((item: any) => item.giftWrap)
+    ? band(
+        [
+          eyebrow("Gift wrap"),
+          `<p style="margin: 0; font-family: ${FONT}; font-size: 14px; line-height: 1.6; color: ${color.textSecondary};">The merchandise in this order will be gift wrapped.</p>`,
+          order.giftMessage
+            ? `<p style="margin: 8px 0 0 0; font-family: ${FONT}; font-size: 14px; line-height: 1.6; color: ${color.textPrimary};">“${esc(order.giftMessage)}”</p>`
+            : "",
+        ].join("\n"),
         "28px 40px 0 40px"
       )
     : "";
@@ -243,6 +261,7 @@ export const getOrderConfirmationEmailHtml = (order: any, frontendUrl: string): 
         "32px 40px 0 40px"
       ),
       itemsPanel,
+      giftNote,
       band(
         `<table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation">
                   ${totalRow("Subtotal:", money(order.subtotal))}
@@ -397,3 +416,237 @@ export const getContactNotificationEmailHtml = (data: {
       )
     ].join("\n")
   });
+
+// ─── Admin: New Order Notification ───────────────────────────────────────────
+
+export interface AdminNewOrderEmailData {
+  order: any;
+  adminUrl: string;
+}
+
+export const getAdminNewOrderEmailHtml = (data: AdminNewOrderEmailData): string => {
+  const { order, adminUrl } = data;
+
+  const rows = (order.items ?? [])
+    .map(
+      (item: any) =>
+        `<tr>
+          <td style="padding: 10px 0; font-family: ${FONT}; font-size: 14px; color: ${color.textPrimary}; border-bottom: 1px solid ${color.hairline};">
+            ${esc(item.productName ?? item.name ?? "Item")} × ${esc(item.quantity)}${item.giftWrap ? " — gift wrap" : ""}${
+              item.supplierEmail
+                ? `<br><span style="font-family: ${FONT}; font-size: 12px; color: ${color.textTertiary};">Supplier: ${esc(item.supplierEmail)}</span>`
+                : `<br><span style="font-family: ${FONT}; font-size: 12px; color: ${color.textTertiary};">Fulfilled by the store</span>`
+            }
+          </td>
+          <td style="padding: 10px 0; font-family: ${FONT}; font-size: 14px; color: ${color.textPrimary}; border-bottom: 1px solid ${color.hairline}; text-align: right; ${TABULAR}">
+            ${money(Number(item.price ?? 0) * Number(item.quantity ?? 1))}
+          </td>
+        </tr>`
+    )
+    .join("\n");
+
+  const addr = order.shippingAddress;
+  const addrHtml = addr
+    ? [
+        addr.addressLine1,
+        addr.addressLine2,
+        addr.city,
+        addr.state,
+        addr.postalCode,
+        addr.country,
+      ]
+        .filter(Boolean)
+        .map(esc)
+        .join(", ")
+    : "—";
+
+  const subtotal = Number(order.subtotal ?? 0);
+  const shipping = Number(order.shippingCost ?? 0);
+  const tax      = Number(order.taxAmount ?? 0);
+  const total    = Number(order.totalAmount ?? 0);
+  const discount = Number(order.discountAmount ?? 0);
+
+  const summaryRows = [
+    ["Subtotal",  money(subtotal)],
+    ...(discount > 0 ? [["Discount", `−${money(discount)}`]] : []),
+    ["Shipping",  shipping === 0 ? "Free" : money(shipping)],
+    ["Tax",       money(tax)],
+  ]
+    .map(
+      ([label, value]) =>
+        `<tr>
+          <td style="padding: 6px 0; font-family: ${FONT}; font-size: 13px; color: ${color.textSecondary};">${label}</td>
+          <td style="padding: 6px 0; font-family: ${FONT}; font-size: 13px; color: ${color.textSecondary}; text-align: right; ${TABULAR}">${value}</td>
+        </tr>`
+    )
+    .join("\n");
+
+  const paymentMethod = (order.payment?.method ?? order.paymentMethod ?? "—").toString().toUpperCase();
+  const wrapped = (order.items ?? []).some((item: any) => item.giftWrap);
+  const giftBanner = wrapped
+    ? `<p style="margin: 14px 0 0 0; font-family: ${FONT}; font-size: 14px; font-weight: 600; line-height: 1.5; color: ${color.textPrimary};">Gift wrap the merchandise in this order.${
+        order.giftMessage ? ` Note: “${esc(order.giftMessage)}”` : ""
+      }</p>`
+    : "";
+
+  return layout({
+    title: `New order ${order.orderNumber}`,
+    preheader: `New order #${esc(order.orderNumber)} placed — ${money(total)}`,
+    content: [
+      band(
+        [
+          eyebrow("New Order"),
+          display(`#${esc(order.orderNumber)}`),
+          lead(
+            `<strong style="color:${color.textPrimary};">${esc(order.user?.firstName ?? "")} ${esc(order.user?.lastName ?? "")}</strong>` +
+            ` placed an order worth <strong style="color:${color.textPrimary};">${money(total)}</strong>.`
+          ),
+          `<p style="margin: 6px 0 0 0; font-family: ${FONT}; font-size: 13px; color: ${color.textSecondary};">
+            ${esc(order.user?.email ?? "guest")} &nbsp;·&nbsp; ${paymentMethod}
+          </p>`,
+          giftBanner,
+        ].join("\n"),
+        "40px 40px 32px 40px"
+      ),
+      band(
+        [
+          eyebrow("Items"),
+          `<table width="100%" border="0" cellspacing="0" cellpadding="0" role="presentation" style="border-top: 1px solid ${color.hairline};">
+            ${rows}
+            ${summaryRows}
+            <tr>
+              <td style="padding: 12px 0 0 0; font-family: ${FONT}; font-size: 15px; font-weight: 600; color: ${color.textPrimary};">Total</td>
+              <td style="padding: 12px 0 0 0; font-family: ${FONT}; font-size: 15px; font-weight: 600; color: ${color.textPrimary}; text-align: right; ${TABULAR}">${money(total)}</td>
+            </tr>
+          </table>`,
+        ].join("\n"),
+        "0 40px 32px 40px"
+      ),
+      band(
+        [
+          eyebrow("Ship to"),
+          `<p style="margin: 0; font-family: ${FONT}; font-size: 14px; color: ${color.textSecondary};">${addrHtml}</p>`,
+        ].join("\n"),
+        "0 40px 32px 40px"
+      ),
+      band(
+        button(`${adminUrl}/admin/orders/${order.id}`, "View Order in Admin"),
+        "0 40px 40px 40px"
+      ),
+    ].join("\n"),
+  });
+};
+
+// ─── Supplier: order to fulfill, and later status changes ────────────────────
+
+const supplierLines = (items: any[]): string =>
+  items
+    .map(
+      (item) =>
+        `<p style="margin: 0 0 8px 0; font-family: ${FONT}; font-size: 14px; line-height: 1.5; color: ${color.textPrimary};">${esc(item.productName ?? "Item")} × ${esc(item.quantity)}${
+          item.giftWrap ? " — gift wrap" : ""
+        }</p>`
+    )
+    .join("");
+
+const shipToBlock = (order: any): string => {
+  const addr = order.shippingAddress;
+  const who = [order.user?.firstName, order.user?.lastName].filter(Boolean).join(" ");
+  const lines = [
+    who,
+    addr?.addressLine1,
+    addr?.addressLine2,
+    [addr?.city, addr?.state, addr?.postalCode].filter(Boolean).join(", "),
+    order.user?.phone ? `Phone: ${order.user.phone}` : "",
+  ].filter(Boolean);
+  return lines.map((line) => esc(line)).join("<br>");
+};
+
+export const getSupplierNewOrderEmailHtml = (
+  order: any,
+  items: any[],
+  frontendUrl: string
+): string => {
+  const wrapped = items.some((item) => item.giftWrap);
+  return layout({
+    title: `Order ${order.orderNumber} to fulfill`,
+    preheader: `Please pack order #${order.orderNumber}.`,
+    content: [
+      band(
+        [
+          eyebrow("Order to fulfill"),
+          display(`#${esc(order.orderNumber)}`, TABULAR),
+          lead("A customer ordered products you supply. Pack only the lines below and ship them to this address."),
+        ].join("\n"),
+        "32px 40px 0 40px"
+      ),
+      band(
+        `<div style="background-color: ${color.panelBg}; border: 1px solid ${color.hairline}; border-radius: 8px; padding: 16px 18px;">${supplierLines(items)}</div>`,
+        "28px 40px 0 40px"
+      ),
+      wrapped
+        ? band(
+            [
+              eyebrow("Gift wrap"),
+              `<p style="margin: 0; font-family: ${FONT}; font-size: 14px; line-height: 1.6; color: ${color.textPrimary};">Gift wrap the merchandise marked above.${
+                order.giftMessage ? ` Note: “${esc(order.giftMessage)}”` : ""
+              }</p>`,
+            ].join("\n"),
+            "28px 40px 0 40px"
+          )
+        : "",
+      band(
+        [
+          eyebrow("Ship to"),
+          `<p style="margin: 0; font-family: ${FONT}; font-size: 14px; line-height: 1.6; color: ${color.textSecondary};">${shipToBlock(order)}</p>`,
+        ].join("\n"),
+        "28px 40px 0 40px"
+      ),
+      band(button(`${frontendUrl}/vendor/dashboard`, "Open your orders"), "28px 40px 32px 40px"),
+    ].join("\n"),
+  });
+};
+
+export const getSupplierOrderStatusEmailHtml = (
+  order: any,
+  items: any[],
+  newStatus: string,
+  frontendUrl: string
+): string => {
+  const status = String(newStatus || "").toUpperCase();
+  const tracking = order.shipment?.trackingNumber
+    ? `${order.shipment.carrier ? `${esc(order.shipment.carrier)} · ` : ""}${esc(order.shipment.trackingNumber)}`
+    : "";
+  const copy =
+    status === "CANCELLED"
+      ? "This order was cancelled. Do not ship these items."
+      : status === "SHIPPED"
+        ? "This order is marked shipped."
+        : `This order is now ${status.toLowerCase()}.`;
+
+  return layout({
+    title: `Order ${order.orderNumber} is ${status.toLowerCase()}`,
+    preheader: `Order #${order.orderNumber} is now ${status.toLowerCase()}.`,
+    content: [
+      band(
+        [
+          eyebrow("Order update"),
+          display(`#${esc(order.orderNumber)}`, TABULAR),
+          lead(copy),
+        ].join("\n"),
+        "32px 40px 0 40px"
+      ),
+      band(
+        `<div style="background-color: ${color.panelBg}; border: 1px solid ${color.hairline}; border-radius: 8px; padding: 16px 18px;">${supplierLines(items)}</div>`,
+        "28px 40px 0 40px"
+      ),
+      tracking
+        ? band(
+            `<p style="margin: 0; font-family: ${FONT}; font-size: 14px; color: ${color.textSecondary};">Tracking: ${tracking}</p>`,
+            "28px 40px 0 40px"
+          )
+        : "",
+      band(button(`${frontendUrl}/vendor/dashboard`, "Open your orders"), "28px 40px 32px 40px"),
+    ].join("\n"),
+  });
+};

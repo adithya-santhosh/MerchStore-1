@@ -106,7 +106,7 @@ export default function Hero() {
               className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary-bright/40 bg-black/30 backdrop-blur-sm text-xs font-bold tracking-widest text-primary-bright uppercase animate-in fade-in slide-in-from-bottom-2 duration-700"
             >
               <span className="size-1.5 rounded-full bg-primary-bright animate-pulse" />
-              Premium Off-Road Gear
+              OffRoad World
             </div>
 
             {/* Headline */}
@@ -123,8 +123,8 @@ export default function Hero() {
               className="text-base sm:text-lg lg:text-xl text-white/75 leading-relaxed max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-700 fill-mode-both"
               style={{ animationDelay: "300ms" }}
             >
-              Engineered accessories and limited-edition merch for the
-              off-road lifestyle. Armor up. Stand out.
+              Desktop calendars, stickers, and small goods are in the shop.
+              Accessories for the build follow.
             </p>
 
             {/* CTA buttons */}
@@ -138,7 +138,7 @@ export default function Hero() {
                 asChild
               >
                 <Link
-                  href="/products"
+                  href="/products/merchandise"
                   className="inline-flex items-center gap-2"
                 >
                   Shop Now
@@ -152,7 +152,7 @@ export default function Hero() {
                 asChild
               >
                 <Link href="/products/car-accessories">
-                  Explore Accessories
+                  Accessories coming soon
                 </Link>
               </Button>
             </div>

@@ -42,7 +42,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
   const [dbMakes, setDbMakes] = useState<string[]>([]);
 
   // Brand states
-  const [brand, setBrand] = useState(product.brand || "");
+  const [brand, setBrand] = useState(product.brand?.name || "");
   const [customBrand, setCustomBrand] = useState("");
   const [isCustomBrand, setIsCustomBrand] = useState(false);
 

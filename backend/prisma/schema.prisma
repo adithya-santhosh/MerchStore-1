@@ -279,6 +279,11 @@ model Order {
   totalAmount             Decimal     @db.Decimal(10, 2)
   couponCode              String?
 
+  // Set only when the shopper asked for gift wrap and the order actually
+  // contains merchandise. Parts are never wrapped, so a parts-only order
+  // keeps this null even if the client sent a note.
+  giftMessage             String?
+
   confirmationEmailSentAt DateTime?
 
   notes                   String?
@@ -302,6 +307,13 @@ model OrderItem {
   quantity    Int
   unitPrice   Decimal @db.Decimal(10, 2)
   totalPrice  Decimal @db.Decimal(10, 2)
+  // True only for merchandise lines the shopper chose to gift wrap.
+  // Car-accessory lines stay false even when the order is a gift.
+  giftWrap      Boolean @default(false)
+  // Supplier account email copied at checkout. Later reassignment of the
+  // product does not change who is notified about this order. Null means
+  // the store itself fulfills the line.
+  supplierEmail String?
 
   @@map("order_items")
 }

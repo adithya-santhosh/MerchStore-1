@@ -86,7 +86,7 @@ export default function CarAccessoriesPage() {
             Car Accessories
           </h1>
           <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
-            Configure your off-road rig with custom vehicle armor, recovery kits, electrical light modules, suspension lifts, and modular cargo systems built to withstand the elements.
+            These sections are coming soon. Calendars and stickers are available in merchandise.
           </p>
         </div>
 
@@ -142,7 +142,7 @@ export default function CarAccessoriesPage() {
 
                 {/* Action Footer Indicator */}
                 <div className="flex items-center justify-between text-xs sm:text-sm font-semibold text-muted-foreground pt-4 border-t border-border/40 group-hover:text-primary-bright transition-colors">
-                  <span>Explore Gear</span>
+                  <span>Coming soon</span>
                   <div className="size-8 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground group-hover:border-transparent transition-all duration-300 group-hover:translate-x-1">
                     <ArrowRight className="size-4" />
                   </div>

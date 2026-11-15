@@ -18,6 +18,7 @@ import {
   Sparkles,
   Banknote,
   Clock,
+  Gift,
 } from "lucide-react";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
@@ -192,6 +193,9 @@ function ConfirmationPageContent() {
                       <p className="text-xs text-muted-foreground">
                         {item.quantity} × ₹{item.unitPrice.toLocaleString("en-IN")}
                       </p>
+                      {item.giftWrap && (
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-primary-bright mt-1">Gift wrapped</p>
+                      )}
                     </div>
                     <span className="text-sm font-black text-foreground shrink-0">
                       ₹{item.totalPrice.toLocaleString("en-IN")}
@@ -199,6 +203,17 @@ function ConfirmationPageContent() {
                   </div>
                 ))}
               </div>
+              {order.items.some((item) => item.giftWrap) && (
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex gap-3">
+                  <Gift className="size-4 text-primary shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-foreground">Merchandise will be gift wrapped</p>
+                    {order.giftMessage && (
+                      <p className="text-xs text-muted-foreground leading-relaxed">“{order.giftMessage}”</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Payment Info */}

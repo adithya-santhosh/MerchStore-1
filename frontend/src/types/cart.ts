@@ -5,6 +5,7 @@ export interface CartProduct {
   price: number;
   compareAtPrice: number | null;
   category: string;
+  productType?: "part" | "merch";
   ImageURL: string | null;
 }
 

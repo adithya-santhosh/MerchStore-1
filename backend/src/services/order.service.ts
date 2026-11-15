@@ -1,11 +1,18 @@
 import logger from "../lib/logger";
 import prisma from "../lib/prisma";
 import { OrderStatus, PaymentStatus, Prisma, User } from "@prisma/client";
-import { sendOrderConfirmationEmail, sendOrderStatusEmail } from "./email.service";
+import {
+  sendOrderConfirmationEmail,
+  sendOrderStatusEmail,
+  sendAdminNewOrderNotification,
+  sendSupplierNewOrderEmail,
+  sendSupplierOrderStatusEmail,
+} from "./email.service";
 import { getSettings } from "./settings.service";
 import { resolveGuestUser } from "./auth.service";
 import { getOrCreateCart } from "./cart.service";
 import { guestContactSchema } from "../middleware/validation.middleware";
+import { stripHtml } from "../lib/sanitize";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,10 +35,28 @@ export interface CreateOrderInput {
   couponCode?: string;
   paymentMethod: "cod" | "razorpay";
   sessionToken?: string;
+  // Requested at checkout. Applied only to merchandise lines; a cart of
+  // parts stores nothing even when this is true.
+  giftWrap?: boolean;
+  giftMessage?: string;
 }
 
+// Loads the supplier account email with the cart so checkout can copy it
+// onto the order line. `product: true` would not load that relation.
+const checkoutCartInclude = {
+  items: {
+    include: {
+      product: {
+        include: {
+          vendor: { include: { user: { select: { email: true } } } },
+        },
+      },
+    },
+  },
+} as const;
+
 export type PreparedCheckout = {
-    cart: Prisma.CartGetPayload<{ include: { items: { include: { product: true } } } }>
+    cart: Prisma.CartGetPayload<{ include: typeof checkoutCartInclude }>
     subtotal: number
     discountAmount: number
     resolvedCouponCode?: string | undefined
@@ -84,6 +109,100 @@ const generateOrderNumber = (): string => {
   return `ORD-${year}-${rand}`;
 };
 
+const GIFT_NOTE_LIMIT = 300;
+
+/** Merchandise (`productType === "merch"`) is the only type that can be gift wrapped. */
+const isMerchandise = (product: { productType?: string | null } | null | undefined): boolean =>
+  product?.productType === "merch";
+
+/** The supplier account email on a product, or null when the store fulfills it. */
+const supplierEmailFor = (
+  product: { vendor?: { user?: { email?: string | null } | null } | null } | null | undefined
+): string | null => {
+  const email = product?.vendor?.user?.email?.trim().toLowerCase();
+  return email ? email : null;
+};
+
+type SupplierBucket = { email: string; items: any[] };
+
+/** One bucket per supplier inbox. Lines the store fulfills are left out. */
+const supplierBuckets = (items: any[] | undefined): SupplierBucket[] => {
+  const byEmail = new Map<string, any[]>();
+  for (const item of items ?? []) {
+    const email = typeof item?.supplierEmail === "string" ? item.supplierEmail.trim().toLowerCase() : "";
+    if (!email) continue;
+    const list = byEmail.get(email) ?? [];
+    list.push(item);
+    byEmail.set(email, list);
+  }
+  return [...byEmail.entries()].map(([email, lines]) => ({ email, items: lines }));
+};
+
+/**
+ * Emails each supplier who has lines on this order. A supplier only receives
+ * their own lines. Failures are logged by the email service; this returns
+ * the combined promise so callers can attach one .catch.
+ */
+export const emailSuppliersAboutOrder = (
+  order: { items?: any[] } | null | undefined,
+  event: { type: "new" } | { type: "status"; status: string }
+) => {
+  const sends = supplierBuckets(order?.items).map((bucket) =>
+    event.type === "new"
+      ? sendSupplierNewOrderEmail({ to: bucket.email, order, items: bucket.items })
+      : sendSupplierOrderStatusEmail({
+          to: bucket.email,
+          order,
+          items: bucket.items,
+          newStatus: event.status,
+        })
+  );
+  return Promise.all(sends);
+};
+
+/** Customer + suppliers, after a supplier records a shipment. */
+export const notifyOrderShipped = async (orderId: number): Promise<void> => {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: {
+        items: true,
+        user: { select: { email: true, firstName: true, lastName: true, phone: true } },
+        shippingAddress: true,
+        shipment: true,
+      },
+    });
+    if (!order) return;
+
+    if (order.user?.email) {
+      await sendOrderStatusEmail({
+        to: order.user.email,
+        order,
+        newStatus: OrderStatus.SHIPPED,
+      });
+    }
+    await emailSuppliersAboutOrder(order, { type: "status", status: OrderStatus.SHIPPED });
+  } catch (error) {
+    logger.error({ err: error }, "[OrderService] Error sending shipped emails");
+  }
+};
+
+/**
+ * The note stored on the order. Empty unless gift wrap was requested and at
+ * least one line is merchandise — a parts-only cart must not keep a note the
+ * shopper was never offered.
+ */
+const giftNoteForOrder = (
+  input: CreateOrderInput,
+  items: { product: { productType?: string | null } | null }[]
+): string | null => {
+  if (input.giftWrap !== true) return null;
+  if (!items.some((item) => isMerchandise(item.product))) return null;
+  if (typeof input.giftMessage !== "string") return null;
+  const note = stripHtml(input.giftMessage).slice(0, GIFT_NOTE_LIMIT);
+  return note.length > 0 ? note : null;
+};
+
 export const prepareCheckout = async (input: CreateOrderInput) => {
    const { userId, address, couponCode, paymentMethod, sessionToken } = input;
 
@@ -100,12 +219,12 @@ export const prepareCheckout = async (input: CreateOrderInput) => {
   const cart = userId
     ? await prisma.cart.findFirst({
         where: { userId },
-        include: { items: { include: { product: true } } },
+        include: checkoutCartInclude,
       })
     : sessionToken
       ? await prisma.cart.findFirst({
           where: { sessionToken },
-          include: { items: { include: { product: true } } },
+          include: checkoutCartInclude,
         })
       : null;
 
@@ -242,7 +361,9 @@ export const finalizeOrder = async (
         taxAmount,
         totalAmount,
         couponCode: resolvedCouponCode || null,
-        // Step 6: Create order items
+        giftMessage: giftNoteForOrder(input, cart.items),
+        // Step 6: Create order items. Gift wrap is decided here, from the
+        // product record, so a client cannot mark a car accessory as a gift.
         items: {
           create: cart.items.map((item) => ({
             productId:   item.productId,
@@ -250,6 +371,8 @@ export const finalizeOrder = async (
             quantity:    item.quantity,
             unitPrice:   item.unitPrice,
             totalPrice:  Number(item.unitPrice) * item.quantity,
+            giftWrap:    input.giftWrap === true && isMerchandise(item.product),
+            supplierEmail: supplierEmailFor(item.product),
           })),
         },
         payment: {
@@ -326,11 +449,23 @@ export const triggerOrderConfirmationEmail = async (orderId: number): Promise<vo
         },
       });
 
-      if (order && order.user?.email) {
-        sendOrderConfirmationEmail({
-          to: order.user.email,
-          order,
-        }).catch((err) => logger.error({ err: err }, "[OrderService] sendOrderConfirmationEmail background error"));
+      if (order) {
+        if (order.user?.email) {
+          sendOrderConfirmationEmail({
+            to: order.user.email,
+            order,
+          }).catch((err) => logger.error({ err: err }, "[OrderService] sendOrderConfirmationEmail background error"));
+        }
+
+        // Notify the store owner about the new order
+        sendAdminNewOrderNotification(order).catch((err) =>
+          logger.error({ err: err }, "[OrderService] sendAdminNewOrderNotification background error")
+        );
+
+        // One mail per supplier, containing only the lines they fulfill.
+        emailSuppliersAboutOrder(order, { type: "new" }).catch((err) =>
+          logger.error({ err: err }, "[OrderService] supplier new-order email error")
+        );
       }
     }
   } catch (error) {
@@ -450,6 +585,7 @@ export const getOrderByIdAdmin = async (orderId: number) => {
     taxAmount:     Number(order.taxAmount),
     totalAmount:   Number(order.totalAmount),
     couponCode:    order.couponCode,
+    giftMessage:   order.giftMessage,
     notes:         order.notes,
     createdAt:     order.createdAt,
     updatedAt:     order.updatedAt,
@@ -473,13 +609,15 @@ export const getOrderByIdAdmin = async (orderId: number) => {
       const primaryImage =
         item.product?.images?.find((img) => img.isPrimary) || item.product?.images?.[0];
       return {
-        id:          item.id,
-        productId:   item.productId,
-        productName: item.productName,
-        quantity:    item.quantity,
-        unitPrice:   Number(item.unitPrice),
-        totalPrice:  Number(item.totalPrice),
-        imageUrl:    primaryImage?.imageUrl || null,
+        id:            item.id,
+        productId:     item.productId,
+        productName:   item.productName,
+        quantity:      item.quantity,
+        unitPrice:     Number(item.unitPrice),
+        totalPrice:    Number(item.totalPrice),
+        giftWrap:      item.giftWrap === true,
+        supplierEmail: item.supplierEmail ?? null,
+        imageUrl:      primaryImage?.imageUrl || null,
       };
     }),
   };
@@ -602,6 +740,10 @@ export const cancelOrder = async (
       newStatus: OrderStatus.CANCELLED,
     }).catch((err) => logger.error({ err }, "[OrderService] Cancellation email error"));
   }
+
+  emailSuppliersAboutOrder(cancelled, { type: "status", status: OrderStatus.CANCELLED }).catch((err) =>
+    logger.error({ err }, "[OrderService] Supplier cancellation email error")
+  );
 
   return mapOrder(cancelled);
 };
@@ -739,6 +881,7 @@ export const updateOrderStatus = async (orderId: number, status: string) => {
       items:           true,
       payment:         true,
       shippingAddress: true,
+      shipment:        true,
     },
   });
 
@@ -749,6 +892,10 @@ export const updateOrderStatus = async (orderId: number, status: string) => {
       newStatus: status
     }).catch((err) => logger.error({ err: err }, "[OrderService] Status email background error"));
   }
+
+  emailSuppliersAboutOrder(order, { type: "status", status }).catch((err) =>
+    logger.error({ err: err }, "[OrderService] Supplier status email error")
+  );
 
   return order;
 };
@@ -765,6 +912,7 @@ const mapOrder = (order: any) => ({
   taxAmount:     Number(order.taxAmount),
   totalAmount:   Number(order.totalAmount),
   couponCode:    order.couponCode,
+  giftMessage:   order.giftMessage ?? null,
   createdAt:     order.createdAt,
   updatedAt:     order.updatedAt,
   shippingAddress: order.shippingAddress,
@@ -795,6 +943,7 @@ const mapOrder = (order: any) => ({
     quantity:    item.quantity,
     unitPrice:   Number(item.unitPrice),
     totalPrice:  Number(item.totalPrice),
+    giftWrap:    item.giftWrap === true,
   })),
 });
 
@@ -812,6 +961,7 @@ const mapOrderDetail = (order: any) => {
         quantity:    item.quantity,
         unitPrice:   Number(item.unitPrice),
         totalPrice:  Number(item.totalPrice),
+        giftWrap:    item.giftWrap === true,
         imageUrl:    primaryImage?.imageUrl || null,
       };
     }),

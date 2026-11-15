@@ -721,7 +721,7 @@ function DashboardContent() {
                                   </div>
                                   <div className="truncate text-[11px] font-medium text-foreground">
                                     <p className="truncate font-bold">{item.productName}</p>
-                                    <p className="text-[9px] text-muted-foreground">Qty: {item.quantity} • ₹{Number(item.unitPrice).toLocaleString("en-IN")}</p>
+                                    <p className="text-[9px] text-muted-foreground">Qty: {item.quantity} • ₹{Number(item.unitPrice).toLocaleString("en-IN")}{item.giftWrap ? " • Gift wrap" : ""}</p>
                                   </div>
                                 </div>
                               ))}
@@ -1119,6 +1119,12 @@ function DashboardContent() {
               {/* Items List */}
               <div className="space-y-3">
                 <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Items in Package</h3>
+                {selectedOrder.items.some((item) => item.giftWrap) && (
+                  <p className="text-xs text-foreground">
+                    Merchandise in this order will be gift wrapped.
+                    {selectedOrder.giftMessage ? ` “${selectedOrder.giftMessage}”` : ""}
+                  </p>
+                )}
                 <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
                   {selectedOrder.items.map((item, idx) => (
                     <div key={item.id || idx} className="flex items-center justify-between gap-3 bg-muted/15 border border-border/40 p-3 rounded-xl">
@@ -1128,7 +1134,7 @@ function DashboardContent() {
                         </div>
                         <div>
                           <p className="text-xs font-bold text-foreground leading-tight">{item.productName}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">₹{Number(item.unitPrice).toLocaleString("en-IN")} each</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">₹{Number(item.unitPrice).toLocaleString("en-IN")} each{item.giftWrap ? " · Gift wrap" : ""}</p>
                         </div>
                       </div>
                       <div className="text-right">

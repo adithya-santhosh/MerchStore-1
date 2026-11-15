@@ -81,6 +81,26 @@ describe("placeOrderSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a gift wrap request with a short note", () => {
+    const result = placeOrderSchema.safeParse({
+      address: validAddress,
+      paymentMethod: "cod",
+      giftWrap: true,
+      giftMessage: "Happy birthday",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a gift note longer than 300 characters", () => {
+    const result = placeOrderSchema.safeParse({
+      address: validAddress,
+      paymentMethod: "cod",
+      giftWrap: true,
+      giftMessage: "a".repeat(301),
+    });
+    expect(result.success).toBe(false);
+  });
+
   it("rejects an unsupported payment method", () => {
     const result = placeOrderSchema.safeParse({
       address: validAddress,
