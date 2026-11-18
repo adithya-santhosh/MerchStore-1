@@ -6,6 +6,22 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Public product address. Uses the SEO slug, and the id only when a row has none. */
+export function productPath(product: { id: number; slug?: string | null }): string {
+  const slug = product.slug?.trim()
+  const segment = slug ? encodeURIComponent(slug) : String(product.id)
+  return `/products/${segment}`
+}
+
+/** Same rules the API applies before it stores a product slug. */
+export function normalizeProductSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
 /** Avoid legacy `/products/foo.jpg` paths colliding with `/products/[id]`. */
 export function getProductImageSrc(url: string | null | undefined): string | null {
   if (!url) return null

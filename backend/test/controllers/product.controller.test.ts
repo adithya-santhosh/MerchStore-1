@@ -5,6 +5,7 @@ import jwt from "jsonwebtoken";
 vi.mock("../../src/services/product.service", () => ({
   getAllProducts: vi.fn(),
   getProductById: vi.fn(),
+  getProductBySlug: vi.fn(),
   createProduct: vi.fn(),
   deleteProduct: vi.fn(),
   updateProduct: vi.fn(),
@@ -95,23 +96,42 @@ describe("GET /api/products/:id", () => {
     expect(res.status).toBe(404);
   });
 
-  it("rejects a non-numeric id with 400", async () => {
-    const res = await request(app).get("/api/products/not-a-number");
+  it("returns the product for a slug", async () => {
+    svc.getProductBySlug.mockResolvedValue({ id: 10, slug: "roof-rack", name: "Roof Rack" } as any);
 
-    expect(res.status).toBe(400);
+    const res = await request(app).get("/api/products/roof-rack");
+
+    expect(res.status).toBe(200);
+    expect(res.body.slug).toBe("roof-rack");
+    expect(svc.getProductBySlug).toHaveBeenCalledWith("roof-rack");
     expect(svc.getProductById).not.toHaveBeenCalled();
   });
 
-  it("rejects a fractional id with 400", async () => {
-    const res = await request(app).get("/api/products/1.5");
+  it("answers 404 when the slug does not match", async () => {
+    svc.getProductBySlug.mockResolvedValue(null as any);
 
-    expect(res.status).toBe(400);
+    const res = await request(app).get("/api/products/not-a-product");
+
+    expect(res.status).toBe(404);
+    expect(svc.getProductById).not.toHaveBeenCalled();
   });
 
-  it("rejects a negative id with 400", async () => {
+  it("does not treat a fraction as an id", async () => {
+    svc.getProductBySlug.mockResolvedValue(null as any);
+
+    const res = await request(app).get("/api/products/1.5");
+
+    expect(res.status).toBe(404);
+    expect(svc.getProductById).not.toHaveBeenCalled();
+  });
+
+  it("does not treat a negative number as an id", async () => {
+    svc.getProductBySlug.mockResolvedValue(null as any);
+
     const res = await request(app).get("/api/products/-1");
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
+    expect(svc.getProductById).not.toHaveBeenCalled();
   });
 });
 
@@ -495,9 +515,8 @@ describe("POST /api/products", () => {
 });
 
 describe("PUT /api/products/:id", () => {
-  // What EditProductForm actually posts: the subset of fields it manages. There
-  // is no slug, no stock and no flags, so a create-shaped schema would reject
-  // an ordinary edit outright.
+  // A partial edit that leaves the slug alone. Stock and flags are absent too,
+  // so a create-shaped schema would reject an ordinary edit outright.
   const editFormPayload = {
     name: "Formula V1 Hoodie",
     description: "Heavyweight cotton hoodie",
@@ -558,6 +577,41 @@ describe("PUT /api/products/:id", () => {
     expect(sent).not.toHaveProperty("isActive");
     expect(sent).not.toHaveProperty("isFeatured");
     expect(sent).not.toHaveProperty("slug");
+  });
+
+  it("stores a normalized slug when one is sent", async () => {
+    svc.updateProduct.mockResolvedValue({ id: 10 } as any);
+
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ ...editFormPayload, slug: "  Formula V1 Hoodie! " });
+
+    expect(res.status).toBe(200);
+    expect(svc.updateProduct).toHaveBeenCalledWith(
+      10,
+      expect.objectContaining({ slug: "formula-v1-hoodie" })
+    );
+  });
+
+  it("rejects a number-only slug", async () => {
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ ...editFormPayload, slug: "96" });
+
+    expect(res.status).toBe(422);
+    expect(svc.updateProduct).not.toHaveBeenCalled();
+  });
+
+  it("rejects a slug reserved for a shop page", async () => {
+    const res = await request(app)
+      .put("/api/products/10")
+      .set("Authorization", adminAuth)
+      .send({ ...editFormPayload, slug: "merchandise" });
+
+    expect(res.status).toBe(422);
+    expect(svc.updateProduct).not.toHaveBeenCalled();
   });
 
   it("still applies those fields when they are sent explicitly", async () => {

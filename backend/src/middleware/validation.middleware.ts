@@ -130,11 +130,54 @@ const vehicleFitmentSchema = z.object({
 // This stays a plain object rather than folding the create-only `.refine()` in
 // directly, because `.refine()` returns a ZodEffects, which has no `.partial()`
 // for the update schema below to build on.
+/** Shop paths that already exist under /products, plus API routes on /api/products. */
+const RESERVED_PRODUCT_SLUGS = new Set([
+  "admin",
+  "search",
+  "car-accessories",
+  "merchandise",
+]);
+
+export function normalizeProductSlug(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+const productSlugSchema = z
+  .string()
+  .min(1, "Slug is required")
+  .max(255)
+  .transform((value, ctx) => {
+    const slug = normalizeProductSlug(value);
+    if (!slug) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Slug is required" });
+      return z.NEVER;
+    }
+    if (/^\d+$/.test(slug)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Use letters in the slug so the address is not only a number.",
+      });
+      return z.NEVER;
+    }
+    if (RESERVED_PRODUCT_SLUGS.has(slug)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "That slug is reserved for a shop page.",
+      });
+      return z.NEVER;
+    }
+    return slug;
+  });
+
 const productFieldsSchema = z.object({
   name: sanitized(z.string().min(1, "Name is required").max(255)),
   description: sanitized(z.string().min(1, "Description is required")),
   shortDescription: sanitized(z.string().max(500)).nullish(),
-  slug: z.string().min(1, "Slug is required").max(255),
+  slug: productSlugSchema,
   price: z.number().positive("Price must be positive"),
   compareAtPrice: z.number().positive().nullish(),
   costPrice: z.number().positive().nullish(),
@@ -172,9 +215,9 @@ export const createProductSchema = productFieldsSchema.refine(
   { message: "Category is required", path: ["categoryId"] }
 );
 
-// Every field is optional on update: the edit form posts only the subset it
-// manages — it never sends a slug, for one — so a create-shaped schema would
-// reject an ordinary edit outright.
+// Every field is optional on update. A payload that leaves the slug out must
+// stay that way: a create-shaped schema would reject an ordinary edit, and a
+// defaulted slug would overwrite the one already stored.
 //
 // The four overrides below are load-bearing, and repeat the lesson already
 // recorded on `updateCouponSchema`: `.partial()` makes a key optional but does

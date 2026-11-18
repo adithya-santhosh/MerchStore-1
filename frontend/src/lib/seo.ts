@@ -18,7 +18,7 @@ export function buildMetadata({
 }: {
   title: string;
   description: string;
-  /** Route path, e.g. "/products/12". Used for the canonical URL. */
+  /** Route path, e.g. "/products/thar-calendar-2027". Used for the canonical URL. */
   path?: string;
   /** Absolute or root-relative image URL for the link preview. */
   image?: string | null;

@@ -24,6 +24,10 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
         // calls, not the global scroll animation.
         lerp: 0.1,
         smoothWheel: true,
+        // Panels such as the admin catalog scroll inside their own box.
+        // Lenis otherwise calls preventDefault on the wheel, so that box
+        // never moves.
+        allowNestedScroll: true,
       }}
     >
       {children}

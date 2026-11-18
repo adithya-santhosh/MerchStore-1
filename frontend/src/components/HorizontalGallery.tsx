@@ -45,15 +45,11 @@ export default function HorizontalGallery() {
       className="relative w-full bg-background"
       style={{ height: "300dvh" }}
     >
-      {/* `sticky` and `overflow-hidden` are deliberately on separate nodes,
-          not combined on one element — Chromium can mis-hit-test wheel
-          input against a sticky+overflow-hidden element once it scrolls
-          past, effectively trapping further wheel scroll for the rest of
-          the page (mouse wheel and trackpad both affected; scrollbar drag
-          and keyboard scrolling are unaffected, since they bypass wheel
-          hit-testing entirely). */}
+      {/* Clip with overflow-clip, not overflow-hidden. Hidden turns this
+          full-screen box into a scroll container, and Chrome then swallows
+          the wheel so the page cannot move on past the pinned strip. */}
       <div className="sticky top-0 h-dvh">
-        <div className="flex h-full flex-col justify-center overflow-hidden">
+        <div className="flex h-full flex-col justify-center overflow-clip">
           <div className="mx-auto mb-8 w-full max-w-7xl px-4 sm:px-6 lg:px-8">
             <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary-bright">
               From The Trail
@@ -71,7 +67,7 @@ export default function HorizontalGallery() {
             {ITEMS.map((item) => (
               <div
                 key={item.label}
-                className="relative h-[50vh] w-[70vw] shrink-0 overflow-hidden rounded-[2rem] border border-border/40 sm:w-[38vw] lg:w-[26vw]"
+                className="relative h-[50vh] w-[70vw] shrink-0 overflow-clip rounded-[2rem] border border-border/40 sm:w-[38vw] lg:w-[26vw]"
               >
                 <img
                   src={item.image}

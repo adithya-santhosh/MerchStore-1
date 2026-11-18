@@ -59,7 +59,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${bodySans.variable} ${headingFont.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${bodySans.variable} ${headingFont.variable} ${geistMono.variable} antialiased`}
     >
       {/* Rendered as JSX rather than the metadata API's icons/etc fields
           because there's no dedicated preconnect field there — Next
@@ -68,7 +68,7 @@ export default function RootLayout({
       <link rel="preconnect" href="https://images.unsplash.com" />
       <link rel="preconnect" href="https://res.cloudinary.com" />
       <link rel="preconnect" href="https://checkout.razorpay.com" />
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+      <body className="min-h-dvh flex flex-col" suppressHydrationWarning>
         <SmoothScroll>
           <AuthProvider>
             <CartProvider>

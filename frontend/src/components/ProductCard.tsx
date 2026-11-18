@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Product } from "@/types/products";
-import { getProductImageSrc } from "@/lib/utils";
+import { getProductImageSrc, productPath } from "@/lib/utils";
 import { ArrowRight, Sparkles, ShoppingBag } from "lucide-react";
 import { useCart } from "@/hooks/useCart";
 import WishlistButton from "./WishlistButton";
@@ -23,7 +23,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link
-      href={`/products/${product.id}`}
+      href={productPath(product)}
       className="group flex flex-col justify-between rounded-2xl border border-border bg-card/40 shadow-sm hover:shadow-lg hover:border-primary hover:shadow-primary/5 transition-all duration-300 overflow-hidden min-h-[380px] cursor-pointer"
     >
       

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { siteUrl } from "@/lib/site-config";
 import { getProducts } from "@/lib/api";
+import { productPath } from "@/lib/utils";
 
 /**
  * Generated at request time so newly added products appear without a redeploy.
@@ -47,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     productEntries = products
       .filter((p) => p.isActive !== false)
       .map((p) => ({
-        url: `${siteUrl}/products/${p.id}`,
+        url: `${siteUrl}${productPath(p)}`,
         lastModified: p.updatedAt ? new Date(p.updatedAt) : now,
         changeFrequency: "weekly" as const,
         priority: 0.8,

@@ -10,6 +10,7 @@ import ProductImagesField from "@/components/admin/ProductImagesField";
 import FormErrorSummary from "@/components/admin/FormErrorSummary";
 import { getErrorMessage, getFieldErrors, type ApiFieldError } from "@/lib/errors";
 import { galleryFromProduct, primaryImageUrl as heroImageUrl } from "@/lib/product-images";
+import { normalizeProductSlug } from "@/lib/utils";
 
 interface EditProductFormProps {
   product: Product;
@@ -18,6 +19,7 @@ interface EditProductFormProps {
 export default function EditProductForm({ product }: EditProductFormProps) {
   const router = useRouter();
   const [name, setName] = useState(product.name);
+  const [slug, setSlug] = useState(product.slug || "");
   const [description, setDescription] = useState(product.description);
   const [price, setPrice] = useState(product.price.toString());
   const [category, setCategory] = useState(product.category);
@@ -265,6 +267,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
     try {
       await updateProduct(product.id, {
         name,
+        slug: normalizeProductSlug(slug),
         description,
         price: Number(price),
         category,
@@ -378,6 +381,24 @@ export default function EditProductForm({ product }: EditProductFormProps) {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="slug" className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              SEO URL Slug
+            </label>
+            <input
+              type="text"
+              id="slug"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
+              placeholder="e.g. formula-v1-hoodie"
+              required
+            />
+            <p className="text-xs text-muted-foreground">
+              Public address: /products/{normalizeProductSlug(slug) || "your-slug"}
+            </p>
           </div>
 
           {/* Primary and Sub-Category Selection */}

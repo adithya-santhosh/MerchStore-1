@@ -8,6 +8,7 @@ import ProductImagesField from "@/components/admin/ProductImagesField";
 import FormErrorSummary from "@/components/admin/FormErrorSummary";
 import { getErrorMessage, getFieldErrors, type ApiFieldError } from "@/lib/errors";
 import { primaryImageUrl as heroImageUrl } from "@/lib/product-images";
+import { normalizeProductSlug } from "@/lib/utils";
 import type { ProductImageDraft, VehicleFitment } from "@/types/products";
 
 export default function ProductForm() {
@@ -102,11 +103,7 @@ export default function ProductForm() {
   // Auto-generate slug from name unless manually edited
   useEffect(() => {
     if (!manualSlug) {
-      const generatedSlug = name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/(^-|-$)+/g, "");
-      setSlug(generatedSlug);
+      setSlug(normalizeProductSlug(name));
     }
   }, [name, manualSlug]);
 
@@ -267,7 +264,7 @@ export default function ProductForm() {
     try {
       await createProduct({
         name,
-        slug,
+        slug: normalizeProductSlug(slug),
         description,
         shortDescription: shortDescription || null,
         price: Number(price),
@@ -378,6 +375,9 @@ export default function ProductForm() {
               className="w-full rounded-xl border border-input bg-background/50 px-4 py-3 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all text-foreground"
               required
             />
+            <p className="text-xs text-muted-foreground">
+              Public address: /products/{normalizeProductSlug(slug) || "your-slug"}
+            </p>
           </div>
         </div>
 

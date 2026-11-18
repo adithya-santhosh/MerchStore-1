@@ -6,7 +6,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getProducts } from "@/lib/api";
 import { Product } from "@/types/products";
-import { getProductImageSrc } from "@/lib/utils";
+import { getProductImageSrc, productPath } from "@/lib/utils";
 import ScrollReveal from "@/components/ScrollReveal";
 
 export default function FeaturedSpotlight() {
@@ -99,7 +99,7 @@ export default function FeaturedSpotlight() {
                     asChild
                   >
                     <Link
-                      href={`/products/${product.id}`}
+                      href={productPath(product)}
                       className="inline-flex items-center gap-2"
                     >
                       View Details

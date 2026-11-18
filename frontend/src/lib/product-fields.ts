@@ -5,7 +5,7 @@
  */
 const PRODUCT_FIELD_LABELS: Record<string, string> = {
   name: "Product Name",
-  slug: "Slug",
+  slug: "SEO URL Slug",
   description: "Description",
   shortDescription: "Short Description",
   price: "Price",

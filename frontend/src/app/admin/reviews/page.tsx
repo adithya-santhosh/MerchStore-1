@@ -10,6 +10,7 @@ import {
   PendingReview,
 } from "@/lib/api";
 import { getErrorMessage } from "@/lib/errors";
+import { productPath } from "@/lib/utils";
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -116,7 +117,7 @@ export default function AdminReviewsPage() {
                     )}
                   </div>
                   <Link
-                    href={`/products/${review.product.id}`}
+                    href={productPath(review.product)}
                     target="_blank"
                     className="inline-flex items-center gap-1 text-xs text-primary-bright hover:underline"
                   >

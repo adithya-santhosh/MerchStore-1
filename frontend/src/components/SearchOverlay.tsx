@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Search, X, ArrowRight, Clock, Sparkles, Command } from "lucide-react";
 import { searchProducts } from "@/lib/api";
 import { Product } from "@/types/products";
-import { getProductImageSrc } from "@/lib/utils";
+import { getProductImageSrc, productPath } from "@/lib/utils";
 
 interface SearchOverlayProps {
   isOpen: boolean;
@@ -122,7 +122,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         const product = results[selectedIndex];
         addRecentSearch(query);
         onClose();
-        router.push(`/products/${product.id}`);
+        router.push(productPath(product));
       } else if (query.trim()) {
         // "View all results" or default enter
         handleViewAll();
@@ -225,7 +225,7 @@ export default function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                   return (
                     <Link
                       key={product.id}
-                      href={`/products/${product.id}`}
+                      href={productPath(product)}
                       onClick={() => {
                         addRecentSearch(query);
                         onClose();

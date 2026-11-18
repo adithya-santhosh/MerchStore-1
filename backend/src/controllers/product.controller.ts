@@ -1,6 +1,6 @@
 import logger from "../lib/logger";
 import { Response, Request } from "express";
-import { getAllProducts, getProductById, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata, getProductsAdmin, getProductStats, bulkUpdateProducts, searchProducts } from "../services/product.service";
+import { getAllProducts, getProductById, getProductBySlug, createProduct, deleteProduct, updateProduct, subCategories, getNavigationMetadata, getProductsAdmin, getProductStats, bulkUpdateProducts, searchProducts } from "../services/product.service";
 import { createUploadSignature } from "../lib/cloudinary";
 
 // GET /api/products/admin/upload-signature — requireAuth, requireAdmin
@@ -36,13 +36,13 @@ export const getProducts = async (req: Request, res: Response) => {
 //
 
 export const getProduct = async (req:Request, res:Response) =>{
-    const id = Number(req.params.id);
-
-    if (!Number.isInteger(id) || id <= 0) {
-        return res.status(400).json({ message: "Invalid product ID" });
-    }
-
-    const product = await getProductById(id);
+    const key = String(req.params.id ?? "").trim();
+    // A positive integer is the old /products/96 address. Anything else is the
+    // SEO slug. The storefront redirects the number to the slug.
+    const numericId = /^[1-9]\d*$/.test(key) ? Number(key) : null;
+    const product = numericId !== null
+        ? await getProductById(numericId)
+        : await getProductBySlug(key);
 
     if (!product){
         return res.status(404).json({

@@ -5,6 +5,7 @@ vi.mock("../../src/lib/prisma", () => ({
     product: {
       findMany: vi.fn(),
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
       updateMany: vi.fn(),
@@ -30,6 +31,7 @@ import prisma from "../../src/lib/prisma";
 import {
   getAllProducts,
   getProductById,
+  getProductBySlug,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -170,6 +172,19 @@ describe("product mapping", () => {
     mockedPrisma.product.findUnique.mockResolvedValue(null as any);
 
     expect(await getProductById(999)).toBeNull();
+  });
+
+  it("finds a product by slug without requiring the same letter case", async () => {
+    mockedPrisma.product.findFirst.mockResolvedValue(productRow() as any);
+
+    const product = await getProductBySlug("Roof-Rack");
+
+    expect(mockedPrisma.product.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { slug: { equals: "Roof-Rack", mode: "insensitive" } },
+      })
+    );
+    expect(product?.slug).toBe("roof-rack");
   });
 
   it("reports a top-level category with no sub-category", async () => {

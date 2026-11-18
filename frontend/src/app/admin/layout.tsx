@@ -58,7 +58,7 @@ export default function AdminLayout({
     <div className="min-h-screen md:h-screen md:overflow-hidden bg-background flex flex-col md:flex-row text-foreground">
       
       {/* 1. Left Sidebar Panel (Desktop) */}
-      <aside className="w-full md:w-64 bg-card/40 border-b md:border-b-0 md:border-r border-border/80 flex flex-col shrink-0">
+      <aside className="w-full md:w-64 md:min-h-0 md:overflow-hidden bg-card/40 border-b md:border-b-0 md:border-r border-border/80 flex flex-col shrink-0">
         
         {/* Branding header */}
         <div className="h-16 sm:h-20 flex items-center px-6 border-b border-border/60">
@@ -77,7 +77,7 @@ export default function AdminLayout({
         </div>
 
         {/* Navigation links */}
-        <nav className="flex-grow p-4 space-y-1">
+        <nav className="flex-grow min-h-0 overflow-y-auto p-4 space-y-1">
           {menuItems.map((item) => {
             const active = isActive(item.href);
             const Icon = item.icon;
@@ -113,7 +113,7 @@ export default function AdminLayout({
       </aside>
 
       {/* 2. Right Workspace window */}
-      <div className="flex-grow flex flex-col min-w-0">
+      <div className="flex flex-col min-w-0 flex-grow md:h-full md:min-h-0 md:flex-1 md:overflow-hidden">
         
         {/* Top Header Workspace Bar */}
         <header className="h-16 sm:h-20 border-b border-border/60 bg-card/20 backdrop-blur-sm px-6 flex justify-between items-center shrink-0">
@@ -157,8 +157,11 @@ export default function AdminLayout({
 
         </header>
 
-        {/* Workspace content window */}
-        <div className="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background">
+        {/* Workspace content window. min-h-0 is required: a flex child
+            defaults to min-height:auto, so this pane would grow with the
+            product list and the h-screen shell would clip it instead of
+            scrolling. */}
+        <div className="flex-grow overflow-y-auto p-4 sm:p-6 lg:p-8 bg-background md:min-h-0 md:flex-1">
           {children}
         </div>
 

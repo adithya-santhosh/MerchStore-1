@@ -1,5 +1,6 @@
+import { cache } from "react";
 import { getProductById } from "@/lib/api";
-import { getProductImageSrc } from "@/lib/utils";
+import { getProductImageSrc, productPath } from "@/lib/utils";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProductActions from "@/components/ProductActions";
@@ -10,22 +11,32 @@ import VehicleCompatibility from "@/components/VehicleCompatibility";
 import RelatedProducts from "@/components/RelatedProducts";
 import { ShieldCheck, Truck, RotateCcw, Sparkles, ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { Metadata } from "next";
 import { buildMetadata, formatPrice } from "@/lib/seo";
 import { siteUrl } from "@/lib/site-config";
+import type { Product } from "@/types/products";
 
 interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+// The folder is still `[id]`, but the segment is the SEO slug. A numeric
+// segment is the old address and is redirected to the slug.
+const loadProduct = cache(async (key: string): Promise<Product | null> => {
+  try {
+    return await getProductById(key);
+  } catch {
+    return null;
+  }
+});
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { id } = await params;
-  if (!/^\d+$/.test(id)) return { title: "Product Not Found" };
+  const product = await loadProduct(id);
+  if (!product) return { title: "Product Not Found" };
 
   try {
-    const product = await getProductById(id);
-
     // Prefer the curated short description; otherwise trim the long one to a
     // length search engines will actually display (~160 chars).
     const raw = product.shortDescription?.trim() || product.description?.trim() || "";
@@ -36,7 +47,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description:
         summary ||
         `${product.name} — available at ${formatPrice(product.price)} with free delivery across India.`,
-      path: `/products/${product.id}`,
+      path: productPath(product),
       image: getProductImageSrc(product.ImageURL),
     });
   } catch {
@@ -47,12 +58,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProductPage({ params }: PageProps) {
   const { id } = await params;
+  const product = await loadProduct(id);
 
-  if (!/^\d+$/.test(id)) {
+  if (!product) {
     notFound();
   }
 
-  const product = await getProductById(id);
+  const canonicalKey = product.slug?.trim() || String(product.id);
+  if (id !== canonicalKey) {
+    permanentRedirect(productPath(product));
+  }
   const imageSrc = getProductImageSrc(product.ImageURL);
 
   // Fallback category path
@@ -107,7 +122,7 @@ export default async function ProductPage({ params }: PageProps) {
     brand: product.brand ? { "@type": "Brand", name: product.brand.name } : undefined,
     offers: {
       "@type": "Offer",
-      url: `${siteUrl}/products/${product.id}`,
+      url: `${siteUrl}${productPath(product)}`,
       priceCurrency: "INR",
       price: product.price,
       availability:

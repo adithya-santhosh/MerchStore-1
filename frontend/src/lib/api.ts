@@ -84,11 +84,11 @@ export async function getProductByCategory(category:string) :Promise<Product[]> 
   return response.json();
 }
 
-// This is to get product according to the id number
+// Loads one product. `id` may be the numeric id or the SEO slug.
 
 export async function getProductById(id:string) :Promise<Product>{
   const response = await fetch(
-    `${API_URL}/api/products/${id}`,
+    `${API_URL}/api/products/${encodeURIComponent(id)}`,
     {
       cache: "no-store",
     }

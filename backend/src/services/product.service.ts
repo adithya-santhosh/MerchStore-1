@@ -166,38 +166,50 @@ export const getAllProducts = async (
   return products.map(mapProduct);
 };
 
+const productDetailInclude = {
+  category: {
+    include: {
+      parent: true
+    }
+  },
+  brand: true,
+  images: true,
+  attributes: true,
+  compatibleWith: {
+    include: {
+      vehicle: true
+    }
+  },
+  reviews: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true
+        }
+      }
+    }
+  }
+};
+
 //
 /// Function to Find the Product by Id number
 //
 export const getProductById = async (id: number) => {
   const product = await prisma.product.findUnique({
     where: { id },
-    include: {
-      category: {
-        include: {
-          parent: true
-        }
-      },
-      brand: true,
-      images: true,
-      attributes: true,
-      compatibleWith: {
-        include: {
-          vehicle: true
-        }
-      },
-      reviews: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true
-            }
-          }
-        }
-      }
-    }
+    include: productDetailInclude,
+  });
+
+  return product ? mapProduct(product) : null;
+};
+
+/** Storefront lookup. Letter case in the URL does not have to match the row. */
+export const getProductBySlug = async (slug: string) => {
+  const product = await prisma.product.findFirst({
+    where: { slug: { equals: slug, mode: "insensitive" } },
+    include: productDetailInclude,
   });
 
   return product ? mapProduct(product) : null;

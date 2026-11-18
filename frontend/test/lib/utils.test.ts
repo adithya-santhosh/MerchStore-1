@@ -4,7 +4,23 @@ import { getErrorMessage } from "@/lib/errors";
 const { signatureMock } = vi.hoisted(() => ({ signatureMock: vi.fn() }));
 vi.mock("@/lib/api", () => ({ getUploadSignature: signatureMock }));
 
-import { cn, getProductImageSrc, safeCallbackUrl, uploadToCloudinary } from "@/lib/utils";
+import { cn, getProductImageSrc, normalizeProductSlug, productPath, safeCallbackUrl, uploadToCloudinary } from "@/lib/utils";
+
+describe("productPath", () => {
+  it("uses the stored slug", () => {
+    expect(productPath({ id: 96, slug: "thar-calendar-2027" })).toBe("/products/thar-calendar-2027");
+  });
+
+  it("falls back to the id when the slug is blank", () => {
+    expect(productPath({ id: 96, slug: "  " })).toBe("/products/96");
+  });
+});
+
+describe("normalizeProductSlug", () => {
+  it("lowercases and turns spaces into hyphens", () => {
+    expect(normalizeProductSlug("  Thar Calendar 2027! ")).toBe("thar-calendar-2027");
+  });
+});
 
 describe("cn", () => {
   it("joins several class names", () => {
