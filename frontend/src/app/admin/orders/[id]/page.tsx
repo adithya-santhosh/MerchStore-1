@@ -299,6 +299,9 @@ export default function AdminOrderDetailPage() {
                     {item.giftWrap && (
                       <p className="text-[10px] font-bold uppercase tracking-wider text-primary-bright mt-1">Gift wrap</p>
                     )}
+                    {item.sku && (
+                      <p className="text-[10px] font-mono text-muted-foreground font-medium">SKU: {item.sku}</p>
+                    )}
                     <p className="text-[10px] text-muted-foreground font-medium">
                       {item.supplierEmail ? `Supplier: ${item.supplierEmail}` : "Fulfilled by the store"}
                     </p>

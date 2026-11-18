@@ -392,10 +392,29 @@ export const createProduct = async (data: any) => {
 //
 /// Delete the Product from the Database
 //
+const ORDERED_PRODUCT_MESSAGE =
+  "This product is on an order, so it cannot be deleted. Turn Active off to hide it from the shop.";
+
+// Images and attributes cascade. These do not, so a plain product delete
+// fails for any item that was fitted to a vehicle, saved, reviewed, or
+// left in a cart.
+const clearProductLinks = async (ids: number[]) => {
+  const where = { productId: { in: ids } };
+  await prisma.productVehicle.deleteMany({ where });
+  await prisma.productAttribute.deleteMany({ where });
+  await prisma.productImage.deleteMany({ where });
+  await prisma.cartItem.deleteMany({ where });
+  await prisma.wishlistItem.deleteMany({ where });
+  await prisma.review.deleteMany({ where });
+};
+
 export const deleteProduct = async (id: number) => {
-  return await prisma.product.delete({
-    where: { id }
-  });
+  const ordered = await prisma.orderItem.count({ where: { productId: id } });
+  if (ordered > 0) {
+    throw new Error(ORDERED_PRODUCT_MESSAGE);
+  }
+  await clearProductLinks([id]);
+  return prisma.product.delete({ where: { id } });
 };
 
 /// Update the Product in the database
@@ -924,14 +943,21 @@ export const bulkUpdateProducts = async (
   if (!ids.length) throw new Error('No product IDs provided');
 
   if (action === 'delete') {
-    // Delete related records first, then products
-    await prisma.productVehicle.deleteMany({ where: { productId: { in: ids } } });
-    await prisma.productAttribute.deleteMany({ where: { productId: { in: ids } } });
-    await prisma.productImage.deleteMany({ where: { productId: { in: ids } } });
-    await prisma.cartItem.deleteMany({ where: { productId: { in: ids } } });
-    await prisma.wishlistItem.deleteMany({ where: { productId: { in: ids } } });
-    const result = await prisma.product.deleteMany({ where: { id: { in: ids } } });
-    return { affected: result.count, action };
+    const ordered = await prisma.orderItem.findMany({
+      where: { productId: { in: ids } },
+      select: { productId: true },
+      distinct: ["productId"],
+    });
+    const blocked = new Set(ordered.map((row) => row.productId));
+    const removable = ids.filter((id) => !blocked.has(id));
+    if (removable.length) {
+      await clearProductLinks(removable);
+      await prisma.product.deleteMany({ where: { id: { in: removable } } });
+    }
+    if (blocked.size && removable.length === 0) {
+      throw new Error(ORDERED_PRODUCT_MESSAGE);
+    }
+    return { affected: removable.length, action };
   }
 
   const isActive = action === 'activate';

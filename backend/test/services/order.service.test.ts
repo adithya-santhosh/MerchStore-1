@@ -391,6 +391,48 @@ describe("finalizeOrder — gift wrap", () => {
     expect(created.items.create[0].supplierEmail).toBe("pack@supply.test");
     expect(created.items.create[1].supplierEmail).toBeNull();
   });
+
+  it("copies the product SKU onto the line and stores a blank SKU as null", async () => {
+    const tx = makeTx();
+    mockedPrisma.$transaction.mockImplementation((cb: any) => cb(tx));
+
+    await finalizeOrder(
+      {
+        ...mixedCheckout,
+        cart: {
+          id: 1,
+          items: [
+            {
+              id: 1,
+              productId: 10,
+              quantity: 1,
+              unitPrice: 100,
+              product: {
+                id: 10,
+                name: "Keychain",
+                sku: "  CAL-27-FEND  ",
+                productType: "merch",
+                isActive: true,
+                stockQty: 5,
+              },
+            },
+            {
+              id: 2,
+              productId: 11,
+              quantity: 1,
+              unitPrice: 50,
+              product: { id: 11, name: "Bumper", sku: "   ", productType: "part", isActive: true, stockQty: 5 },
+            },
+          ],
+        } as any,
+      },
+      baseInput
+    );
+
+    const created = tx.order.create.mock.calls[0]?.[0].data;
+    expect(created.items.create[0].sku).toBe("CAL-27-FEND");
+    expect(created.items.create[1].sku).toBeNull();
+  });
 });
 
 // ─── Cancellation ─────────────────────────────────────────────────────────────

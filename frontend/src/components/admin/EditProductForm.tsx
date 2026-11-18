@@ -311,7 +311,7 @@ export default function EditProductForm({ product }: EditProductFormProps) {
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert("Failed to delete product.");
+      alert(getErrorMessage(error, "Failed to delete product."));
       setShowDeleteConfirm(false);
     } finally {
       setLoading(false);

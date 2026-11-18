@@ -128,7 +128,7 @@ export const getTopProducts = async (limit: number = 5, days?: number) => {
   }
 
   const topItems = await prisma.orderItem.groupBy({
-    by: ["productId", "productName"],
+    by: ["productId", "productName", "sku"],
     where: dateFilter,
     _sum: {
       quantity: true,
@@ -151,10 +151,14 @@ export const getTopProducts = async (limit: number = 5, days?: number) => {
       return [p.id, primaryImg?.imageUrl || null];
     })
   );
+  const skuMap = new Map(
+    products.map((p) => [p.id, typeof p.sku === "string" && p.sku.trim() ? p.sku.trim() : null])
+  );
 
   return topItems.map((item) => ({
     productId: item.productId,
     productName: item.productName,
+    sku: (typeof item.sku === "string" && item.sku.trim()) || skuMap.get(item.productId) || null,
     totalQuantity: item._sum.quantity || 0,
     totalRevenue: Number(item._sum.totalPrice || 0),
     imageUrl: imageMap.get(item.productId) || null,

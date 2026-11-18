@@ -314,6 +314,9 @@ model OrderItem {
   // product does not change who is notified about this order. Null means
   // the store itself fulfills the line.
   supplierEmail String?
+  // Part number copied at checkout. A later edit to the product SKU does not
+  // change the code already sold on this line.
+  sku           String?
 
   @@map("order_items")
 }

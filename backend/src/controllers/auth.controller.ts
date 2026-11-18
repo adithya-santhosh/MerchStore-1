@@ -33,6 +33,13 @@ export const register = async (req: Request, res: Response) => {
   }
 };
 
+const databaseUnavailable = (error: unknown): boolean => {
+  const message = error instanceof Error ? error.message : "";
+  return /server has closed the connection|connection terminated|can't reach database server|ECONNRESET|ECONNREFUSED|ETIMEDOUT/i.test(
+    message
+  );
+};
+
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
@@ -44,9 +51,15 @@ export const login = async (req: Request, res: Response) => {
     res.cookie(AUTH_COOKIE_NAME, result.token, { ...AUTH_COOKIE_OPTIONS, maxAge: AUTH_COOKIE_MAX_AGE });
     setCsrfCookie(res);
     res.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error({ err: error }, "Error in login controller");
-    res.status(401).json({ message: error.message || "Invalid credentials" });
+    if (databaseUnavailable(error)) {
+      return res.status(503).json({
+        message: "The shop database is waking up. Please try signing in again.",
+      });
+    }
+    const message = error instanceof Error ? error.message : "";
+    res.status(401).json({ message: message || "Invalid credentials" });
   }
 };
 

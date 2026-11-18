@@ -229,6 +229,7 @@ export default async function AdminDashboardPage({ searchParams }: PageProps) {
                       </p>
                       <p className="text-[10px] text-muted-foreground font-medium mt-0.5">
                         {product.totalQuantity} units sold
+                        {product.sku ? ` · SKU ${product.sku}` : ""}
                       </p>
                     </div>
                   </div>

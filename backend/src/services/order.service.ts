@@ -116,6 +116,11 @@ const isMerchandise = (product: { productType?: string | null } | null | undefin
   product?.productType === "merch";
 
 /** The supplier account email on a product, or null when the store fulfills it. */
+const skuFor = (product: { sku?: string | null } | null | undefined): string | null => {
+  const sku = typeof product?.sku === "string" ? product.sku.trim() : "";
+  return sku ? sku : null;
+};
+
 const supplierEmailFor = (
   product: { vendor?: { user?: { email?: string | null } | null } | null } | null | undefined
 ): string | null => {
@@ -373,6 +378,7 @@ export const finalizeOrder = async (
             totalPrice:  Number(item.unitPrice) * item.quantity,
             giftWrap:    input.giftWrap === true && isMerchandise(item.product),
             supplierEmail: supplierEmailFor(item.product),
+            sku:         skuFor(item.product),
           })),
         },
         payment: {
@@ -617,6 +623,7 @@ export const getOrderByIdAdmin = async (orderId: number) => {
         totalPrice:    Number(item.totalPrice),
         giftWrap:      item.giftWrap === true,
         supplierEmail: item.supplierEmail ?? null,
+        sku:           item.sku ?? null,
         imageUrl:      primaryImage?.imageUrl || null,
       };
     }),

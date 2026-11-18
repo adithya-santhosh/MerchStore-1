@@ -70,10 +70,19 @@ export const removeProduct = async(req:Request, res:Response) =>{
         return res.status(400).json({ message: "Invalid product ID" });
     }
 
-    await deleteProduct(id);
-    res.json({
-        message:"Product Deleted Successfully"
-    })
+    try {
+        await deleteProduct(id);
+        res.json({
+            message:"Product Deleted Successfully"
+        })
+    } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to delete product";
+        const status = message.includes("on an order") ? 409 : 500;
+        if (status === 500) {
+            logger.error({ err: error }, "Failed to delete product");
+        }
+        res.status(status).json({ message });
+    }
 }
 //
 /// Update the Product in the Database

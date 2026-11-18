@@ -107,11 +107,12 @@ describe("getOrderConfirmationEmailHtml", () => {
         user: { firstName: "Ada", lastName: "Lovelace", phone: "9999900000" },
         shippingAddress: { addressLine1: "1 Main", city: "Bengaluru", state: "KA", postalCode: "560001" },
       },
-      [{ productName: "Keychain", quantity: 1, giftWrap: true }],
+      [{ productName: "Keychain", quantity: 1, giftWrap: true, sku: " CAL-27-FEND " }],
       FRONTEND
     );
 
     expect(html).toContain("Keychain");
+    expect(html).toContain("SKU: CAL-27-FEND");
     expect(html).toContain("9999900000");
     expect(html).toContain("Happy birthday");
     expect(html).not.toContain("Bumper");

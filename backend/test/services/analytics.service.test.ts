@@ -317,6 +317,7 @@ describe("getTopProducts", () => {
 
     const call = mockedPrisma.orderItem.groupBy.mock.calls[0]?.[0] as any;
     expect(call.take).toBe(3);
+    expect(call.by).toEqual(["productId", "productName", "sku"]);
     expect(call.orderBy).toEqual({ _sum: { quantity: "desc" } });
   });
 
@@ -375,7 +376,7 @@ describe("getTopProducts", () => {
 
   it("still lists a product whose record has since been deleted", async () => {
     mockedPrisma.orderItem.groupBy.mockResolvedValue([
-      { productId: 99, productName: "Discontinued Bar", _sum: { quantity: 4, totalPrice: 900 } },
+      { productId: 99, productName: "Discontinued Bar", sku: "ARM-OLD", _sum: { quantity: 4, totalPrice: 900 } },
     ] as any);
     mockedPrisma.product.findMany.mockResolvedValue([] as any);
 
@@ -384,6 +385,18 @@ describe("getTopProducts", () => {
     // The order line keeps its own name snapshot, so history stays readable.
     expect(top.productName).toBe("Discontinued Bar");
     expect(top.imageUrl).toBeNull();
+    expect(top.sku).toBe("ARM-OLD");
+  });
+
+  it("uses the product's current SKU when the sale was recorded before SKUs were stored", async () => {
+    mockedPrisma.orderItem.groupBy.mockResolvedValue([
+      { productId: 10, productName: "Roof Rack", sku: null, _sum: { quantity: 2, totalPrice: 200 } },
+    ] as any);
+    mockedPrisma.product.findMany.mockResolvedValue([{ id: 10, sku: " CAL-27-THLX ", images: [] }] as any);
+
+    const [top] = await getTopProducts(5);
+
+    expect(top.sku).toBe("CAL-27-THLX");
   });
 
   it("treats a missing quantity sum as zero", async () => {

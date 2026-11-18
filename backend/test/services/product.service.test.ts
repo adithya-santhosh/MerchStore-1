@@ -21,6 +21,8 @@ vi.mock("../../src/lib/prisma", () => ({
     productImage: { deleteMany: vi.fn() },
     cartItem: { deleteMany: vi.fn() },
     wishlistItem: { deleteMany: vi.fn() },
+    review: { deleteMany: vi.fn() },
+    orderItem: { count: vi.fn().mockResolvedValue(0), findMany: vi.fn().mockResolvedValue([]) },
   },
 }));
 
@@ -629,12 +631,28 @@ describe("updateProduct", () => {
 });
 
 describe("deleteProduct", () => {
-  it("deletes by id", async () => {
+  it("clears fitment, carts, wishlists, and reviews before deleting", async () => {
+    mockedPrisma.orderItem.count.mockResolvedValue(0 as any);
     mockedPrisma.product.delete.mockResolvedValue({} as any);
 
     await deleteProduct(10);
 
+    for (const table of [
+      mockedPrisma.productVehicle,
+      mockedPrisma.cartItem,
+      mockedPrisma.wishlistItem,
+      mockedPrisma.review,
+    ]) {
+      expect(table.deleteMany).toHaveBeenCalledWith({ where: { productId: { in: [10] } } });
+    }
     expect(mockedPrisma.product.delete).toHaveBeenCalledWith({ where: { id: 10 } });
+  });
+
+  it("refuses to delete a product that is already on an order", async () => {
+    mockedPrisma.orderItem.count.mockResolvedValue(2 as any);
+
+    await expect(deleteProduct(10)).rejects.toThrow(/on an order/i);
+    expect(mockedPrisma.product.delete).not.toHaveBeenCalled();
   });
 });
 
@@ -1111,6 +1129,7 @@ describe("bulkUpdateProducts", () => {
       mockedPrisma.productImage,
       mockedPrisma.cartItem,
       mockedPrisma.wishlistItem,
+      mockedPrisma.review,
     ]) {
       expect(table.deleteMany).toHaveBeenCalledWith({ where: { productId: { in: [10, 11] } } });
     }

@@ -68,6 +68,7 @@ export const getVendorOrders = async (vendorId: number) => {
       quantity: item.quantity,
       unitPrice: Number(item.unitPrice),
       giftWrap: item.giftWrap === true,
+      sku: item.sku ?? null,
       imageUrl: item.product?.images?.[0]?.imageUrl ?? null
     })),
     shipment: order.shipment ? {

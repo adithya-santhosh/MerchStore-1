@@ -19,7 +19,7 @@ interface VendorOrderCardProps {
       postalCode: string;
     };
     giftMessage?: string | null;
-    items: { productId: number; productName: string; quantity: number; unitPrice: number; giftWrap?: boolean; imageUrl: string | null }[];
+    items: { productId: number; productName: string; quantity: number; unitPrice: number; giftWrap?: boolean; sku?: string | null; imageUrl: string | null }[];
     shipment: { carrier: string | null; trackingNumber: string | null; status: string; shippedAt: string | null } | null;
   };
   onShipped: () => void;
@@ -104,7 +104,10 @@ export default function VendorOrderCard({ order, onShipped }: VendorOrderCardPro
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{item.productName}</p>
-                    <p className="text-xs text-muted-foreground">Qty: {item.quantity} · ₹{item.unitPrice.toLocaleString("en-IN")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Qty: {item.quantity} · ₹{item.unitPrice.toLocaleString("en-IN")}
+                      {item.sku ? ` · SKU ${item.sku}` : ""}
+                    </p>
                     {item.giftWrap && (
                       <p className="text-[10px] font-bold uppercase tracking-wider text-primary mt-1">Gift wrap this item</p>
                     )}

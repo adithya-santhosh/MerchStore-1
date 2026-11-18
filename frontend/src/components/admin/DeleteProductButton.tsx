@@ -6,6 +6,7 @@ import { Trash2, AlertTriangle } from "lucide-react";
 import { deleteProduct } from "@/lib/api";
 import { useState } from "react";
 import { Product } from "@/types/products";
+import { getErrorMessage } from "@/lib/errors";
 
 interface DeleteProductButtonProps {
   product: Product;
@@ -25,7 +26,7 @@ export default function DeleteProductButton({ product }: DeleteProductButtonProp
       router.refresh();
     } catch (error) {
       console.error(error);
-      alert("Failed to delete product.");
+      alert(getErrorMessage(error, "Failed to delete product."));
       setShowConfirm(false);
     } finally {
       setIsDeleting(false);

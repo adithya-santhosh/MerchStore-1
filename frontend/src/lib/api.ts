@@ -116,7 +116,8 @@ export async function deleteProduct(id: number) {
   );
 
   if (!response.ok) {
-    throw new Error("Failed to delete product");
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.message || "Failed to delete product");
   }
 
   return response.json();
@@ -352,6 +353,7 @@ export interface VendorOrder {
     quantity: number;
     unitPrice: number;
     giftWrap?: boolean;
+    sku?: string | null;
     imageUrl: string | null;
   }[];
   giftMessage?: string | null;
@@ -624,6 +626,7 @@ export interface AdminOrderDetail {
     totalPrice: number;
     giftWrap?: boolean;
     supplierEmail?: string | null;
+    sku?: string | null;
     imageUrl: string | null;
   }[];
 }
@@ -916,6 +919,7 @@ export interface DashboardData {
   topProducts: {
     productId: number;
     productName: string;
+    sku?: string | null;
     totalQuantity: number;
     totalRevenue: number;
     imageUrl: string | null;

@@ -545,6 +545,10 @@ const supplierLines = (items: any[]): string =>
       (item) =>
         `<p style="margin: 0 0 8px 0; font-family: ${FONT}; font-size: 14px; line-height: 1.5; color: ${color.textPrimary};">${esc(item.productName ?? "Item")} × ${esc(item.quantity)}${
           item.giftWrap ? " — gift wrap" : ""
+        }${
+          typeof item.sku === "string" && item.sku.trim()
+            ? `<br><span style="font-size: 12px; color: ${color.textSecondary};">SKU: ${esc(item.sku.trim())}</span>`
+            : ""
         }</p>`
     )
     .join("");

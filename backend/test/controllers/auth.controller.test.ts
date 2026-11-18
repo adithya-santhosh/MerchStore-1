@@ -173,6 +173,21 @@ describe("POST /api/auth/login", () => {
     expect(res.body.message).toBe("Invalid email or password");
   });
 
+  it("answers 503 when the database connection was closed", async () => {
+    svc.loginUser.mockRejectedValue(
+      new Error(
+        "Invalid `prisma.user.findUnique()` invocation:\n\nServer has closed the connection."
+      )
+    );
+
+    const res = await post("/api/auth/login").send({ email: "a@b.com", password: "secret" });
+
+    expect(res.status).toBe(503);
+    expect(res.body.message).toBe(
+      "The shop database is waking up. Please try signing in again."
+    );
+  });
+
   it("returns the profile and sets the cookie on success", async () => {
     svc.loginUser.mockResolvedValue({ user: sessionUser, token: "jwt-token" } as any);
 
